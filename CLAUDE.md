@@ -189,7 +189,7 @@ GOOGLE_CLIENT_ID_ANDROID=xxx.apps.googleusercontent.com
 
 | Skill | 呼叫時機 |
 |-------|---------|
-| `/ui` | 建立或修改任何 Flutter Widget 時，主動參照設計規範 |
+| `/ui` | 建立或修改任何 Flutter 介面相關程式碼時（Widget、頁面佈局、導航、動畫、狀態呈現、互動設計），主動參照設計規範 |
 | `/arch` | 實作新功能前，先評估架構可行性與 ADR 合規性 |
 | `/security` | 每次 commit 前，對本次改動執行安全掃描 |
 | `/google-photos` | 任何涉及 Google Photos API 的程式碼，主動參照 API 限制與正確用法 |

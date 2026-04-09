@@ -237,13 +237,16 @@ GOOGLE_CLIENT_ID_ANDROID=xxx.apps.googleusercontent.com
 
 ## 里程碑現況
 
-| 階段 | 功能 | 狀態 |
-|------|------|------|
-| M1 | 專案初始化、Google 登入、CI/CD 骨架 | 進行中 |
-| M2 | Lumi Snap（拍照 + AI 分析 + 上傳） | 待開始 |
-| M3 | Lumi Search（衣物列表 + 色彩篩選） | 待開始 |
-| M4 | Lumi-Check（查重比對） | 待開始 |
-| M5 | UI 精修、效能優化、TestFlight Beta | 待開始 |
+> 開發策略：Web 優先。M1–M4 在 Flutter Web 驗證 UX，M5 再轉換 Native。
+
+| 階段 | 平台 | 功能 | 狀態 |
+|------|------|------|------|
+| M1 | Web | 專案骨架、Google 登入、GitHub Pages 自動部署 | 進行中 |
+| M2 | Web | Lumi Snap（拍照 + AI 分析 + 上傳） | 待開始 |
+| M3 | Web | Lumi Search（衣物列表 + 篩選） | 待開始 |
+| M4 | Web | Lumi-Check（查重比對） | 待開始 |
+| M5 | Native | iOS + Android 轉換、平台 CI/CD | 待開始 |
+| M6 | Native | UI 精修、效能優化、Beta 發布 | 待開始 |
 
 ---
 

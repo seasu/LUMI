@@ -1,4 +1,5 @@
 {
+  "language": "traditional chinese",
   "hooks": {
     "PreToolUse": [
       {

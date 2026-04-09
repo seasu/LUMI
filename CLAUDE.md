@@ -245,6 +245,13 @@ GOOGLE_CLIENT_ID_ANDROID=xxx.apps.googleusercontent.com
 
 ---
 
+## 語言規範
+
+**所有回覆必須使用繁體中文。** 包含說明、提問、錯誤訊息解讀、commit message 以外的所有文字溝通。
+程式碼、指令、變數名稱、commit message 本身維持英文。
+
+---
+
 ## 給 Claude Code 的工作原則
 
 1. **先讀後改**：修改任何檔案前，先用 Read 工具讀取現有內容。

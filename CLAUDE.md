@@ -96,11 +96,27 @@ refactor: 拆分 WardrobeRepository 為獨立 Provider
 
 - **目標分支**：一律為 `develop`（hotfix 例外，見上方）
 - **標題格式**：同 Commit Message 規範（`feat:` / `fix:` 開頭）
-- **描述必填**：
-  - 這個 PR 做了什麼（1–3 行）
-  - 如何測試（測試步驟或截圖）
+- **描述必填**：這個 PR 做了什麼（1–3 行）＋如何測試
 - **Merge 條件**：CI（flutter analyze + flutter test）全部通過
 - **禁止**：直接 push 至 `main` 或 `develop`，一律走 PR
+
+### Push 完成後的自動化流程
+
+每次 push 後，依照以下順序執行：
+
+**情況 A：GitHub MCP 工具可用**
+1. 自動建立 PR（標題、描述依上方規範）
+2. 呼叫 `subscribe_pr_activity` 訂閱該 PR 的事件
+3. CI 失敗 → 自動分析錯誤、修正、重新 push，不需使用者介入
+4. CI 通過、review 無問題 → 通知使用者確認 merge
+
+**情況 B：GitHub MCP 工具不可用**
+輸出以下資訊供手動建立 PR：
+```
+分支：feature/xxx → develop
+標題：feat: xxx
+描述：（完整 PR 描述內容）
+```
 
 ---
 

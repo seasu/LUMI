@@ -1,0 +1,39 @@
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+pubspec.lock
+
+# Dart
+.dart_tool/
+*.dart.js
+*.dart.js.deps
+*.dart.js.map
+
+# Environment variables (never commit)
+.env
+.env.local
+*.env
+
+# Firebase
+google-services.json
+GoogleService-Info.plist
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# macOS
+.DS_Store
+
+# Generated files
+*.g.dart
+*.freezed.dart
+
+# Coverage
+coverage/

@@ -55,20 +55,17 @@ Lumi 是一款 Flutter App，讓使用者用 Google Photos 管理衣櫥，並透
 
 | 分支 | 用途 |
 |------|------|
-| `main` | 正式發布，受保護，只接受 PR merge |
-| `develop` | 日常開發主線 |
+| `main` | 正式發布，受保護，只接受 PR merge，merge 後自動部署 GitHub Pages |
 | `feature/*` | 新功能開發 |
 | `fix/*` | Bug 修復 |
 
-**所有 PR 須 merge 至 `develop`，`develop` 穩定後再 merge 至 `main` 觸發發布。**
+**所有 PR 一律 merge 至 `main`。**
 
 ### Hotfix 流程
 
-線上緊急 bug 處理方式：
-
 1. 從 `main` 建立 `hotfix/簡短描述` 分支
 2. 修復後以 `fix:` 前綴 commit（自動觸發 Patch 版號更新）
-3. 開兩個 PR：一個 merge 至 `main`，一個 merge 至 `develop`（保持同步）
+3. PR 直接 merge 至 `main`
 
 ---
 
@@ -94,7 +91,7 @@ refactor: 拆分 WardrobeRepository 為獨立 Provider
 
 ## PR 規範
 
-- **目標分支**：一律為 `develop`（hotfix 例外，見上方）
+- **目標分支**：一律為 `main`
 - **標題格式**：同 Commit Message 規範（`feat:` / `fix:` 開頭）
 - **描述必填**：這個 PR 做了什麼（1–3 行）＋如何測試
 - **Merge 條件**：CI（flutter analyze + flutter test）全部通過

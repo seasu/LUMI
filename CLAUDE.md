@@ -96,11 +96,27 @@ refactor: 拆分 WardrobeRepository 為獨立 Provider
 
 - **目標分支**：一律為 `develop`（hotfix 例外，見上方）
 - **標題格式**：同 Commit Message 規範（`feat:` / `fix:` 開頭）
-- **描述必填**：
-  - 這個 PR 做了什麼（1–3 行）
-  - 如何測試（測試步驟或截圖）
+- **描述必填**：這個 PR 做了什麼（1–3 行）＋如何測試
 - **Merge 條件**：CI（flutter analyze + flutter test）全部通過
 - **禁止**：直接 push 至 `main` 或 `develop`，一律走 PR
+
+### Push 完成後的自動化流程
+
+每次 push 後，依照以下順序執行：
+
+**情況 A：GitHub MCP 工具可用**
+1. 自動建立 PR（標題、描述依上方規範）
+2. 呼叫 `subscribe_pr_activity` 訂閱該 PR 的事件
+3. CI 失敗 → 自動分析錯誤、修正、重新 push，不需使用者介入
+4. CI 通過、review 無問題 → 通知使用者確認 merge
+
+**情況 B：GitHub MCP 工具不可用**
+輸出以下資訊供手動建立 PR：
+```
+分支：feature/xxx → develop
+標題：feat: xxx
+描述：（完整 PR 描述內容）
+```
 
 ---
 
@@ -242,6 +258,58 @@ GOOGLE_CLIENT_ID_ANDROID=xxx.apps.googleusercontent.com
 | `/google-photos` | 任何涉及 Google Photos API 的程式碼，主動參照 API 限制與正確用法 |
 | `/test` | 實作新功能時，同步撰寫對應測試；或需要查閱各里程碑驗收標準時 |
 | `/marketing` | 使用者要求撰寫 App Store 說明、版本更新說明、社群文案時 |
+
+---
+
+## 語言規範
+
+**所有回覆必須使用繁體中文。** 包含說明、提問、錯誤訊息解讀、commit message 以外的所有文字溝通。
+程式碼、指令、變數名稱、commit message 本身維持英文。
+
+---
+
+## Session 恢復流程
+
+每次開啟新 session，在回應任何需求前，先依序執行：
+
+1. `git status` — 確認有無未 commit 的變更
+2. `git log --oneline -5` — 讀取最近 5 筆 commit，了解目前進度
+3. `git branch --show-current` — 確認目前所在分支
+4. 若有未完成工作（uncommitted changes 或 WIP commit），主動告知使用者目前狀態，詢問是否繼續上次任務
+
+完成後才進入使用者描述的新需求。
+
+---
+
+## 長任務分段策略
+
+單一功能預估超過 3 個檔案修改，或需要多個邏輯步驟時，主動拆分：
+
+1. 開始前列出分段計畫，說明每段的範圍與 commit 節點
+2. 每完成一個有意義的段落即 commit，確保 session 中斷後進度不遺失
+3. 每段 commit message 加上進度標記，例如：
+   ```
+   feat(wardrobe): add Firestore repository layer [1/3]
+   feat(wardrobe): add Riverpod provider and state [2/3]
+   feat(wardrobe): add wardrobe list UI [3/3]
+   ```
+4. 每段完成後簡短回報進度，讓使用者知道目前到哪裡
+
+---
+
+## 卡住時的處理規則
+
+遇到 `flutter analyze` 或 `flutter test` 失敗：
+
+- **第 1 次失敗**：分析錯誤，自行修正，重新執行
+- **第 2 次失敗**：再嘗試一次，若仍失敗則停下
+- **第 3 次仍失敗**：停止嘗試，向使用者說明：
+  - 錯誤訊息是什麼
+  - 已嘗試過哪些修法
+  - 目前判斷問題可能出在哪裡
+  - 提供 2–3 個解決方向供選擇
+
+不得無限重試消耗 context，也不得在未解決的情況下繼續後續任務。
 
 ---
 

@@ -193,6 +193,7 @@ GOOGLE_CLIENT_ID_ANDROID=xxx.apps.googleusercontent.com
 | `/arch` | 實作新功能前，先評估架構可行性與 ADR 合規性 |
 | `/security` | 每次 commit 前，對本次改動執行安全掃描 |
 | `/google-photos` | 任何涉及 Google Photos API 的程式碼，主動參照 API 限制與正確用法 |
+| `/test` | 實作新功能時，同步撰寫對應測試；或需要查閱各里程碑驗收標準時 |
 | `/marketing` | 使用者要求撰寫 App Store 說明、版本更新說明、社群文案時 |
 
 ---

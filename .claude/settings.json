@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); cmd=$(echo \"$input\" | jq -r '.tool_input.command'); if echo \"$cmd\" | grep -q 'git commit'; then echo '🔍 Running pre-commit checks...' >&2; cd /home/user/LUMI && flutter analyze && flutter test && echo '{\"continue\": true}' || echo '{\"continue\": false, \"stopReason\": \"Pre-commit checks failed: flutter analyze or flutter test did not pass. Fix the errors above before committing.\"}'; else echo '{\"continue\": true}'; fi",
+            "timeout": 120,
+            "statusMessage": "Running flutter analyze & flutter test..."
+          }
+        ]
+      }
+    ]
+  }
+}

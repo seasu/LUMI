@@ -185,6 +185,18 @@ GOOGLE_CLIENT_ID_ANDROID=xxx.apps.googleusercontent.com
 
 ---
 
+## 可用 Skills（AI 應主動判斷時機呼叫）
+
+| Skill | 呼叫時機 |
+|-------|---------|
+| `/ui` | 建立或修改任何 Flutter Widget 時，主動參照設計規範 |
+| `/arch` | 實作新功能前，先評估架構可行性與 ADR 合規性 |
+| `/security` | 每次 commit 前，對本次改動執行安全掃描 |
+| `/google-photos` | 任何涉及 Google Photos API 的程式碼，主動參照 API 限制與正確用法 |
+| `/marketing` | 使用者要求撰寫 App Store 說明、版本更新說明、社群文案時 |
+
+---
+
 ## 給 Claude Code 的工作原則
 
 1. **先讀後改**：修改任何檔案前，先用 Read 工具讀取現有內容。

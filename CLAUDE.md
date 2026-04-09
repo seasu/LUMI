@@ -268,6 +268,51 @@ GOOGLE_CLIENT_ID_ANDROID=xxx.apps.googleusercontent.com
 
 ---
 
+## Session 恢復流程
+
+每次開啟新 session，在回應任何需求前，先依序執行：
+
+1. `git status` — 確認有無未 commit 的變更
+2. `git log --oneline -5` — 讀取最近 5 筆 commit，了解目前進度
+3. `git branch --show-current` — 確認目前所在分支
+4. 若有未完成工作（uncommitted changes 或 WIP commit），主動告知使用者目前狀態，詢問是否繼續上次任務
+
+完成後才進入使用者描述的新需求。
+
+---
+
+## 長任務分段策略
+
+單一功能預估超過 3 個檔案修改，或需要多個邏輯步驟時，主動拆分：
+
+1. 開始前列出分段計畫，說明每段的範圍與 commit 節點
+2. 每完成一個有意義的段落即 commit，確保 session 中斷後進度不遺失
+3. 每段 commit message 加上進度標記，例如：
+   ```
+   feat(wardrobe): add Firestore repository layer [1/3]
+   feat(wardrobe): add Riverpod provider and state [2/3]
+   feat(wardrobe): add wardrobe list UI [3/3]
+   ```
+4. 每段完成後簡短回報進度，讓使用者知道目前到哪裡
+
+---
+
+## 卡住時的處理規則
+
+遇到 `flutter analyze` 或 `flutter test` 失敗：
+
+- **第 1 次失敗**：分析錯誤，自行修正，重新執行
+- **第 2 次失敗**：再嘗試一次，若仍失敗則停下
+- **第 3 次仍失敗**：停止嘗試，向使用者說明：
+  - 錯誤訊息是什麼
+  - 已嘗試過哪些修法
+  - 目前判斷問題可能出在哪裡
+  - 提供 2–3 個解決方向供選擇
+
+不得無限重試消耗 context，也不得在未解決的情況下繼續後續任務。
+
+---
+
 ## 給 Claude Code 的工作原則
 
 1. **先讀後改**：修改任何檔案前，先用 Read 工具讀取現有內容。

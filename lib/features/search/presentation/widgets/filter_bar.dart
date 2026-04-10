@@ -114,6 +114,7 @@ class _Chip extends StatelessWidget {
           horizontal: LumiSpacing.md,
           vertical: LumiSpacing.xs,
         ),
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected ? LumiColors.accent : LumiColors.surface,
           borderRadius: BorderRadius.circular(20),

@@ -19,12 +19,13 @@ class SearchPage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: LumiColors.base,
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: FloatingActionButton.large(
         onPressed: () => context.push('/snap'),
         backgroundColor: LumiColors.accent,
         foregroundColor: LumiColors.surface,
-        label: const Text('Lumi Snap'),
-        icon: const Icon(Icons.camera_alt_outlined),
+        tooltip: 'Lumi Snap',
+        child: const Icon(Icons.camera_alt_outlined, size: 32),
       ),
       body: SafeArea(
         child: Column(
@@ -122,12 +123,18 @@ class _WardrobeGrid extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: () async {}, // Firestore stream handles real-time updates
       child: GridView.builder(
-        padding: const EdgeInsets.all(LumiSpacing.md),
+        // Extra bottom padding so the large FAB doesn't cover the last row
+        padding: const EdgeInsets.fromLTRB(
+          LumiSpacing.sm,
+          LumiSpacing.sm,
+          LumiSpacing.sm,
+          96 + LumiSpacing.lg,
+        ),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: crossAxisCount,
           crossAxisSpacing: LumiSpacing.sm,
           mainAxisSpacing: LumiSpacing.sm,
-          childAspectRatio: 0.72,
+          childAspectRatio: 0.62,
         ),
         itemCount: items.length,
         itemBuilder: (context, index) => WardrobeCard(item: items[index]),
@@ -195,19 +202,19 @@ class _LoadingGrid extends StatelessWidget {
     };
 
     return GridView.builder(
-      padding: const EdgeInsets.all(LumiSpacing.md),
+      padding: const EdgeInsets.all(LumiSpacing.sm),
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
         crossAxisSpacing: LumiSpacing.sm,
         mainAxisSpacing: LumiSpacing.sm,
-        childAspectRatio: 0.72,
+        childAspectRatio: 0.62,
       ),
       itemCount: 6,
       itemBuilder: (_, __) => Container(
         decoration: BoxDecoration(
           color: LumiColors.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
         ),
       ),
     );

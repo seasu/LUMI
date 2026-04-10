@@ -15,40 +15,64 @@ class WardrobeCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final thumbnailUrl = ref.watch(_thumbnailUrlProvider(item));
 
-    return Container(
-      decoration: BoxDecoration(
-        color: LumiColors.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(child: _ThumbnailImage(url: thumbnailUrl)),
-          Padding(
-            padding: const EdgeInsets.all(LumiSpacing.sm),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.category,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: LumiColors.text,
+    // Spring entrance: scale from 0.92 → 1.0 with easeOutBack
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.92, end: 1.0),
+      duration: const Duration(milliseconds: 380),
+      curve: Curves.easeOutBack,
+      builder: (_, scale, child) =>
+          Transform.scale(scale: scale, child: child),
+      child: Container(
+        decoration: BoxDecoration(
+          color: LumiColors.surface,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Full-bleed image
+            _ThumbnailImage(url: thumbnailUrl),
+            // Bottom gradient overlay with label
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(
+                  LumiSpacing.sm,
+                  LumiSpacing.xl,
+                  LumiSpacing.sm,
+                  LumiSpacing.sm,
+                ),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [Color(0xCC000000), Colors.transparent],
                   ),
                 ),
-                const SizedBox(height: LumiSpacing.xs),
-                Row(
-                  children: item.colors
-                      .take(3)
-                      .map((hex) => _ColorDot(hex: hex))
-                      .toList(),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.category,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                    ...item.colors.take(3).map((hex) => _ColorDot(hex: hex)),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -58,7 +82,6 @@ class WardrobeCard extends ConsumerWidget {
 
 final _thumbnailUrlProvider =
     Provider.family<String, WardrobeItem>((ref, item) {
-  // Auto-refresh in background if stale; return current URL immediately
   if (item.isThumbnailStale) {
     _refreshInBackground(ref, item);
   }
@@ -101,18 +124,16 @@ class _ThumbnailImage extends StatelessWidget {
       url,
       fit: BoxFit.cover,
       width: double.infinity,
+      height: double.infinity,
       errorBuilder: (_, __, ___) => const ColoredBox(
         color: LumiColors.base,
         child: Center(
-          child: Icon(Icons.image_not_supported_outlined,
-              color: LumiColors.subtext),
+          child: Icon(Icons.checkroom_outlined, color: LumiColors.subtext, size: 32),
         ),
       ),
       loadingBuilder: (_, child, progress) {
         if (progress == null) return child;
-        return const ColoredBox(
-          color: LumiColors.base,
-        );
+        return const ColoredBox(color: LumiColors.base);
       },
     );
   }
@@ -127,13 +148,17 @@ class _ColorDot extends StatelessWidget {
   Widget build(BuildContext context) {
     final clean = hex.replaceAll('#', '');
     final value = int.tryParse('FF$clean', radix: 16);
-    final color = value != null ? Color(value) : LumiColors.subtext;
+    final color = value != null ? Color(value) : Colors.white;
 
     return Container(
       width: 10,
       height: 10,
-      margin: const EdgeInsets.only(right: LumiSpacing.xs),
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      margin: const EdgeInsets.only(left: LumiSpacing.xs),
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white.withOpacity(0.6), width: 1),
+      ),
     );
   }
 }

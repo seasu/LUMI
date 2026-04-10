@@ -46,6 +46,25 @@ class CloudFunctionsService {
       thumbnailUrl: data['thumbnailUrl'] as String,
     );
   }
+
+  Future<CompareClothingResult> compareClothing({
+    required String imageBase64,
+    required String mimeType,
+  }) async {
+    final callable = _functions.httpsCallable('compareClothing');
+    final result = await callable.call<Map<dynamic, dynamic>>({
+      'imageBase64': imageBase64,
+      'mimeType': mimeType,
+    });
+
+    final data = Map<String, dynamic>.from(result.data);
+    return CompareClothingResult(
+      similarity: (data['similarity'] as num).toDouble(),
+      matchedMediaItemId: data['matchedMediaItemId'] as String?,
+      matchedThumbnailUrl: data['matchedThumbnailUrl'] as String?,
+      matchedCategory: data['matchedCategory'] as String?,
+    );
+  }
 }
 
 class AnalyzeClothingResult {
@@ -70,4 +89,18 @@ class UploadToPhotosResult {
 
   final String mediaItemId;
   final String thumbnailUrl;
+}
+
+class CompareClothingResult {
+  const CompareClothingResult({
+    required this.similarity,
+    this.matchedMediaItemId,
+    this.matchedThumbnailUrl,
+    this.matchedCategory,
+  });
+
+  final double similarity;
+  final String? matchedMediaItemId;
+  final String? matchedThumbnailUrl;
+  final String? matchedCategory;
 }

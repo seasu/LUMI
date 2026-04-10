@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/login_page.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
+import '../../features/check/presentation/check_page.dart';
 import '../../features/search/presentation/search_page.dart';
 import '../../features/snap/presentation/snap_page.dart';
 
@@ -30,6 +31,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/snap',
         builder: (context, state) => const SnapPage(),
+      ),
+      GoRoute(
+        path: '/check',
+        builder: (context, state) => const CheckPage(),
       ),
     ],
   );

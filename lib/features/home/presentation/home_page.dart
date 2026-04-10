@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/providers/firebase_providers.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_spacing.dart';
@@ -62,7 +63,7 @@ class HomePage extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {},
+        onPressed: () => context.push('/snap'),
         backgroundColor: LumiColors.text,
         foregroundColor: LumiColors.surface,
         label: const Text('Lumi Snap'),

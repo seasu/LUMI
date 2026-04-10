@@ -9,8 +9,9 @@ import '../../features/search/presentation/search_page.dart';
 import '../../features/snap/presentation/snap_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  // ValueNotifier lets GoRouter re-evaluate redirects on auth change
-  final authNotifier = ValueNotifier<AsyncValue<User?>>(const AsyncValue.loading());
+  // Initialize with current auth state so the router doesn't get stuck on
+  // AsyncLoading if Firebase already restored a session before this provider built.
+  final authNotifier = ValueNotifier<AsyncValue<User?>>(ref.read(authStateProvider));
 
   ref.listen<AsyncValue<User?>>(authStateProvider, (_, next) {
     authNotifier.value = next;

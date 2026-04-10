@@ -68,7 +68,24 @@ class LoginPage extends ConsumerWidget {
     return SizedBox(
       width: double.infinity,
       child: FilledButton(
-        onPressed: isLoading ? null : () => signInWithGoogle(ref),
+        onPressed: isLoading
+            ? null
+            : () async {
+                try {
+                  await signInWithGoogle(ref);
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          e.toString().replaceFirst('Exception: ', ''),
+                        ),
+                        backgroundColor: const Color(0xFFFF6B35),
+                      ),
+                    );
+                  }
+                }
+              },
         style: FilledButton.styleFrom(
           backgroundColor: LumiColors.text,
           foregroundColor: LumiColors.surface,

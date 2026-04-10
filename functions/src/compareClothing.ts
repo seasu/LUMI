@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions/v1";
 import { defineSecret } from "firebase-functions/params";
 import * as admin from "firebase-admin";
+import { FUNCTIONS_REGION } from "./functionsRegion";
 import { analyzeImage, generateEmbedding } from "./gemini";
 
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
@@ -37,6 +38,7 @@ function cosineSimilarity(a: number[], b: number[]): number {
 }
 
 export const compareClothing = functions
+  .region(FUNCTIONS_REGION)
   .runWith({ secrets: [geminiApiKey] })
   .https.onCall(async (data, context): Promise<CompareClothingResult> => {
     if (!context.auth) {

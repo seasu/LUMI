@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
+import { FUNCTIONS_REGION } from "./functionsRegion";
 
 const PHOTOS_BASE_URL = "https://photoslibrary.googleapis.com/v1";
 const ALBUM_TITLE = "Lumi_Wardrobe";
@@ -178,7 +179,9 @@ async function createMediaItem(
 
 // ── Callable Function ─────────────────────────────────────────────────────────
 
-export const uploadToPhotos = functions.https.onCall(
+export const uploadToPhotos = functions
+  .region(FUNCTIONS_REGION)
+  .https.onCall(
   async (data, context): Promise<UploadToPhotosResult> => {
     if (!context.auth) {
       throw new functions.https.HttpsError(

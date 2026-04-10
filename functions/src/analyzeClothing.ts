@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions/v1";
 import { defineSecret } from "firebase-functions/params";
+import { FUNCTIONS_REGION } from "./functionsRegion";
 import { analyzeImage, generateEmbedding } from "./gemini";
 
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
@@ -12,6 +13,7 @@ interface AnalyzeClothingResult {
 }
 
 export const analyzeClothing = functions
+  .region(FUNCTIONS_REGION)
   .runWith({ secrets: [geminiApiKey] })
   .https.onCall(async (data, context): Promise<AnalyzeClothingResult> => {
     if (!context.auth) {

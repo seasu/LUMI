@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/login_page.dart';
@@ -7,12 +9,25 @@ import '../../features/search/presentation/search_page.dart';
 import '../../features/snap/presentation/snap_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
+  // ValueNotifier lets GoRouter re-evaluate redirects on auth change
+  final authNotifier = ValueNotifier<AsyncValue<User?>>(const AsyncValue.loading());
+
+  ref.listen<AsyncValue<User?>>(authStateProvider, (_, next) {
+    authNotifier.value = next;
+  });
+
+  ref.onDispose(authNotifier.dispose);
 
   return GoRouter(
     initialLocation: '/login',
+    refreshListenable: authNotifier,
     redirect: (context, state) {
-      final isLoggedIn = authState.valueOrNull != null;
+      final authValue = authNotifier.value;
+
+      // Still loading — don't redirect yet
+      if (authValue is AsyncLoading) return null;
+
+      final isLoggedIn = authValue.valueOrNull != null;
       final isLoginPage = state.matchedLocation == '/login';
 
       if (!isLoggedIn && !isLoginPage) return '/login';

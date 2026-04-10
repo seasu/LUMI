@@ -32,6 +32,9 @@ jobs:
       - name: Write service account credentials
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa.json
 
+      - name: Show deploy service account (for IAM debugging)
+        run: python3 -c "import json; print(json.load(open('/tmp/sa.json'))['client_email'])"
+
       # IAM for this SA (project lumi-app): must allow Firebase CLI deploy, including
       # cloudresourcemanager.googleapis.com GET on the project (403 = missing roles).
       # Typical fix: grant this service account one of:
@@ -44,9 +47,10 @@ jobs:
       # Configure GEMINI_API_KEY once in Firebase (Console or CLI with an admin account).
 
       - name: Deploy Cloud Functions
+        working-directory: functions
         run: |
           GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
-            npx firebase-tools deploy --only functions \
+            firebase deploy --only functions \
               --project lumi-app --non-interactive
 
       - name: Cleanup credentials

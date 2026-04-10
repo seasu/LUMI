@@ -1,4 +1,4 @@
-import * as functions from "firebase-functions/v1";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { FUNCTIONS_REGION } from "./functionsRegion";
 
@@ -179,28 +179,24 @@ async function createMediaItem(
 
 // ── Callable Function ─────────────────────────────────────────────────────────
 
-export const uploadToPhotos = functions
-  .region(FUNCTIONS_REGION)
-  .https.onCall(
-  async (data, context): Promise<UploadToPhotosResult> => {
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
-        "unauthenticated",
-        "Authentication required."
-      );
+export const uploadToPhotos = onCall(
+  { region: FUNCTIONS_REGION },
+  async (request): Promise<UploadToPhotosResult> => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Authentication required.");
     }
 
     const { imageBase64, mimeType, filename, accessToken } =
-      data as UploadToPhotosData;
+      request.data as UploadToPhotosData;
 
     if (!imageBase64 || !mimeType || !filename || !accessToken) {
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         "invalid-argument",
         "imageBase64, mimeType, filename, and accessToken are required."
       );
     }
 
-    const userId = context.auth.uid;
+    const userId = request.auth.uid;
 
     try {
       const albumId = await getOrCreateAlbum(accessToken, userId);
@@ -213,10 +209,7 @@ export const uploadToPhotos = functions
       return await createMediaItem(accessToken, uploadToken, albumId, filename);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      throw new functions.https.HttpsError(
-        "internal",
-        `Upload failed: ${msg}`
-      );
+      throw new HttpsError("internal", `Upload failed: ${msg}`);
     }
   }
 );

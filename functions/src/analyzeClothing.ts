@@ -1,4 +1,4 @@
-import * as functions from "firebase-functions/v1";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { FUNCTIONS_REGION } from "./functionsRegion";
 import { analyzeImage, generateEmbedding } from "./gemini";
@@ -12,24 +12,23 @@ interface AnalyzeClothingResult {
   embedding: number[];
 }
 
-export const analyzeClothing = functions
-  .region(FUNCTIONS_REGION)
-  .runWith({ secrets: [geminiApiKey] })
-  .https.onCall(async (data, context): Promise<AnalyzeClothingResult> => {
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
-        "unauthenticated",
-        "Authentication required."
-      );
+export const analyzeClothing = onCall(
+  {
+    region: FUNCTIONS_REGION,
+    secrets: [geminiApiKey],
+  },
+  async (request): Promise<AnalyzeClothingResult> => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Authentication required.");
     }
 
-    const { imageBase64, mimeType } = data as {
+    const { imageBase64, mimeType } = request.data as {
       imageBase64: string;
       mimeType: string;
     };
 
     if (!imageBase64 || !mimeType) {
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         "invalid-argument",
         "imageBase64 and mimeType are required."
       );
@@ -45,4 +44,5 @@ export const analyzeClothing = functions
       materials: analysis.materials,
       embedding,
     };
-  });
+  }
+);

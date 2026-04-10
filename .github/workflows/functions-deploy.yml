@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: functions/package-lock.json
 
@@ -46,19 +46,21 @@ jobs:
       # permissions that the deploy SA often lacks (403 on serviceusage.googleapis.com).
       # Configure GEMINI_API_KEY once in Firebase (Console or CLI with an admin account).
       #
-      # Functions are Gen1 (firebase.json runtime + v1 SDK), region asia-east1 — align with
-      # the App Engine app location for project lumi-309ff.
+      # Cloud Functions Gen2 (v2 SDK), region asia-east1 — align with App Engine (lumi-309ff).
       #
       # One-time (project owner): if deploy still asks to enable APIs, enable manually:
       # - Cloud Build: https://console.cloud.google.com/apis/library/cloudbuild.googleapis.com?project=lumi-309ff
       # - Artifact Registry: https://console.cloud.google.com/apis/library/artifactregistry.googleapis.com?project=lumi-309ff
+      #
+      # --force on deploy: CLI applies Artifact Registry cleanup policy for build artifacts;
+      # without it, deploy can exit 1 after functions succeeded.
 
       - name: Deploy Cloud Functions
         working-directory: functions
         run: |
           GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
             npx firebase deploy --only functions \
-              --project lumi-309ff --non-interactive
+              --project lumi-309ff --non-interactive --force
 
       - name: Cleanup credentials
         if: always()

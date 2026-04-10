@@ -4,3 +4,4 @@ admin.initializeApp();
 
 export { analyzeClothing } from "./analyzeClothing";
 export { uploadToPhotos } from "./uploadToPhotos";
+export { compareClothing } from "./compareClothing";

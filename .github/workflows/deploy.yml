@@ -89,6 +89,11 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Inject build version into index.html
+        run: |
+          GIT_SHA=$(git rev-parse --short HEAD)
+          sed -i "s/__BUILD_VERSION__/$GIT_SHA/g" web/index.html
+
       - name: Build Web
         run: |
           flutter build web --release \

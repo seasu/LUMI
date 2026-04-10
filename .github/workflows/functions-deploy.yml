@@ -52,13 +52,16 @@ jobs:
       # One-time (project owner): if deploy still asks to enable APIs, enable manually:
       # - Cloud Build: https://console.cloud.google.com/apis/library/cloudbuild.googleapis.com?project=lumi-309ff
       # - Artifact Registry: https://console.cloud.google.com/apis/library/artifactregistry.googleapis.com?project=lumi-309ff
+      #
+      # --force on deploy: CLI applies Artifact Registry cleanup policy for build artifacts;
+      # without it, deploy can exit 1 after functions succeeded.
 
       - name: Deploy Cloud Functions
         working-directory: functions
         run: |
           GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
             npx firebase deploy --only functions \
-              --project lumi-309ff --non-interactive
+              --project lumi-309ff --non-interactive --force
 
       - name: Cleanup credentials
         if: always()

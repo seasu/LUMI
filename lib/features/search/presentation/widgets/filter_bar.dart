@@ -115,7 +115,7 @@ class _Chip extends StatelessWidget {
           vertical: LumiSpacing.xs,
         ),
         decoration: BoxDecoration(
-          color: selected ? LumiColors.text : LumiColors.surface,
+          color: selected ? LumiColors.accent : LumiColors.surface,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(

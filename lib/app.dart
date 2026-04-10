@@ -16,7 +16,7 @@ class LumiApp extends ConsumerWidget {
       routerConfig: router,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: LumiColors.text,
+          seedColor: LumiColors.accent,
           surface: LumiColors.base,
         ),
         scaffoldBackgroundColor: LumiColors.base,

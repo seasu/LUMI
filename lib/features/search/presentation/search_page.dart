@@ -21,7 +21,7 @@ class SearchPage extends ConsumerWidget {
       backgroundColor: LumiColors.base,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/snap'),
-        backgroundColor: LumiColors.text,
+        backgroundColor: LumiColors.accent,
         foregroundColor: LumiColors.surface,
         label: const Text('Lumi Snap'),
         icon: const Icon(Icons.camera_alt_outlined),

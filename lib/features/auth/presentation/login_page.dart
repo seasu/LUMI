@@ -87,7 +87,7 @@ class LoginPage extends ConsumerWidget {
                 }
               },
         style: FilledButton.styleFrom(
-          backgroundColor: LumiColors.text,
+          backgroundColor: LumiColors.accent,
           foregroundColor: LumiColors.surface,
           padding: const EdgeInsets.symmetric(vertical: LumiSpacing.md),
           shape: RoundedRectangleBorder(

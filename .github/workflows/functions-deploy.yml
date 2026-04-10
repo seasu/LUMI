@@ -35,7 +35,7 @@ jobs:
       - name: Show deploy service account (for IAM debugging)
         run: python3 -c "import json; print(json.load(open('/tmp/sa.json'))['client_email'])"
 
-      # IAM for this SA (project lumi-app): must allow Firebase CLI deploy, including
+      # IAM for this SA (project lumi-309ff): must allow Firebase CLI deploy, including
       # cloudresourcemanager.googleapis.com GET on the project (403 = missing roles).
       # Typical fix: grant this service account one of:
       # - roles/firebase.admin (Firebase Admin), or
@@ -51,7 +51,7 @@ jobs:
         run: |
           GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
             firebase deploy --only functions \
-              --project lumi-app --non-interactive
+              --project lumi-309ff --non-interactive
 
       - name: Cleanup credentials
         if: always()

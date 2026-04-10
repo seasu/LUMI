@@ -20,6 +20,11 @@ pubspec.lock
 # Firebase
 google-services.json
 GoogleService-Info.plist
+.firebase/
+
+# Cloud Functions
+functions/node_modules/
+functions/lib/
 
 # IDE
 .idea/

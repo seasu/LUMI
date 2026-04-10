@@ -1,0 +1,50 @@
+name: Deploy Firebase Functions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'functions/**'
+  workflow_dispatch: # 允許從 GitHub Actions UI 手動觸發
+
+jobs:
+  deploy:
+    name: Deploy Functions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: functions
+
+      - name: Build TypeScript
+        run: npm run build
+        working-directory: functions
+
+      - name: Write service account credentials
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa.json
+
+      - name: Set GEMINI_API_KEY Firebase Secret
+        run: |
+          printf '%s' '${{ secrets.GEMINI_API_KEY }}' | \
+            GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
+            npx firebase-tools functions:secrets:set GEMINI_API_KEY \
+              --project lumi-app --non-interactive --force
+
+      - name: Deploy Cloud Functions
+        run: |
+          GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
+            npx firebase-tools deploy --only functions \
+              --project lumi-app --non-interactive
+
+      - name: Cleanup credentials
+        if: always()
+        run: rm -f /tmp/sa.json

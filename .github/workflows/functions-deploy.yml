@@ -32,6 +32,13 @@ jobs:
       - name: Write service account credentials
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa.json
 
+      # IAM for this SA (project lumi-app): must allow Firebase CLI deploy, including
+      # cloudresourcemanager.googleapis.com GET on the project (403 = missing roles).
+      # Typical fix: grant this service account one of:
+      # - roles/firebase.admin (Firebase Admin), or
+      # - roles/editor (broader; use only if acceptable for your org)
+      # Also ensure the SA is not disabled and is the same JSON as in FIREBASE_SERVICE_ACCOUNT.
+
       # Do not run `functions:secrets:set` here: it requires Service Usage + Secret Manager
       # permissions that the deploy SA often lacks (403 on serviceusage.googleapis.com).
       # Configure GEMINI_API_KEY once in Firebase (Console or CLI with an admin account).

@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/providers/firebase_providers.dart';
 import '../../../wardrobe/data/wardrobe_item.dart';

@@ -8,7 +8,7 @@ import 'package:lumi/features/wardrobe/data/wardrobe_repository.dart';
 void main() {
   const userId = 'test-user-123';
 
-  WardrobeItem _makeItem({
+  WardrobeItem makeItem({
     String mediaItemId = 'item-001',
     DateTime? thumbnailRefreshedAt,
   }) {
@@ -35,7 +35,7 @@ void main() {
     });
 
     test('addItem writes correct data to Firestore', () async {
-      final item = _makeItem();
+      final item = makeItem();
       await repo.addItem(userId, item);
 
       final doc = await fakeFirestore
@@ -58,7 +58,7 @@ void main() {
     });
 
     test('getItem returns correct item after addItem', () async {
-      final item = _makeItem();
+      final item = makeItem();
       await repo.addItem(userId, item);
 
       final result = await repo.getItem(userId, item.mediaItemId);
@@ -68,11 +68,11 @@ void main() {
     });
 
     test('watchWardrobe emits items in descending createdAt order', () async {
-      final older = _makeItem(
+      final older = makeItem(
         mediaItemId: 'item-old',
       );
       await Future<void>.delayed(const Duration(milliseconds: 10));
-      final newer = _makeItem(
+      final newer = makeItem(
         mediaItemId: 'item-new',
       );
 
@@ -85,7 +85,7 @@ void main() {
     });
 
     test('refreshThumbnailUrl updates Firestore with fresh URL', () async {
-      final item = _makeItem();
+      final item = makeItem();
       await repo.addItem(userId, item);
 
       const freshUrl = 'https://photos.example.com/fresh-thumb';
@@ -116,21 +116,21 @@ void main() {
 
   group('WardrobeItem.isThumbnailStale', () {
     test('returns false when refreshed less than 55 minutes ago', () {
-      final item = _makeItem(
+      final item = makeItem(
         thumbnailRefreshedAt: DateTime.now().subtract(const Duration(minutes: 30)),
       );
       expect(item.isThumbnailStale, isFalse);
     });
 
     test('returns true when refreshed exactly 55 minutes ago', () {
-      final item = _makeItem(
+      final item = makeItem(
         thumbnailRefreshedAt: DateTime.now().subtract(const Duration(minutes: 55)),
       );
       expect(item.isThumbnailStale, isTrue);
     });
 
     test('returns true when refreshed more than 55 minutes ago', () {
-      final item = _makeItem(
+      final item = makeItem(
         thumbnailRefreshedAt: DateTime.now().subtract(const Duration(hours: 2)),
       );
       expect(item.isThumbnailStale, isTrue);

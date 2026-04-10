@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/providers/firebase_providers.dart';
+import '../../../wardrobe/data/wardrobe_item.dart';
+import '../../../wardrobe/data/wardrobe_repository.dart';
 import '../../data/cloud_functions_service.dart';
 import '../../domain/snap_state.dart';
 
@@ -86,12 +88,28 @@ class SnapNotifier extends Notifier<SnapState> {
     return auth?.accessToken;
   }
 
-  // Placeholder — full implementation in segment 4/4
   Future<void> _writeToFirestore({
     required String mediaItemId,
     required String thumbnailUrl,
     required AnalyzeClothingResult analysis,
-  }) async {}
+  }) async {
+    final user = ref.read(firebaseAuthProvider).currentUser;
+    if (user == null) throw Exception('User not authenticated.');
+
+    final now = DateTime.now();
+    final item = WardrobeItem(
+      mediaItemId: mediaItemId,
+      category: analysis.category,
+      colors: analysis.colors,
+      materials: analysis.materials,
+      embedding: analysis.embedding,
+      thumbnailUrl: thumbnailUrl,
+      createdAt: now,
+      thumbnailRefreshedAt: now,
+    );
+
+    await ref.read(wardrobeRepositoryProvider).addItem(user.uid, item);
+  }
 
   String _toBase64(List<int> bytes) => base64Encode(bytes);
 }

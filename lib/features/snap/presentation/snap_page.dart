@@ -132,7 +132,7 @@ class _IdleView extends StatelessWidget {
           child: FilledButton.icon(
             onPressed: onSnap,
             style: FilledButton.styleFrom(
-              backgroundColor: LumiColors.text,
+              backgroundColor: LumiColors.accent,
               foregroundColor: LumiColors.surface,
               padding: const EdgeInsets.symmetric(vertical: LumiSpacing.md),
               shape: RoundedRectangleBorder(
@@ -264,7 +264,7 @@ class _DoneView extends StatelessWidget {
           child: FilledButton(
             onPressed: onReset,
             style: FilledButton.styleFrom(
-              backgroundColor: LumiColors.text,
+              backgroundColor: LumiColors.accent,
               foregroundColor: LumiColors.surface,
               padding:
                   const EdgeInsets.symmetric(vertical: LumiSpacing.md),
@@ -375,7 +375,7 @@ class _ErrorView extends StatelessWidget {
           child: FilledButton(
             onPressed: onRetry,
             style: FilledButton.styleFrom(
-              backgroundColor: LumiColors.text,
+              backgroundColor: LumiColors.accent,
               foregroundColor: LumiColors.surface,
               padding:
                   const EdgeInsets.symmetric(vertical: LumiSpacing.md),

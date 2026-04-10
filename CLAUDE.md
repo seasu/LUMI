@@ -193,12 +193,14 @@ users/{userId}/
 
 ```dart
 // 色彩常數（統一從這裡引用，不得 hardcode 顏色值）
-static const colorBase    = Color(0xFFF5F5F7); // 主背景
-static const colorSurface = Color(0xFFFFFFFF); // 卡片
-static const colorGlow    = Color(0xFFAEE2FF); // AI 處理動畫
-static const colorText    = Color(0xFF1D1D1F); // 主文字
-static const colorSubtext = Color(0xFF6E6E73); // 次要文字
-static const colorWarning = Color(0xFFFF6B35); // Lumi-Check 警示（橘紅，非純紅）
+// 風格：Warm Blush — 暖奶油玫瑰，Pinterest 式輕盈質感
+static const base    = Color(0xFFFDF6F0); // 暖奶油白，主背景
+static const surface = Color(0xFFFFFFFF); // 純白，卡片表面
+static const accent  = Color(0xFFC4788A); // 玫瑰粉，按鈕／強調色（原 text 角色）
+static const glow    = Color(0xFFF2C4CE); // 嬰兒粉，AI 處理動畫
+static const text    = Color(0xFF2C2024); // 深暖棕，主要文字
+static const subtext = Color(0xFF9B7F85); // 霧玫瑰灰，次要文字
+static const warning = Color(0xFFE07B5A); // 暖橘，Lumi-Check 警示（非純紅）
 ```
 
 **互動規則**

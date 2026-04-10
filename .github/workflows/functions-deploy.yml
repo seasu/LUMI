@@ -50,7 +50,7 @@ jobs:
         working-directory: functions
         run: |
           GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
-            firebase deploy --only functions \
+            npx firebase deploy --only functions \
               --project lumi-309ff --non-interactive
 
       - name: Cleanup credentials

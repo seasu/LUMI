@@ -32,12 +32,9 @@ jobs:
       - name: Write service account credentials
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa.json
 
-      - name: Set GEMINI_API_KEY Firebase Secret
-        run: |
-          printf '%s' '${{ secrets.GEMINI_API_KEY }}' | \
-            GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
-            npx firebase-tools functions:secrets:set GEMINI_API_KEY \
-              --project lumi-app --non-interactive --force
+      # Do not run `functions:secrets:set` here: it requires Service Usage + Secret Manager
+      # permissions that the deploy SA often lacks (403 on serviceusage.googleapis.com).
+      # Configure GEMINI_API_KEY once in Firebase (Console or CLI with an admin account).
 
       - name: Deploy Cloud Functions
         run: |

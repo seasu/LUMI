@@ -1,6 +1,18 @@
 {
   "language": "traditional chinese",
   "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); cmd=$(echo \"$input\" | jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE 'git (commit|push)'; then echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"git 操作已完成。你必須立即向使用者回報：(1) 這次完成了什麼功能或修正；(2) 修改了哪些檔案；(3) 下一步計畫是什麼。不得略過此回報直接繼續下一個動作。\"}}'; else echo '{}'; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash",

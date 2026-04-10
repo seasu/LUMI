@@ -238,10 +238,10 @@ GOOGLE_CLIENT_ID_ANDROID=xxx.apps.googleusercontent.com
 
 | 階段 | 平台 | 功能 | 狀態 |
 |------|------|------|------|
-| M1 | Web | 專案骨架、Google 登入、GitHub Pages 自動部署 | 進行中 |
-| M2 | Web | Lumi Snap（拍照 + AI 分析 + 上傳） | 待開始 |
-| M3 | Web | Lumi Search（衣物列表 + 篩選） | 待開始 |
-| M4 | Web | Lumi-Check（查重比對） | 待開始 |
+| M1 | Web | 專案骨架、Google 登入、GitHub Pages 自動部署 | 完成 |
+| M2 | Web | Lumi Snap（拍照 + AI 分析 + 上傳） | 完成 |
+| M3 | Web | Lumi Search（衣物列表 + 篩選） | 完成 |
+| M4 | Web | Lumi-Check（查重比對） | 完成 |
 | M5 | Native | iOS + Android 轉換、平台 CI/CD | 待開始 |
 | M6 | Native | UI 精修、效能優化、Beta 發布 | 待開始 |
 
@@ -322,3 +322,4 @@ GOOGLE_CLIENT_ID_ANDROID=xxx.apps.googleusercontent.com
 5. **ADR 優先**：若新需求與 ADR 衝突，先向使用者提出討論，不自行推翻已確認的架構決策。
 6. **Commit 格式**：所有 commit 必須符合 Conventional Commits 規範（見上方），確保自動版號正常運作。
 7. **不建 Release**：禁止執行 `flutter build` 正式版建置，一律由 GitHub Actions 負責。
+8. **完成後必須回報**：每次執行完 `git commit` 或 `git push` 後，必須立即向使用者說明：(1) 完成了什麼功能或修正；(2) 修改了哪些檔案；(3) 下一步計畫。不得跳過此步驟直接進入下一個動作。

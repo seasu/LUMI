@@ -1,4 +1,4 @@
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
 
 const PHOTOS_BASE_URL = "https://photoslibrary.googleapis.com/v1";
@@ -178,23 +178,26 @@ async function createMediaItem(
 
 // ── Callable Function ─────────────────────────────────────────────────────────
 
-export const uploadToPhotos = onCall(
-  async (request): Promise<UploadToPhotosResult> => {
-    if (!request.auth) {
-      throw new HttpsError("unauthenticated", "Authentication required.");
+export const uploadToPhotos = functions.https.onCall(
+  async (data, context): Promise<UploadToPhotosResult> => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Authentication required."
+      );
     }
 
     const { imageBase64, mimeType, filename, accessToken } =
-      request.data as UploadToPhotosData;
+      data as UploadToPhotosData;
 
     if (!imageBase64 || !mimeType || !filename || !accessToken) {
-      throw new HttpsError(
+      throw new functions.https.HttpsError(
         "invalid-argument",
         "imageBase64, mimeType, filename, and accessToken are required."
       );
     }
 
-    const userId = request.auth.uid;
+    const userId = context.auth.uid;
 
     try {
       const albumId = await getOrCreateAlbum(accessToken, userId);
@@ -207,7 +210,10 @@ export const uploadToPhotos = onCall(
       return await createMediaItem(accessToken, uploadToken, albumId, filename);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      throw new HttpsError("internal", `Upload failed: ${msg}`);
+      throw new functions.https.HttpsError(
+        "internal",
+        `Upload failed: ${msg}`
+      );
     }
   }
 );

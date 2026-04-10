@@ -71,7 +71,9 @@ class SnapNotifier extends Notifier<SnapState> {
         materials: analysis.materials,
       );
     } on FirebaseFunctionsException catch (e) {
-      state = SnapError(e.message ?? '雲端處理失敗，請再試一次。');
+      final detail = e.details?.toString();
+      final base = e.message ?? '雲端處理失敗，請再試一次。';
+      state = SnapError(detail != null ? '$base\n($detail)' : base);
     } catch (e) {
       state = SnapError(e.toString());
     }

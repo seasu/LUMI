@@ -45,6 +45,12 @@ jobs:
       # Do not run `functions:secrets:set` here: it requires Service Usage + Secret Manager
       # permissions that the deploy SA often lacks (403 on serviceusage.googleapis.com).
       # Configure GEMINI_API_KEY once in Firebase (Console or CLI with an admin account).
+      #
+      # One-time (project owner): enable APIs Firebase needs for Functions deploy. If the CLI
+      # tries to enable them at deploy time, the CI service account often lacks permission to
+      # enable APIs — enable manually, then re-run CI:
+      # - Cloud Build: https://console.cloud.google.com/apis/library/cloudbuild.googleapis.com?project=lumi-309ff
+      # - Artifact Registry: https://console.cloud.google.com/apis/library/artifactregistry.googleapis.com?project=lumi-309ff
 
       - name: Deploy Cloud Functions
         working-directory: functions

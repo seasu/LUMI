@@ -87,6 +87,12 @@ class _SearchHeader extends ConsumerWidget {
               ),
             ),
           IconButton(
+            onPressed: () => context.push('/check'),
+            tooltip: '購物模式',
+            icon: const Icon(Icons.shopping_bag_outlined,
+                color: LumiColors.subtext),
+          ),
+          IconButton(
             onPressed: () => signOut(ref),
             icon: const Icon(Icons.logout, color: LumiColors.subtext),
           ),

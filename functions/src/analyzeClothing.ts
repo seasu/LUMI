@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
+import { FUNCTIONS_REGION } from "./functionsRegion";
 import { analyzeImage, generateEmbedding } from "./gemini";
 
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
@@ -12,7 +13,10 @@ interface AnalyzeClothingResult {
 }
 
 export const analyzeClothing = onCall(
-  { secrets: [geminiApiKey] },
+  {
+    region: FUNCTIONS_REGION,
+    secrets: [geminiApiKey],
+  },
   async (request): Promise<AnalyzeClothingResult> => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentication required.");

@@ -1,6 +1,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import * as admin from "firebase-admin";
+import { FUNCTIONS_REGION } from "./functionsRegion";
 import { analyzeImage, generateEmbedding } from "./gemini";
 
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
@@ -37,7 +38,10 @@ function cosineSimilarity(a: number[], b: number[]): number {
 }
 
 export const compareClothing = onCall(
-  { secrets: [geminiApiKey] },
+  {
+    region: FUNCTIONS_REGION,
+    secrets: [geminiApiKey],
+  },
   async (request): Promise<CompareClothingResult> => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentication required.");

@@ -12,8 +12,9 @@ final firestoreProvider = Provider<FirebaseFirestore>((ref) {
   return FirebaseFirestore.instance;
 });
 
+/// Must match Cloud Functions region in `functions/src/functionsRegion.ts`.
 final cloudFunctionsProvider = Provider<FirebaseFunctions>((ref) {
-  return FirebaseFunctions.instance;
+  return FirebaseFunctions.instanceFor(region: 'asia-east1');
 });
 
 final googleSignInProvider = Provider<GoogleSignIn>((ref) {

@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import { FUNCTIONS_REGION } from "./functionsRegion";
 
 const PHOTOS_BASE_URL = "https://photoslibrary.googleapis.com/v1";
 const ALBUM_TITLE = "Lumi_Wardrobe";
@@ -179,6 +180,7 @@ async function createMediaItem(
 // ── Callable Function ─────────────────────────────────────────────────────────
 
 export const uploadToPhotos = onCall(
+  { region: FUNCTIONS_REGION },
   async (request): Promise<UploadToPhotosResult> => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentication required.");

@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: functions/package-lock.json
 
@@ -32,18 +32,35 @@ jobs:
       - name: Write service account credentials
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa.json
 
-      - name: Set GEMINI_API_KEY Firebase Secret
-        run: |
-          printf '%s' '${{ secrets.GEMINI_API_KEY }}' | \
-            GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
-            npx firebase-tools functions:secrets:set GEMINI_API_KEY \
-              --project lumi-app --non-interactive --force
+      - name: Show deploy service account (for IAM debugging)
+        run: python3 -c "import json; print(json.load(open('/tmp/sa.json'))['client_email'])"
+
+      # IAM for this SA (project lumi-309ff): must allow Firebase CLI deploy, including
+      # cloudresourcemanager.googleapis.com GET on the project (403 = missing roles).
+      # Typical fix: grant this service account one of:
+      # - roles/firebase.admin (Firebase Admin), or
+      # - roles/editor (broader; use only if acceptable for your org)
+      # Also ensure the SA is not disabled and is the same JSON as in FIREBASE_SERVICE_ACCOUNT.
+
+      # Do not run `functions:secrets:set` here: it requires Service Usage + Secret Manager
+      # permissions that the deploy SA often lacks (403 on serviceusage.googleapis.com).
+      # Configure GEMINI_API_KEY once in Firebase (Console or CLI with an admin account).
+      #
+      # Cloud Functions Gen2 (v2 SDK), region asia-east1 — align with App Engine (lumi-309ff).
+      #
+      # One-time (project owner): if deploy still asks to enable APIs, enable manually:
+      # - Cloud Build: https://console.cloud.google.com/apis/library/cloudbuild.googleapis.com?project=lumi-309ff
+      # - Artifact Registry: https://console.cloud.google.com/apis/library/artifactregistry.googleapis.com?project=lumi-309ff
+      #
+      # --force on deploy: CLI applies Artifact Registry cleanup policy for build artifacts;
+      # without it, deploy can exit 1 after functions succeeded.
 
       - name: Deploy Cloud Functions
+        working-directory: functions
         run: |
           GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
-            npx firebase-tools deploy --only functions \
-              --project lumi-app --non-interactive
+            npx firebase deploy --only functions \
+              --project lumi-309ff --non-interactive --force
 
       - name: Cleanup credentials
         if: always()

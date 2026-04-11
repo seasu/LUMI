@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/providers/firebase_providers.dart';
@@ -18,6 +19,11 @@ final cloudFunctionsServiceProvider = Provider<CloudFunctionsService>((ref) {
 final snapProvider = NotifierProvider<SnapNotifier, SnapState>(SnapNotifier.new);
 
 class SnapNotifier extends Notifier<SnapState> {
+  // Cache the Google Photos access token within the current app session.
+  // Google OAuth2 tokens expire in 1 hour; we treat them as stale 5 min early.
+  String? _cachedPhotosToken;
+  DateTime? _tokenExpiry;
+
   @override
   SnapState build() => const SnapIdle();
 
@@ -128,34 +134,42 @@ class SnapNotifier extends Notifier<SnapState> {
   }
 
   Future<String?> _getAccessToken() async {
-    final googleSignIn = ref.read(googleSignInProvider);
+    // Return cached token if still valid (with 5-minute safety buffer).
+    if (_cachedPhotosToken != null &&
+        _tokenExpiry != null &&
+        DateTime.now()
+            .isBefore(_tokenExpiry!.subtract(const Duration(minutes: 5)))) {
+      return _cachedPhotosToken;
+    }
 
-    // If not signed in at all, return null immediately.
-    final user = googleSignIn.currentUser ?? await googleSignIn.signInSilently();
-    if (user == null) return null;
+    final firebaseAuth = ref.read(firebaseAuthProvider);
+    if (firebaseAuth.currentUser == null) return null;
 
-    // On Flutter web with GIS (google_sign_in 6.x), authentication.accessToken
-    // is null after the basic sign-in flow — GIS separates authentication
-    // (idToken) from API authorisation (accessToken).
-    // If we already have a token, use it.
-    final auth = await user.authentication;
-    if (auth.accessToken != null) return auth.accessToken;
+    // GIS requestScopes() / TokenClient triggers One Tap internally for account
+    // selection.  On browsers where FedCM is rolling out, One Tap never resolves
+    // — so requestScopes() hangs indefinitely regardless of call timing.
+    //
+    // Fix: use FirebaseAuth.signInWithPopup() with a GoogleAuthProvider that
+    // includes the Photos scopes.  Firebase opens a direct window.open() OAuth2
+    // popup, completely bypassing GIS TokenClient and One Tap.  If the user is
+    // already signed in to Google the popup shows their account pre-selected and
+    // no password re-entry is required.
+    final provider = GoogleAuthProvider()
+      ..addScope('https://www.googleapis.com/auth/photoslibrary.appendonly')
+      ..addScope('https://www.googleapis.com/auth/photoslibrary.readonly');
 
-    // Request authorisation for the Photos API scopes.
-    // requestScopes() uses GIS TokenClient (OAuth2 popup) — NOT One Tap,
-    // so it is unaffected by FedCM migration and will not hang.
-    // Timeout guards against the rare case where the popup is silently blocked
-    // and GIS never fires its callback.
-    final granted = await googleSignIn
-        .requestScopes([
-          'https://www.googleapis.com/auth/photoslibrary.appendonly',
-          'https://www.googleapis.com/auth/photoslibrary.readonly',
-        ])
-        .timeout(const Duration(seconds: 60), onTimeout: () => false);
-    if (!granted) return null;
-
-    final freshAuth = await googleSignIn.currentUser?.authentication;
-    return freshAuth?.accessToken;
+    try {
+      final result = await firebaseAuth.signInWithPopup(provider);
+      final credential = result.credential as OAuthCredential?;
+      final accessToken = credential?.accessToken;
+      if (accessToken != null) {
+        _cachedPhotosToken = accessToken;
+        _tokenExpiry = DateTime.now().add(const Duration(hours: 1));
+      }
+      return accessToken;
+    } catch (_) {
+      return null;
+    }
   }
 
   void reset() => state = const SnapIdle();

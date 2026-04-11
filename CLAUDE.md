@@ -189,24 +189,71 @@ users/{userId}/
 
 ## UI/UX 快速參考
 
-**設計風格**：Neo-Minimalism，輕盈如光影，無粗線條與沉重陰影。
+> **設計參考檔案**（以 Stitch 製作的官方 mockup）：
+> - `design/lumi_welcome_screen.png` — 登入頁
+> - `design/lumi_wardrobe_dashboard.png` — 衣櫥主頁
+> - `design/lumi_check_shopping_mode.png` — Lumi-Check 購物模式
+
+**設計風格**：Clean iOS Style — 乾淨、系統感、以留白與層次取代裝飾。
+
+### 色彩常數
 
 ```dart
-// 色彩常數（統一從這裡引用，不得 hardcode 顏色值）
-// 風格：Warm Blush — 暖奶油玫瑰，Pinterest 式輕盈質感
-static const base    = Color(0xFFFDF6F0); // 暖奶油白，主背景
-static const surface = Color(0xFFFFFFFF); // 純白，卡片表面
-static const accent  = Color(0xFFC4788A); // 玫瑰粉，按鈕／強調色（原 text 角色）
-static const glow    = Color(0xFFF2C4CE); // 嬰兒粉，AI 處理動畫
-static const text    = Color(0xFF2C2024); // 深暖棕，主要文字
-static const subtext = Color(0xFF9B7F85); // 霧玫瑰灰，次要文字
-static const warning = Color(0xFFE07B5A); // 暖橘，Lumi-Check 警示（非純紅）
+// 統一從 LumiColors 引用，不得 hardcode 顏色值
+static const base       = Color(0xFFF2F2F7); // iOS 系統背景灰，主背景
+static const surface    = Color(0xFFFFFFFF); // 純白，卡片表面
+static const accent     = Color(0xFF007AFF); // iOS 藍，導航 active、互動強調
+static const googleBlue = Color(0xFF4285F4); // Google 登入按鈕專用
+static const lumiCheck  = Color(0xFFE8735A); // 珊瑚橙，Lumi-Check 模式主色
+static const glow       = Color(0xFF5BB7FF); // 淡藍，AI 掃描動畫光圈
+static const text       = Color(0xFF1C1C1E); // iOS 主文字（近黑）
+static const subtext    = Color(0xFF8E8E93); // iOS 次要文字（中灰）
+static const warning    = Color(0xFFE8735A); // 重複警示徽章（同 lumiCheck）
 ```
 
-**互動規則**
-- AI 處理中：使用 `colorGlow` 脈衝光暈動畫，**不使用** CircularProgressIndicator。
-- 衣物卡片：無邊框，用留白建立層次，`borderRadius: 16`。
-- Lumi-Check 警示：橘紅漸層橫幅，**不使用**純紅色警告。
+### 導航結構
+
+主應用（衣櫥模式）底部 5 tab：
+| Tab | Icon | 功能 |
+|-----|------|------|
+| Home | house | 衣櫥主頁（Lumi Wardrobe） |
+| Search | magnifying glass | 搜尋篩選 |
+| Add | + | Lumi Snap（上傳） |
+| Outfits | hanger | 穿搭組合（M5+） |
+| Profile | person | 個人設定 |
+
+Lumi-Check 購物模式切換為 4 tab：Wardrobe／Shopping（active）／OOTD／Profile
+
+### 元件規範
+
+**卡片**
+- 白色底 `surface`，圓角 `borderRadius: 12`，輕微陰影（`BoxShadow` opacity ≤ 0.08）
+- 無外框線，用卡片白 vs 頁面灰製造層次
+
+**分類 Tab Bar**
+- 水平可捲動，active 以底線 underline 標示（非 pill/填色背景）
+- active 文字 `text` 色，inactive `subtext` 色
+
+**顏色篩選器**
+- 圓形 chip，實心填色，All 以黑色圓形表示
+- active 加白色外框（2px border）
+
+**重複警示徽章（Duplicate Alert）**
+- 卡片右上角橘色 pill，`warning` 色，白色文字
+- 不使用全頁警告橫幅，僅作為徽章
+
+**AI 掃描動畫**（Lumi-Check）
+- 藍色脈衝光圈（`glow` 色），圓形擴散效果
+- 不使用 CircularProgressIndicator，不使用粉色光暈
+
+**Lumi-Check 頁面**
+- Header 背景：`lumiCheck` 珊瑚橙漸層
+- Ignore 按鈕：`lumiCheck` 色背景，eye-slash icon
+- Compare 按鈕：淡藍色背景（`glow` 色系），search icon
+
+**登入頁**
+- Google 登入按鈕：`googleBlue` 色，左側 Google G logo（白色圓形背景），pill 形狀
+- 不使用自訂色彩的登入按鈕
 
 ---
 

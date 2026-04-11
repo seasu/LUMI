@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'functions/**'
+      - 'firestore.rules'
   workflow_dispatch: # 允許從 GitHub Actions UI 手動觸發
 
 jobs:
@@ -115,6 +116,12 @@ jobs:
 
           echo "Exceeded retry limit (${MAX_ATTEMPTS}) while resolving trigger migration conflicts."
           exit 1
+
+      - name: Deploy Firestore Rules
+        run: |
+          GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
+            npx firebase deploy --only firestore:rules \
+              --project lumi-309ff --non-interactive
 
       - name: Cleanup credentials
         if: always()

@@ -116,10 +116,18 @@ class SnapNotifier extends Notifier<SnapState> {
 
   Future<String?> _getAccessToken() async {
     final googleSignIn = ref.read(googleSignInProvider);
-    // signInSilently often returns null on web after session expiry; fall back
-    // to interactive signIn so the user can re-authorise without leaving snap.
-    var user = googleSignIn.currentUser ?? await googleSignIn.signInSilently();
-    user ??= await googleSignIn.signIn();
+
+    // On web, GIS silent auth returns a user but omits accessToken (idToken only).
+    // Check the token explicitly; fall back to interactive signIn if null.
+    final silentUser =
+        googleSignIn.currentUser ?? await googleSignIn.signInSilently();
+    if (silentUser != null) {
+      final silentAuth = await silentUser.authentication;
+      if (silentAuth.accessToken != null) return silentAuth.accessToken;
+    }
+
+    // Silent path had no accessToken — request a full interactive sign-in.
+    final user = await googleSignIn.signIn();
     final auth = await user?.authentication;
     return auth?.accessToken;
   }

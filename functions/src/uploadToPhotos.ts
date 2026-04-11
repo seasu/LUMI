@@ -77,38 +77,54 @@ async function createAlbum(accessToken: string): Promise<string> {
 }
 
 /**
- * Returns the Lumi_Wardrobe albumId, using Firestore as cache.
- * Validates the cached albumId before returning it.
+ * Returns the Lumi_Wardrobe albumId.
+ * Firestore is used as an optional cache: if the runtime service account lacks
+ * Cloud Datastore IAM permissions the function falls back gracefully to
+ * searching Google Photos on every call (one extra API round-trip).
  */
 async function getOrCreateAlbum(
   accessToken: string,
   userId: string
 ): Promise<string> {
-  const db = admin.firestore();
-  const ref = db.collection("users").doc(userId);
-  const snap = await ref.get();
-  const cachedAlbumId = snap.data()?.lumiWardrobeAlbumId as string | undefined;
+  // ── Try Firestore cache ───────────────────────────────────────────────────
+  let firestoreRef: admin.firestore.DocumentReference | undefined;
+  try {
+    const db = admin.firestore();
+    firestoreRef = db.collection("users").doc(userId);
+    const snap = await firestoreRef.get();
+    const cachedAlbumId = snap.data()?.lumiWardrobeAlbumId as
+      | string
+      | undefined;
 
-  // Validate cached albumId
-  if (cachedAlbumId) {
+    if (cachedAlbumId) {
+      try {
+        await photosGet(`/albums/${cachedAlbumId}`, accessToken);
+        return cachedAlbumId; // cache hit ✓
+      } catch {
+        // Cached ID is stale, fall through to search
+      }
+    }
+  } catch {
+    // Firestore not accessible (service account lacks datastore.user role).
+    // Continue without cache — grant roles/datastore.user to the Compute SA
+    // to enable caching: gcloud projects add-iam-policy-binding lumi-309ff
+    //   --member="serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com"
+    //   --role="roles/datastore.user"
+    firestoreRef = undefined;
+  }
+
+  // ── Search / create album via Photos API ──────────────────────────────────
+  let albumId = await findAlbum(accessToken);
+  if (!albumId) albumId = await createAlbum(accessToken);
+
+  // ── Write cache (best-effort) ─────────────────────────────────────────────
+  if (firestoreRef) {
     try {
-      await photosGet(`/albums/${cachedAlbumId}`, accessToken);
-      return cachedAlbumId;
+      await firestoreRef.set({ lumiWardrobeAlbumId: albumId }, { merge: true });
     } catch {
-      // Cached ID is invalid, fall through to search
+      // Silently ignore — caching is an optimisation, not a requirement
     }
   }
-
-  // Search existing albums
-  let albumId = await findAlbum(accessToken);
-
-  // Create if not found
-  if (!albumId) {
-    albumId = await createAlbum(accessToken);
-  }
-
-  // Cache the albumId in Firestore
-  await ref.set({ lumiWardrobeAlbumId: albumId }, { merge: true });
 
   return albumId;
 }

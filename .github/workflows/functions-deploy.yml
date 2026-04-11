@@ -55,9 +55,35 @@ jobs:
       # --force on deploy: CLI applies Artifact Registry cleanup policy for build artifacts;
       # without it, deploy can exit 1 after functions succeeded.
 
-      - name: Deploy Cloud Functions
+      - name: Deploy Cloud Functions (with trigger migration fallback)
         working-directory: functions
         run: |
+          set +e
+          DEPLOY_OUTPUT=$(
+            GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
+              npx firebase deploy --only functions \
+                --project lumi-309ff --non-interactive --force 2>&1
+          )
+          DEPLOY_STATUS=$?
+          set -e
+
+          echo "$DEPLOY_OUTPUT"
+
+          if [ "$DEPLOY_STATUS" -eq 0 ]; then
+            exit 0
+          fi
+
+          if [[ "$DEPLOY_OUTPUT" != *"Changing from an HTTPS function to a background triggered function is not allowed"* ]]; then
+            exit "$DEPLOY_STATUS"
+          fi
+
+          echo "Detected trigger-type migration conflict for analyzeWardrobeItem."
+          echo "Deleting legacy function once, then retrying deploy."
+
+          GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
+            npx firebase functions:delete analyzeWardrobeItem \
+              --region asia-east1 --project lumi-309ff --force
+
           GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
             npx firebase deploy --only functions \
               --project lumi-309ff --non-interactive --force

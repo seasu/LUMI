@@ -8,7 +8,7 @@ const geminiApiKey = defineSecret("GEMINI_API_KEY");
 
 const DEFAULT_FREE_QUOTA = 100;
 
-export const analyzeWardrobeItem = onDocumentCreated(
+export const analyzeWardrobeItemOnCreate = onDocumentCreated(
   {
     document: "users/{userId}/wardrobe/{mediaItemId}",
     region: FUNCTIONS_REGION,

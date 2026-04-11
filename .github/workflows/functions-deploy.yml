@@ -80,7 +80,32 @@ jobs:
             fi
 
             MIGRATION_TARGETS=$(
-              DEPLOY_OUTPUT="$DEPLOY_OUTPUT" python3 -c 'import os, re; text=os.environ.get("DEPLOY_OUTPUT", ""); pattern=re.compile(r"\[([^(]+)\(([^)]+)\)\]\s+Changing from an HTTPS function to a background triggered function is not allowed"); seen=sorted({(name.strip(), region.strip()) for name, region in pattern.findall(text)}); print("\n".join(f"{name}|{region}" for name, region in seen))'
+              DEPLOY_OUTPUT="$DEPLOY_OUTPUT" python3 - <<'PY'
+import os
+import re
+
+text = os.environ.get("DEPLOY_OUTPUT", "")
+text = re.sub(r"\x1B\[[0-?]*[ -/]*[@-~]", "", text)
+pattern = re.compile(
+    r"^Error:\s+\[([^\(\]\r\n]+)\(([^)\r\n]+)\)\]\s+Changing from an HTTPS function to a background triggered function is not allowed",
+    re.MULTILINE,
+)
+
+items: list[str] = []
+seen: set[str] = set()
+
+for name, region in pattern.findall(text):
+    fn = name.strip()
+    rg = region.strip()
+    key = f"{fn}|{rg}"
+    valid_name = re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", fn) is not None
+    valid_region = re.fullmatch(r"[a-z0-9-]+", rg) is not None
+    if valid_name and valid_region and key not in seen:
+        items.append(key)
+        seen.add(key)
+
+print("\n".join(items))
+PY
             )
 
             if [ -z "$MIGRATION_TARGETS" ]; then
@@ -91,9 +116,23 @@ jobs:
             while IFS='|' read -r FUNCTION_NAME FUNCTION_REGION; do
               [ -z "$FUNCTION_NAME" ] && continue
               echo "Deleting legacy function ${FUNCTION_NAME}(${FUNCTION_REGION}) then retrying."
-              GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
-                npx firebase functions:delete "$FUNCTION_NAME" \
-                  --region "$FUNCTION_REGION" --project lumi-309ff --force
+              set +e
+              DELETE_OUTPUT=$(
+                GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
+                  npx firebase functions:delete "$FUNCTION_NAME" \
+                    --region "$FUNCTION_REGION" --project lumi-309ff --force 2>&1
+              )
+              DELETE_STATUS=$?
+              set -e
+
+              echo "$DELETE_OUTPUT"
+
+              if [ "$DELETE_STATUS" -ne 0 ] && \
+                [[ "$DELETE_OUTPUT" != *"The specified filters do not match any existing functions"* ]] && \
+                [[ "$DELETE_OUTPUT" != *"do not match any existing functions"* ]]; then
+                echo "Failed to delete legacy function ${FUNCTION_NAME}(${FUNCTION_REGION})."
+                exit "$DELETE_STATUS"
+              fi
             done <<< "$MIGRATION_TARGETS"
 
             ATTEMPT=$((ATTEMPT + 1))

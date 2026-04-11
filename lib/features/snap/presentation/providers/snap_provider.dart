@@ -117,19 +117,28 @@ class SnapNotifier extends Notifier<SnapState> {
   Future<String?> _getAccessToken() async {
     final googleSignIn = ref.read(googleSignInProvider);
 
-    // On web, GIS silent auth returns a user but omits accessToken (idToken only).
-    // Check the token explicitly; fall back to interactive signIn if null.
-    final silentUser =
-        googleSignIn.currentUser ?? await googleSignIn.signInSilently();
-    if (silentUser != null) {
-      final silentAuth = await silentUser.authentication;
-      if (silentAuth.accessToken != null) return silentAuth.accessToken;
-    }
+    // If not signed in at all, return null immediately.
+    final user = googleSignIn.currentUser ?? await googleSignIn.signInSilently();
+    if (user == null) return null;
 
-    // Silent path had no accessToken — request a full interactive sign-in.
-    final user = await googleSignIn.signIn();
-    final auth = await user?.authentication;
-    return auth?.accessToken;
+    // On Flutter web with GIS (google_sign_in 6.x), authentication.accessToken
+    // is null after the basic sign-in flow — GIS separates authentication
+    // (idToken) from API authorisation (accessToken).
+    // If we already have a token, use it.
+    final auth = await user.authentication;
+    if (auth.accessToken != null) return auth.accessToken;
+
+    // Request authorisation for the Photos API scopes.
+    // requestScopes() uses GIS TokenClient (OAuth2 popup) — NOT One Tap,
+    // so it is unaffected by FedCM migration and will not hang.
+    final granted = await googleSignIn.requestScopes([
+      'https://www.googleapis.com/auth/photoslibrary.appendonly',
+      'https://www.googleapis.com/auth/photoslibrary.readonly',
+    ]);
+    if (!granted) return null;
+
+    final freshAuth = await googleSignIn.currentUser?.authentication;
+    return freshAuth?.accessToken;
   }
 
   void reset() => state = const SnapIdle();

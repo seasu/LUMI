@@ -116,8 +116,10 @@ class SnapNotifier extends Notifier<SnapState> {
 
   Future<String?> _getAccessToken() async {
     final googleSignIn = ref.read(googleSignInProvider);
-    final user =
-        googleSignIn.currentUser ?? await googleSignIn.signInSilently();
+    // signInSilently often returns null on web after session expiry; fall back
+    // to interactive signIn so the user can re-authorise without leaving snap.
+    var user = googleSignIn.currentUser ?? await googleSignIn.signInSilently();
+    user ??= await googleSignIn.signIn();
     final auth = await user?.authentication;
     return auth?.accessToken;
   }

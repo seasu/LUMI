@@ -9,6 +9,8 @@ import '../../../wardrobe/data/wardrobe_repository.dart';
 import '../../data/cloud_functions_service.dart';
 import '../../domain/snap_state.dart';
 
+const _maxPhotos = 10;
+
 final cloudFunctionsServiceProvider = Provider<CloudFunctionsService>((ref) {
   return CloudFunctionsService(ref.watch(cloudFunctionsProvider));
 });
@@ -19,67 +21,98 @@ class SnapNotifier extends Notifier<SnapState> {
   @override
   SnapState build() => const SnapIdle();
 
-  Future<void> snap() async {
+  // ── Photo selection ───────────────────────────────────────────────────────────
+
+  Future<void> pickImages() async {
     final picker = ImagePicker();
-    final XFile? file = await picker.pickImage(
-      source: ImageSource.camera,
+    final files = await picker.pickMultiImage(
       maxWidth: 1920,
       maxHeight: 1920,
       imageQuality: 85,
     );
-
-    if (file == null) return; // User cancelled
-
-    try {
-      // ── Step 1: Analyze ───────────────────────────────────────────────────
-      state = const SnapAnalyzing();
-      final bytes = await file.readAsBytes();
-      final imageBase64 = _toBase64(bytes);
-      final mimeType = file.mimeType ?? 'image/jpeg';
-
-      final service = ref.read(cloudFunctionsServiceProvider);
-      final analysis = await service.analyzeClothing(
-        imageBase64: imageBase64,
-        mimeType: mimeType,
-      );
-
-      // ── Step 2: Get Google Photos access token ────────────────────────────
-      state = const SnapUploading();
-      final accessToken = await _getAccessToken();
-      if (accessToken == null) throw Exception('Failed to get Google access token.');
-
-      // ── Step 3: Upload to Google Photos ───────────────────────────────────
-      final filename =
-          'lumi_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final upload = await service.uploadToPhotos(
-        imageBase64: imageBase64,
-        mimeType: mimeType,
-        filename: filename,
-        accessToken: accessToken,
-      );
-
-      // ── Step 4: Write to Firestore (segment 4/4) ──────────────────────────
-      await _writeToFirestore(
-        mediaItemId: upload.mediaItemId,
-        thumbnailUrl: upload.thumbnailUrl,
-        analysis: analysis,
-      );
-
-      state = SnapDone(
-        category: analysis.category,
-        colors: analysis.colors,
-        materials: analysis.materials,
-      );
-    } on FirebaseFunctionsException catch (e) {
-      final detail = e.details?.toString();
-      final base = e.message ?? '雲端處理失敗，請再試一次。';
-      state = SnapError(detail != null ? '$base\n($detail)' : base);
-    } catch (e) {
-      state = SnapError(e.toString());
-    }
+    if (files.isEmpty) return;
+    state = SnapPreviewing(files: files.take(_maxPhotos).toList());
   }
 
-  void reset() => state = const SnapIdle();
+  void removeFile(int index) {
+    final current = state;
+    if (current is! SnapPreviewing) return;
+    final updated = List<XFile>.from(current.files)..removeAt(index);
+    state = updated.isEmpty ? const SnapIdle() : SnapPreviewing(files: updated);
+  }
+
+  // ── Upload ────────────────────────────────────────────────────────────────────
+
+  Future<void> uploadAll() async {
+    final current = state;
+    if (current is! SnapPreviewing) return;
+
+    final files = current.files;
+    final total = files.length;
+
+    for (var i = 0; i < total; i++) {
+      state = SnapUploading(current: i + 1, total: total);
+      try {
+        await _uploadOne(files[i], i);
+      } on FirebaseFunctionsException catch (e) {
+        final detail = e.details?.toString();
+        final base = e.message ?? '上傳失敗，請再試一次。';
+        state = SnapError(detail != null ? '$base\n($detail)' : base);
+        return;
+      } catch (e) {
+        state = SnapError(e.toString());
+        return;
+      }
+    }
+
+    state = SnapDone(count: total);
+  }
+
+  Future<void> _uploadOne(XFile file, int index) async {
+    final bytes = await file.readAsBytes();
+    final imageBase64 = base64Encode(bytes);
+    final mimeType = file.mimeType ?? 'image/jpeg';
+    final filename = 'lumi_${DateTime.now().millisecondsSinceEpoch}_$index.jpg';
+
+    final accessToken = await _getAccessToken();
+    if (accessToken == null) throw Exception('無法取得 Google 授權，請重新登入。');
+
+    final service = ref.read(cloudFunctionsServiceProvider);
+    final upload = await service.uploadToPhotos(
+      imageBase64: imageBase64,
+      mimeType: mimeType,
+      filename: filename,
+      accessToken: accessToken,
+    );
+
+    await _writePendingItem(
+      mediaItemId: upload.mediaItemId,
+      thumbnailUrl: upload.thumbnailUrl,
+    );
+  }
+
+  Future<void> _writePendingItem({
+    required String mediaItemId,
+    required String thumbnailUrl,
+  }) async {
+    final user = ref.read(firebaseAuthProvider).currentUser;
+    if (user == null) throw Exception('User not authenticated.');
+
+    final now = DateTime.now();
+    final item = WardrobeItem(
+      mediaItemId: mediaItemId,
+      category: '',
+      colors: const [],
+      materials: const [],
+      embedding: const [],
+      thumbnailUrl: thumbnailUrl,
+      createdAt: now,
+      thumbnailRefreshedAt: now,
+      analyzed: false,
+    );
+
+    await ref.read(wardrobeRepositoryProvider).addItem(user.uid, item);
+  }
 
   Future<String?> _getAccessToken() async {
     final googleSignIn = ref.read(googleSignInProvider);
@@ -89,28 +122,5 @@ class SnapNotifier extends Notifier<SnapState> {
     return auth?.accessToken;
   }
 
-  Future<void> _writeToFirestore({
-    required String mediaItemId,
-    required String thumbnailUrl,
-    required AnalyzeClothingResult analysis,
-  }) async {
-    final user = ref.read(firebaseAuthProvider).currentUser;
-    if (user == null) throw Exception('User not authenticated.');
-
-    final now = DateTime.now();
-    final item = WardrobeItem(
-      mediaItemId: mediaItemId,
-      category: analysis.category,
-      colors: analysis.colors,
-      materials: analysis.materials,
-      embedding: analysis.embedding,
-      thumbnailUrl: thumbnailUrl,
-      createdAt: now,
-      thumbnailRefreshedAt: now,
-    );
-
-    await ref.read(wardrobeRepositoryProvider).addItem(user.uid, item);
-  }
-
-  String _toBase64(List<int> bytes) => base64Encode(bytes);
+  void reset() => state = const SnapIdle();
 }

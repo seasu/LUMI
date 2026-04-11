@@ -34,15 +34,21 @@ export const analyzeClothing = onCall(
       );
     }
 
-    const apiKey = geminiApiKey.value();
-    const analysis = await analyzeImage(apiKey, imageBase64, mimeType);
-    const embedding = await generateEmbedding(apiKey, analysis);
+    try {
+      const apiKey = geminiApiKey.value();
+      const analysis = await analyzeImage(apiKey, imageBase64, mimeType);
+      const embedding = await generateEmbedding(apiKey, analysis);
 
-    return {
-      category: analysis.category,
-      colors: analysis.colors,
-      materials: analysis.materials,
-      embedding,
-    };
+      return {
+        category: analysis.category,
+        colors: analysis.colors,
+        materials: analysis.materials,
+        embedding,
+      };
+    } catch (err) {
+      if (err instanceof HttpsError) throw err;
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new HttpsError("internal", `analyzeClothing failed: ${msg}`);
+    }
   }
 );

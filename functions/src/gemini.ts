@@ -13,28 +13,38 @@ export async function analyzeImage(
   imageBase64: string,
   mimeType: string
 ): Promise<GeminiAnalysis> {
+  if (!apiKey) {
+    throw new HttpsError("internal", "GEMINI_API_KEY is not configured.");
+  }
+
   const genAI = new GoogleGenerativeAI(apiKey);
   const visionModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-  const visionResult = await visionModel.generateContent({
-    contents: [
-      {
-        role: "user",
-        parts: [
-          { inlineData: { data: imageBase64, mimeType } },
-          {
-            text: `Analyze this clothing item. Return ONLY a valid JSON object with no markdown:
+  let visionResult;
+  try {
+    visionResult = await visionModel.generateContent({
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { inlineData: { data: imageBase64, mimeType } },
+            {
+              text: `Analyze this clothing item. Return ONLY a valid JSON object with no markdown:
 {
   "category": one of ["上衣","褲子","外套","配件","鞋子"],
   "colors": array of 1-3 dominant hex color codes (e.g. ["#3B5BDB","#FFFFFF"]),
   "materials": array of material names in Chinese (e.g. ["棉","聚酯纖維"]),
   "description": brief English description of the clothing item (used for similarity matching)
 }`,
-          },
-        ],
-      },
-    ],
-  });
+            },
+          ],
+        },
+      ],
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new HttpsError("internal", `Gemini vision API error: ${msg}`);
+  }
 
   const rawText = visionResult.response.text().trim();
   const jsonText = rawText
@@ -45,7 +55,10 @@ export async function analyzeImage(
   try {
     return JSON.parse(jsonText) as GeminiAnalysis;
   } catch {
-    throw new HttpsError("internal", "Failed to parse Gemini response.");
+    throw new HttpsError(
+      "internal",
+      `Failed to parse Gemini response: ${rawText.slice(0, 200)}`
+    );
   }
 }
 
@@ -65,6 +78,11 @@ export async function generateEmbedding(
     analysis.description,
   ].join(" ");
 
-  const result = await embeddingModel.embedContent(input);
-  return result.embedding.values;
+  try {
+    const result = await embeddingModel.embedContent(input);
+    return result.embedding.values;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new HttpsError("internal", `Gemini embedding API error: ${msg}`);
+  }
 }

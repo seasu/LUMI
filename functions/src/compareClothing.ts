@@ -60,47 +60,57 @@ export const compareClothing = onCall(
     }
 
     const userId = request.auth.uid;
-    const apiKey = geminiApiKey.value();
 
-    const analysis = await analyzeImage(apiKey, imageBase64, mimeType);
-    const queryEmbedding = await generateEmbedding(apiKey, analysis);
+    try {
+      const apiKey = geminiApiKey.value();
 
-    const snapshot = await admin
-      .firestore()
-      .collection("users")
-      .doc(userId)
-      .collection("wardrobe")
-      .select("mediaItemId", "embedding", "thumbnailUrl", "category")
-      .get();
+      // Step 1: Generate embedding for the new photo
+      const analysis = await analyzeImage(apiKey, imageBase64, mimeType);
+      const queryEmbedding = await generateEmbedding(apiKey, analysis);
 
-    if (snapshot.empty) {
-      return {
-        similarity: 0,
-        matchedMediaItemId: null,
-        matchedThumbnailUrl: null,
-        matchedCategory: null,
-      };
-    }
+      // Step 2: Read all wardrobe items via Admin SDK
+      const snapshot = await admin
+        .firestore()
+        .collection("users")
+        .doc(userId)
+        .collection("wardrobe")
+        .select("mediaItemId", "embedding", "thumbnailUrl", "category")
+        .get();
 
-    let bestSimilarity = 0;
-    let bestDoc: WardrobeDoc | null = null;
-
-    for (const doc of snapshot.docs) {
-      const data = doc.data() as WardrobeDoc;
-      if (!data.embedding?.length) continue;
-
-      const sim = cosineSimilarity(queryEmbedding, data.embedding);
-      if (sim > bestSimilarity) {
-        bestSimilarity = sim;
-        bestDoc = data;
+      if (snapshot.empty) {
+        return {
+          similarity: 0,
+          matchedMediaItemId: null,
+          matchedThumbnailUrl: null,
+          matchedCategory: null,
+        };
       }
-    }
 
-    return {
-      similarity: bestSimilarity,
-      matchedMediaItemId: bestDoc?.mediaItemId ?? null,
-      matchedThumbnailUrl: bestDoc?.thumbnailUrl ?? null,
-      matchedCategory: bestDoc?.category ?? null,
-    };
+      // Step 3: Brute-force cosine similarity (ADR-004)
+      let bestSimilarity = 0;
+      let bestDoc: WardrobeDoc | null = null;
+
+      for (const doc of snapshot.docs) {
+        const data = doc.data() as WardrobeDoc;
+        if (!data.embedding?.length) continue;
+
+        const sim = cosineSimilarity(queryEmbedding, data.embedding);
+        if (sim > bestSimilarity) {
+          bestSimilarity = sim;
+          bestDoc = data;
+        }
+      }
+
+      return {
+        similarity: bestSimilarity,
+        matchedMediaItemId: bestDoc?.mediaItemId ?? null,
+        matchedThumbnailUrl: bestDoc?.thumbnailUrl ?? null,
+        matchedCategory: bestDoc?.category ?? null,
+      };
+    } catch (err) {
+      if (err instanceof HttpsError) throw err;
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new HttpsError("internal", `compareClothing failed: ${msg}`);
+    }
   }
 );

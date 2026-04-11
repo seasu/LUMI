@@ -33,46 +33,91 @@ class WardrobeCard extends ConsumerWidget {
           children: [
             // Full-bleed image
             _ThumbnailImage(url: thumbnailUrl),
-            // Bottom gradient overlay with label
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(
-                  LumiSpacing.sm,
-                  LumiSpacing.xl,
-                  LumiSpacing.sm,
-                  LumiSpacing.sm,
-                ),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [Color(0xCC000000), Colors.transparent],
+            // Bottom gradient overlay with label (only when analyzed)
+            if (item.analyzed)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(
+                    LumiSpacing.sm,
+                    LumiSpacing.xl,
+                    LumiSpacing.sm,
+                    LumiSpacing.sm,
                   ),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        item.category,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                          letterSpacing: 0.2,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [Color(0xCC000000), Colors.transparent],
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.category,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            letterSpacing: 0.2,
+                          ),
                         ),
                       ),
-                    ),
-                    ...item.colors.take(3).map((hex) => _ColorDot(hex: hex)),
-                  ],
+                      ...item.colors.take(3).map((hex) => _ColorDot(hex: hex)),
+                    ],
+                  ),
                 ),
               ),
-            ),
+            // Pending / quota overlay
+            if (!item.analyzed) _PendingOverlay(item: item),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── Pending overlay ───────────────────────────────────────────────────────────
+
+class _PendingOverlay extends StatelessWidget {
+  const _PendingOverlay({required this.item});
+
+  final WardrobeItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final isQuota = item.isQuotaExceeded;
+
+    return Container(
+      color: Colors.black.withOpacity(0.50),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (isQuota)
+            const Icon(Icons.lock_outline, color: Colors.white, size: 26)
+          else
+            const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                color: LumiColors.glow,
+                strokeWidth: 2,
+              ),
+            ),
+          const SizedBox(height: 6),
+          Text(
+            isQuota ? '配額已用完' : 'AI 分析中',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }

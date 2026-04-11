@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_spacing.dart';
 import '../domain/snap_state.dart';
@@ -40,8 +43,7 @@ class _SnapPageState extends ConsumerState<SnapPage>
   @override
   Widget build(BuildContext context) {
     final snapState = ref.watch(snapProvider);
-    final isProcessing =
-        snapState is SnapAnalyzing || snapState is SnapUploading;
+    final isUploading = snapState is SnapUploading;
 
     return Scaffold(
       backgroundColor: LumiColors.base,
@@ -49,7 +51,7 @@ class _SnapPageState extends ConsumerState<SnapPage>
         backgroundColor: LumiColors.base,
         elevation: 0,
         leading: IconButton(
-          onPressed: isProcessing ? null : () => context.pop(),
+          onPressed: isUploading ? null : () => context.pop(),
           icon: const Icon(Icons.close, color: LumiColors.text),
         ),
         title: const Text(
@@ -66,42 +68,43 @@ class _SnapPageState extends ConsumerState<SnapPage>
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.md),
           child: switch (snapState) {
-            SnapIdle() => _IdleView(onSnap: _startSnap),
-            SnapAnalyzing() => _GlowView(
-                animation: _glowAnimation,
-                label: 'AI 分析中…',
+            SnapIdle() => _IdleView(
+                onPick: () => ref.read(snapProvider.notifier).pickImages(),
               ),
-            SnapUploading() => _GlowView(
-                animation: _glowAnimation,
-                label: '上傳至 Google Photos…',
+            SnapPreviewing(:final files) => _PreviewView(
+                files: files,
+                onRemove: (i) =>
+                    ref.read(snapProvider.notifier).removeFile(i),
+                onAddMore: () => ref.read(snapProvider.notifier).pickImages(),
+                onUpload: () => ref.read(snapProvider.notifier).uploadAll(),
               ),
-            SnapDone(:final category, :final colors, :final materials) =>
-              _DoneView(
-                category: category,
-                colors: colors,
-                materials: materials,
-                onReset: _reset,
+            SnapUploading(:final current, :final total) => _UploadingView(
+                animation: _glowAnimation,
+                current: current,
+                total: total,
+              ),
+            SnapDone(:final count) => _DoneView(
+                count: count,
+                onBack: () => context.pop(),
+                onMore: () => ref.read(snapProvider.notifier).reset(),
               ),
             SnapError(:final message) => _ErrorView(
                 message: message,
-                onRetry: _startSnap,
+                onRetry: () => ref.read(snapProvider.notifier).reset(),
               ),
           },
         ),
       ),
     );
   }
-
-  void _startSnap() => ref.read(snapProvider.notifier).snap();
-  void _reset() => ref.read(snapProvider.notifier).reset();
 }
 
 // ── Idle ──────────────────────────────────────────────────────────────────────
 
 class _IdleView extends StatelessWidget {
-  const _IdleView({required this.onSnap});
+  const _IdleView({required this.onPick});
 
-  final VoidCallback onSnap;
+  final VoidCallback onPick;
 
   @override
   Widget build(BuildContext context) {
@@ -109,8 +112,14 @@ class _IdleView extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Spacer(),
+        const Icon(
+          Icons.photo_library_outlined,
+          size: 64,
+          color: LumiColors.glow,
+        ),
+        const SizedBox(height: LumiSpacing.lg),
         const Text(
-          '拍攝衣物照片',
+          '從相簿選取照片',
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w500,
@@ -119,18 +128,19 @@ class _IdleView extends StatelessWidget {
         ),
         const SizedBox(height: LumiSpacing.sm),
         const Text(
-          'AI 將自動辨識類別、顏色與材質',
+          '一次最多 10 張，AI 會在背景自動分析\n上傳完成後可以關閉此頁面',
+          textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 15,
             color: LumiColors.subtext,
-            height: 1.5,
+            height: 1.6,
           ),
         ),
         const Spacer(),
         SizedBox(
           width: double.infinity,
           child: FilledButton.icon(
-            onPressed: onSnap,
+            onPressed: onPick,
             style: FilledButton.styleFrom(
               backgroundColor: LumiColors.accent,
               foregroundColor: LumiColors.surface,
@@ -139,9 +149,9 @@ class _IdleView extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            icon: const Icon(Icons.camera_alt_outlined),
+            icon: const Icon(Icons.add_photo_alternate_outlined),
             label: const Text(
-              '開始拍照',
+              '選取照片',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),
@@ -152,13 +162,179 @@ class _IdleView extends StatelessWidget {
   }
 }
 
-// ── Glow (Analyzing / Uploading) ──────────────────────────────────────────────
+// ── Preview grid ──────────────────────────────────────────────────────────────
 
-class _GlowView extends StatelessWidget {
-  const _GlowView({required this.animation, required this.label});
+class _PreviewView extends StatelessWidget {
+  const _PreviewView({
+    required this.files,
+    required this.onRemove,
+    required this.onAddMore,
+    required this.onUpload,
+  });
+
+  final List<XFile> files;
+  final void Function(int index) onRemove;
+  final VoidCallback onAddMore;
+  final VoidCallback onUpload;
+
+  @override
+  Widget build(BuildContext context) {
+    final canAddMore = files.length < 10;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: LumiSpacing.md),
+        Text(
+          '已選 ${files.length} 張',
+          style: const TextStyle(
+            fontSize: 15,
+            color: LumiColors.subtext,
+          ),
+        ),
+        const SizedBox(height: LumiSpacing.sm),
+        Expanded(
+          child: GridView.builder(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: LumiSpacing.xs,
+              mainAxisSpacing: LumiSpacing.xs,
+              childAspectRatio: 1,
+            ),
+            itemCount: files.length + (canAddMore ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == files.length) {
+                return _AddMoreTile(onTap: onAddMore);
+              }
+              return _PreviewTile(
+                file: files[index],
+                onRemove: () => onRemove(index),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: LumiSpacing.md),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: onUpload,
+            style: FilledButton.styleFrom(
+              backgroundColor: LumiColors.accent,
+              foregroundColor: LumiColors.surface,
+              padding:
+                  const EdgeInsets.symmetric(vertical: LumiSpacing.md),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: Text(
+              '上傳 ${files.length} 張照片',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: LumiSpacing.xl),
+      ],
+    );
+  }
+}
+
+class _PreviewTile extends StatefulWidget {
+  const _PreviewTile({required this.file, required this.onRemove});
+
+  final XFile file;
+  final VoidCallback onRemove;
+
+  @override
+  State<_PreviewTile> createState() => _PreviewTileState();
+}
+
+class _PreviewTileState extends State<_PreviewTile> {
+  Uint8List? _bytes;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.file.readAsBytes().then((b) {
+      if (mounted) setState(() => _bytes = b);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: _bytes == null
+              ? const ColoredBox(color: LumiColors.surface)
+              : Image.memory(_bytes!, fit: BoxFit.cover),
+        ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: GestureDetector(
+            onTap: widget.onRemove,
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close, color: Colors.white, size: 14),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AddMoreTile extends StatelessWidget {
+  const _AddMoreTile({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: LumiColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: LumiColors.glow,
+            width: 1.5,
+          ),
+        ),
+        child: const Icon(
+          Icons.add_photo_alternate_outlined,
+          color: LumiColors.subtext,
+          size: 28,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Uploading ─────────────────────────────────────────────────────────────────
+
+class _UploadingView extends StatelessWidget {
+  const _UploadingView({
+    required this.animation,
+    required this.current,
+    required this.total,
+  });
 
   final Animation<double> animation;
-  final String label;
+  final int current;
+  final int total;
 
   @override
   Widget build(BuildContext context) {
@@ -168,26 +344,29 @@ class _GlowView extends StatelessWidget {
         children: [
           AnimatedBuilder(
             animation: animation,
-            builder: (context, child) {
-              return Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: LumiColors.glow
-                      .withOpacity(0.3 + animation.value * 0.7),
-                ),
-              );
-            },
+            builder: (_, __) => Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: LumiColors.glow
+                    .withOpacity(0.3 + animation.value * 0.7),
+              ),
+            ),
           ),
           const SizedBox(height: LumiSpacing.lg),
           Text(
-            label,
+            '上傳第 $current / $total 張…',
             style: const TextStyle(
-              fontSize: 15,
-              color: LumiColors.subtext,
-              height: 1.5,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: LumiColors.text,
             ),
+          ),
+          const SizedBox(height: LumiSpacing.sm),
+          const Text(
+            '請保持頁面開啟',
+            style: TextStyle(fontSize: 13, color: LumiColors.subtext),
           ),
         ],
       ),
@@ -199,16 +378,14 @@ class _GlowView extends StatelessWidget {
 
 class _DoneView extends StatelessWidget {
   const _DoneView({
-    required this.category,
-    required this.colors,
-    required this.materials,
-    required this.onReset,
+    required this.count,
+    required this.onBack,
+    required this.onMore,
   });
 
-  final String category;
-  final List<String> colors;
-  final List<String> materials;
-  final VoidCallback onReset;
+  final int count;
+  final VoidCallback onBack;
+  final VoidCallback onMore;
 
   @override
   Widget build(BuildContext context) {
@@ -216,53 +393,35 @@ class _DoneView extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Spacer(),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(LumiSpacing.lg),
-          decoration: BoxDecoration(
-            color: LumiColors.surface,
-            borderRadius: BorderRadius.circular(16),
+        const Icon(
+          Icons.cloud_done_outlined,
+          size: 64,
+          color: LumiColors.accent,
+        ),
+        const SizedBox(height: LumiSpacing.lg),
+        Text(
+          '$count 張照片已加入衣櫥',
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: LumiColors.text,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                '入庫完成',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w500,
-                  color: LumiColors.text,
-                ),
-              ),
-              const SizedBox(height: LumiSpacing.md),
-              _InfoRow(label: '類別', value: category),
-              const SizedBox(height: LumiSpacing.sm),
-              _InfoRow(
-                label: '材質',
-                value: materials.join('、'),
-              ),
-              const SizedBox(height: LumiSpacing.sm),
-              Row(
-                children: [
-                  const Text(
-                    '顏色',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: LumiColors.subtext,
-                    ),
-                  ),
-                  const SizedBox(width: LumiSpacing.sm),
-                  ...colors.map((hex) => _ColorDot(hex: hex)),
-                ],
-              ),
-            ],
+        ),
+        const SizedBox(height: LumiSpacing.sm),
+        const Text(
+          'AI 正在背景分析，完成後衣櫥會自動更新\n現在可以關閉此頁面',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 15,
+            color: LumiColors.subtext,
+            height: 1.6,
           ),
         ),
         const Spacer(),
         SizedBox(
           width: double.infinity,
           child: FilledButton(
-            onPressed: onReset,
+            onPressed: onBack,
             style: FilledButton.styleFrom(
               backgroundColor: LumiColors.accent,
               foregroundColor: LumiColors.surface,
@@ -273,7 +432,27 @@ class _DoneView extends StatelessWidget {
               ),
             ),
             child: const Text(
-              '再拍一件',
+              '回到衣櫥',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ),
+        const SizedBox(height: LumiSpacing.sm),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: onMore,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: LumiColors.accent,
+              side: const BorderSide(color: LumiColors.accent),
+              padding:
+                  const EdgeInsets.symmetric(vertical: LumiSpacing.md),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: const Text(
+              '繼續新增',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),
@@ -281,60 +460,6 @@ class _DoneView extends StatelessWidget {
         const SizedBox(height: LumiSpacing.xl),
       ],
     );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 15, color: LumiColors.subtext),
-        ),
-        const SizedBox(width: LumiSpacing.sm),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            color: LumiColors.text,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ColorDot extends StatelessWidget {
-  const _ColorDot({required this.hex});
-
-  final String hex;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = _parseHex(hex);
-    return Container(
-      width: 20,
-      height: 20,
-      margin: const EdgeInsets.only(right: LumiSpacing.xs),
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
-    );
-  }
-
-  Color _parseHex(String hex) {
-    final clean = hex.replaceAll('#', '');
-    final value = int.tryParse('FF$clean', radix: 16);
-    return value != null ? Color(value) : LumiColors.subtext;
   }
 }
 
@@ -384,7 +509,7 @@ class _ErrorView extends StatelessWidget {
               ),
             ),
             child: const Text(
-              '重試',
+              '重新選取',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),

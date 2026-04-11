@@ -118,6 +118,7 @@ jobs:
           exit 1
 
       - name: Deploy Firestore Rules
+        working-directory: functions
         run: |
           GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
             npx firebase deploy --only firestore:rules \

@@ -80,32 +80,7 @@ jobs:
             fi
 
             MIGRATION_TARGETS=$(
-              DEPLOY_OUTPUT="$DEPLOY_OUTPUT" python3 - <<'PY'
-import os
-import re
-
-text = os.environ.get("DEPLOY_OUTPUT", "")
-text = re.sub(r"\x1B\[[0-?]*[ -/]*[@-~]", "", text)
-pattern = re.compile(
-    r"^Error:\s+\[([^\(\]\r\n]+)\(([^)\r\n]+)\)\]\s+Changing from an HTTPS function to a background triggered function is not allowed",
-    re.MULTILINE,
-)
-
-items: list[str] = []
-seen: set[str] = set()
-
-for name, region in pattern.findall(text):
-    fn = name.strip()
-    rg = region.strip()
-    key = f"{fn}|{rg}"
-    valid_name = re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", fn) is not None
-    valid_region = re.fullmatch(r"[a-z0-9-]+", rg) is not None
-    if valid_name and valid_region and key not in seen:
-        items.append(key)
-        seen.add(key)
-
-print("\n".join(items))
-PY
+              DEPLOY_OUTPUT="$DEPLOY_OUTPUT" python3 -c 'import os,re; t=os.environ.get("DEPLOY_OUTPUT",""); t=re.sub(r"\x1B\[[0-?]*[ -/]*[@-~]","",t); p=re.compile(r"^Error:\s+\[([^\(\]\r\n]+)\(([^)\r\n]+)\)\]\s+Changing from an HTTPS function to a background triggered function is not allowed", re.MULTILINE); q=sorted({(a.strip(),b.strip()) for a,b in p.findall(t)}); print("\n".join(f"{a}|{b}" for a,b in q if re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*",a) and re.fullmatch(r"[a-z0-9-]+",b)))'
             )
 
             if [ -z "$MIGRATION_TARGETS" ]; then

@@ -2,12 +2,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../core/providers/firebase_providers.dart';
+import '../../user/data/user_repository.dart';
 
 class AuthRepository {
-  AuthRepository(this._auth, this._googleSignIn);
+  AuthRepository(this._auth, this._googleSignIn, this._userRepository);
 
   final FirebaseAuth _auth;
   final GoogleSignIn _googleSignIn;
+  final UserRepository _userRepository;
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
@@ -21,7 +23,10 @@ class AuthRepository {
       idToken: googleAuth.idToken,
     );
 
-    return _auth.signInWithCredential(credential);
+    final userCredential = await _auth.signInWithCredential(credential);
+    // Upsert Firestore profile — creates on first login, refreshes name/email later.
+    await _userRepository.ensureProfile(userCredential.user!);
+    return userCredential;
   }
 
   Future<void> signOut() async {
@@ -38,5 +43,6 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository(
     ref.watch(firebaseAuthProvider),
     ref.watch(googleSignInProvider),
+    ref.watch(userRepositoryProvider),
   );
 });

@@ -50,10 +50,26 @@ class SnapNotifier extends Notifier<SnapState> {
     final files = current.files;
     final total = files.length;
 
+    // Show a transitional state immediately so the button is disabled and the
+    // user sees feedback.  Riverpod state assignment is synchronous — it does
+    // NOT consume the browser's transient user-activation window.
+    state = SnapUploading(current: 0, total: total);
+
+    // Obtain the Google Photos access token BEFORE any file I/O.
+    // requestScopes() must open a browser popup, which requires transient user
+    // activation.  Chrome's window expires ~5 s after the click; calling this
+    // first (before potentially slow readAsBytes calls) keeps us well inside
+    // that window.
+    final accessToken = await _getAccessToken();
+    if (accessToken == null) {
+      state = const SnapError('無法取得 Google 授權，請重新登入。');
+      return;
+    }
+
     for (var i = 0; i < total; i++) {
       state = SnapUploading(current: i + 1, total: total);
       try {
-        await _uploadOne(files[i], i);
+        await _uploadOne(files[i], i, accessToken);
       } on FirebaseFunctionsException catch (e) {
         final detail = e.details?.toString();
         final base = e.message ?? '上傳失敗，請再試一次。';
@@ -68,14 +84,11 @@ class SnapNotifier extends Notifier<SnapState> {
     state = SnapDone(count: total);
   }
 
-  Future<void> _uploadOne(XFile file, int index) async {
+  Future<void> _uploadOne(XFile file, int index, String accessToken) async {
     final bytes = await file.readAsBytes();
     final imageBase64 = base64Encode(bytes);
     final mimeType = file.mimeType ?? 'image/jpeg';
     final filename = 'lumi_${DateTime.now().millisecondsSinceEpoch}_$index.jpg';
-
-    final accessToken = await _getAccessToken();
-    if (accessToken == null) throw Exception('無法取得 Google 授權，請重新登入。');
 
     final service = ref.read(cloudFunctionsServiceProvider);
     final upload = await service.uploadToPhotos(
@@ -131,10 +144,14 @@ class SnapNotifier extends Notifier<SnapState> {
     // Request authorisation for the Photos API scopes.
     // requestScopes() uses GIS TokenClient (OAuth2 popup) — NOT One Tap,
     // so it is unaffected by FedCM migration and will not hang.
-    final granted = await googleSignIn.requestScopes([
-      'https://www.googleapis.com/auth/photoslibrary.appendonly',
-      'https://www.googleapis.com/auth/photoslibrary.readonly',
-    ]);
+    // Timeout guards against the rare case where the popup is silently blocked
+    // and GIS never fires its callback.
+    final granted = await googleSignIn
+        .requestScopes([
+          'https://www.googleapis.com/auth/photoslibrary.appendonly',
+          'https://www.googleapis.com/auth/photoslibrary.readonly',
+        ])
+        .timeout(const Duration(seconds: 60), onTimeout: () => false);
     if (!granted) return null;
 
     final freshAuth = await googleSignIn.currentUser?.authentication;

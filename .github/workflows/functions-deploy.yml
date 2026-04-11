@@ -58,35 +58,49 @@ jobs:
       - name: Deploy Cloud Functions (with trigger migration fallback)
         working-directory: functions
         run: |
-          set +e
-          DEPLOY_OUTPUT=$(
-            GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
-              npx firebase deploy --only functions \
-                --project lumi-309ff --non-interactive --force 2>&1
-          )
-          DEPLOY_STATUS=$?
-          set -e
+          MAX_ATTEMPTS=5
+          ATTEMPT=1
 
-          echo "$DEPLOY_OUTPUT"
+          while [ "$ATTEMPT" -le "$MAX_ATTEMPTS" ]; do
+            echo "Deploy attempt ${ATTEMPT}/${MAX_ATTEMPTS}"
 
-          if [ "$DEPLOY_STATUS" -eq 0 ]; then
-            exit 0
-          fi
+            set +e
+            DEPLOY_OUTPUT=$(
+              GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
+                npx firebase deploy --only functions \
+                  --project lumi-309ff --non-interactive --force 2>&1
+            )
+            DEPLOY_STATUS=$?
+            set -e
 
-          if [[ "$DEPLOY_OUTPUT" != *"Changing from an HTTPS function to a background triggered function is not allowed"* ]]; then
-            exit "$DEPLOY_STATUS"
-          fi
+            echo "$DEPLOY_OUTPUT"
 
-          echo "Detected trigger-type migration conflict for analyzeWardrobeItem."
-          echo "Deleting legacy function once, then retrying deploy."
+            if [ "$DEPLOY_STATUS" -eq 0 ]; then
+              exit 0
+            fi
 
-          GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
-            npx firebase functions:delete analyzeWardrobeItem \
-              --region asia-east1 --project lumi-309ff --force
+            MIGRATION_TARGETS=$(
+              DEPLOY_OUTPUT="$DEPLOY_OUTPUT" python3 -c 'import os, re; text=os.environ.get("DEPLOY_OUTPUT", ""); pattern=re.compile(r"\[([^(]+)\(([^)]+)\)\]\s+Changing from an HTTPS function to a background triggered function is not allowed"); seen=sorted({(name.strip(), region.strip()) for name, region in pattern.findall(text)}); print("\n".join(f"{name}|{region}" for name, region in seen))'
+            )
 
-          GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
-            npx firebase deploy --only functions \
-              --project lumi-309ff --non-interactive --force
+            if [ -z "$MIGRATION_TARGETS" ]; then
+              exit "$DEPLOY_STATUS"
+            fi
+
+            echo "Detected trigger-type migration conflict(s)."
+            while IFS='|' read -r FUNCTION_NAME FUNCTION_REGION; do
+              [ -z "$FUNCTION_NAME" ] && continue
+              echo "Deleting legacy function ${FUNCTION_NAME}(${FUNCTION_REGION}) then retrying."
+              GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
+                npx firebase functions:delete "$FUNCTION_NAME" \
+                  --region "$FUNCTION_REGION" --project lumi-309ff --force
+            done <<< "$MIGRATION_TARGETS"
+
+            ATTEMPT=$((ATTEMPT + 1))
+          done
+
+          echo "Exceeded retry limit (${MAX_ATTEMPTS}) while resolving trigger migration conflicts."
+          exit 1
 
       - name: Cleanup credentials
         if: always()

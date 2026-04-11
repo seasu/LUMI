@@ -356,7 +356,7 @@ class _UploadingView extends StatelessWidget {
           ),
           const SizedBox(height: LumiSpacing.lg),
           Text(
-            '上傳第 $current / $total 張…',
+            current == 0 ? '正在取得授權…' : '上傳第 $current / $total 張…',
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -364,9 +364,9 @@ class _UploadingView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: LumiSpacing.sm),
-          const Text(
-            '請保持頁面開啟',
-            style: TextStyle(fontSize: 13, color: LumiColors.subtext),
+          Text(
+            current == 0 ? '請在彈出視窗中允許 Google Photos 存取' : '請保持頁面開啟',
+            style: const TextStyle(fontSize: 13, color: LumiColors.subtext),
           ),
         ],
       ),

@@ -22,10 +22,19 @@ class WardrobeFilterNotifier extends Notifier<WardrobeFilter> {
   void setCategory(String? category) =>
       state = state.copyWith(category: category);
 
+  void addColor(String hex) {
+    if (state.colors.contains(hex)) return;
+    state = state.copyWith(colors: [...state.colors, hex]);
+  }
+
+  void removeColor(String hex) {
+    state = state.copyWith(
+      colors: state.colors.where((c) => c != hex).toList(),
+    );
+  }
+
   void toggleColor(String hex) {
-    final colors = List<String>.from(state.colors);
-    colors.contains(hex) ? colors.remove(hex) : colors.add(hex);
-    state = state.copyWith(colors: colors);
+    state.colors.contains(hex) ? removeColor(hex) : addColor(hex);
   }
 
   void toggleMaterial(String material) {

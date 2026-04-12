@@ -1,16 +1,19 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/login_page.dart';
+import '../../features/auth/presentation/loading_page.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/check/presentation/check_page.dart';
+import '../../features/main/presentation/main_shell.dart';
+import '../../features/main/presentation/outfit_page.dart';
+import '../../features/main/presentation/profile_page.dart';
+import '../../features/onboarding/presentation/onboarding_page.dart';
 import '../../features/search/presentation/search_page.dart';
 import '../../features/snap/presentation/snap_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  // Initialize with current auth state so the router doesn't get stuck on
-  // AsyncLoading if Firebase already restored a session before this provider built.
   final authNotifier = ValueNotifier<AsyncValue<User?>>(ref.read(authStateProvider));
 
   ref.listen<AsyncValue<User?>>(authStateProvider, (_, next) {
@@ -24,25 +27,63 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: authNotifier,
     redirect: (context, state) {
       final authValue = authNotifier.value;
-
-      // Still loading — don't redirect yet
       if (authValue is AsyncLoading) return null;
 
       final isLoggedIn = authValue.valueOrNull != null;
-      final isLoginPage = state.matchedLocation == '/login';
+      final loc = state.matchedLocation;
 
-      if (!isLoggedIn && !isLoginPage) return '/login';
-      if (isLoggedIn && isLoginPage) return '/home';
+      // Not logged in → send to login (except already there)
+      if (!isLoggedIn) {
+        if (loc == '/login') return null;
+        return '/login';
+      }
+
+      // Logged in but on login page → go to loading (handles onboarding check)
+      if (loc == '/login') return '/loading';
+
       return null;
     },
     routes: [
       GoRoute(
         path: '/login',
-        builder: (context, state) => const LoginPage(),
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: LoginPage(),
+        ),
       ),
       GoRoute(
-        path: '/home',
-        builder: (context, state) => const SearchPage(),
+        path: '/loading',
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: LoadingPage(),
+        ),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: OnboardingPage(),
+        ),
+      ),
+      ShellRoute(
+        builder: (context, state, child) => MainShell(child: child),
+        routes: [
+          GoRoute(
+            path: '/home',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: SearchPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/home/outfits',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: OutfitPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/home/profile',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ProfilePage(),
+            ),
+          ),
+        ],
       ),
       GoRoute(
         path: '/snap',

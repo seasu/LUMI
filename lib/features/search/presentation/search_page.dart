@@ -4,10 +4,10 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_spacing.dart';
 import '../../../features/wardrobe/data/wardrobe_item.dart';
-import '../../auth/presentation/providers/auth_provider.dart';
 import 'providers/search_provider.dart';
-import 'widgets/wardrobe_card.dart';
 import 'widgets/filter_bar.dart';
+import 'widgets/wardrobe_card.dart';
+import 'widgets/item_detail_modal.dart';
 
 class SearchPage extends ConsumerWidget {
   const SearchPage({super.key});
@@ -15,32 +15,33 @@ class SearchPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final filtered = ref.watch(filteredWardrobeProvider);
-    final filter = ref.watch(wardrobeFilterProvider);
 
     return Scaffold(
       backgroundColor: LumiColors.base,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: FloatingActionButton.large(
-        onPressed: () => context.push('/snap'),
-        backgroundColor: LumiColors.accent,
-        foregroundColor: LumiColors.surface,
-        tooltip: 'Lumi Snap',
-        child: const Icon(Icons.camera_alt_outlined, size: 32),
-      ),
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            _SearchHeader(hasActiveFilter: !filter.isEmpty),
-            const FilterBar(),
-            Expanded(
-              child: filtered.when(
-                data: (items) => items.isEmpty
-                    ? const _EmptyState()
-                    : _WardrobeGrid(items: items),
-                loading: () => const _LoadingGrid(),
-                error: (e, _) => _ErrorState(message: e.toString()),
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const _WardrobeHeader(),
+                const FilterBar(),
+                Expanded(
+                  child: filtered.when(
+                    data: (items) => items.isEmpty
+                        ? const _EmptyState()
+                        : _WardrobeGrid(items: items),
+                    loading: () => const _LoadingGrid(),
+                    error: (e, _) => _ErrorState(message: e.toString()),
+                  ),
+                ),
+              ],
+            ),
+            // 右下角 FAB
+            Positioned(
+              bottom: 16,
+              right: 16,
+              child: _SnapFab(),
             ),
           ],
         ),
@@ -49,12 +50,10 @@ class SearchPage extends ConsumerWidget {
   }
 }
 
-// ── Header ────────────────────────────────────────────────────────────────────
+// ── Header ─────────────────────────────────────────────────────────────────────
 
-class _SearchHeader extends ConsumerWidget {
-  const _SearchHeader({required this.hasActiveFilter});
-
-  final bool hasActiveFilter;
+class _WardrobeHeader extends ConsumerWidget {
+  const _WardrobeHeader();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -66,38 +65,59 @@ class _SearchHeader extends ConsumerWidget {
         LumiSpacing.sm,
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const Expanded(
             child: Text(
               '我的衣櫥',
               style: TextStyle(
                 fontSize: 28,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
                 color: LumiColors.text,
-                letterSpacing: -0.5,
               ),
             ),
           ),
-          if (hasActiveFilter)
-            TextButton(
-              onPressed: () =>
-                  ref.read(wardrobeFilterProvider.notifier).clearAll(),
-              child: const Text(
-                '清除篩選',
-                style: TextStyle(fontSize: 13, color: LumiColors.subtext),
+          TextButton.icon(
+            onPressed: () => context.push('/snap'),
+            icon: const Icon(Icons.add, size: 18, color: LumiColors.primary),
+            label: const Text(
+              '加入新品',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: LumiColors.primary,
               ),
             ),
-          IconButton(
-            onPressed: () => context.push('/check'),
-            tooltip: '購物模式',
-            icon: const Icon(Icons.shopping_bag_outlined,
-                color: LumiColors.subtext),
-          ),
-          IconButton(
-            onPressed: () => signOut(ref),
-            icon: const Icon(Icons.logout, color: LumiColors.subtext),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: LumiSpacing.sm, vertical: 4),
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Snap FAB ──────────────────────────────────────────────────────────────────
+
+class _SnapFab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/snap'),
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: const BoxDecoration(
+          gradient: LumiColors.buttonGradient,
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.add_a_photo_outlined,
+          color: Colors.white,
+          size: 24,
+        ),
       ),
     );
   }
@@ -112,33 +132,27 @@ class _WardrobeGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    // Responsive: 2 columns on mobile, 3 on tablet, 4 on desktop
-    final crossAxisCount = switch (width) {
-      < 600 => 2,
-      < 900 => 3,
-      _ => 4,
-    };
-
-    return RefreshIndicator(
-      onRefresh: () async {}, // Firestore stream handles real-time updates
-      child: GridView.builder(
-        // Extra bottom padding so the large FAB doesn't cover the last row
-        padding: const EdgeInsets.fromLTRB(
-          LumiSpacing.sm,
-          LumiSpacing.sm,
-          LumiSpacing.sm,
-          96 + LumiSpacing.lg,
-        ),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: crossAxisCount,
-          crossAxisSpacing: LumiSpacing.sm,
-          mainAxisSpacing: LumiSpacing.sm,
-          childAspectRatio: 0.62,
-        ),
-        itemCount: items.length,
-        itemBuilder: (context, index) => WardrobeCard(item: items[index]),
+    return GridView.builder(
+      padding: const EdgeInsets.fromLTRB(
+        LumiSpacing.md,
+        LumiSpacing.sm,
+        LumiSpacing.md,
+        80,
       ),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        crossAxisSpacing: LumiSpacing.sm,
+        mainAxisSpacing: LumiSpacing.sm,
+        childAspectRatio: 0.75,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return GestureDetector(
+          onTap: () => showItemDetailModal(context, item),
+          child: WardrobeCard(item: item),
+        );
+      },
     );
   }
 }
@@ -156,28 +170,29 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // 衣架插圖（用 icon 模擬）
             Icon(
               Icons.checkroom_outlined,
-              size: 64,
+              size: 72,
               color: LumiColors.subtext.withOpacity(0.4),
             ),
             const SizedBox(height: LumiSpacing.md),
             const Text(
-              '衣櫥是空的',
+              '妳的衣櫥目前空空如也',
               style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w500,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
                 color: LumiColors.text,
               ),
             ),
             const SizedBox(height: LumiSpacing.sm),
             const Text(
-              '點擊 Lumi Snap 拍照入庫，\n開始建立你的數位衣櫥。',
+              '點擊右上角的「加入新品」按鈕，\n開始建立妳的數位衣櫥吧！',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 14,
                 color: LumiColors.subtext,
-                height: 1.5,
+                height: 1.6,
               ),
             ),
           ],
@@ -187,34 +202,27 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ── Loading skeleton grid ─────────────────────────────────────────────────────
+// ── Loading skeleton ──────────────────────────────────────────────────────────
 
 class _LoadingGrid extends StatelessWidget {
   const _LoadingGrid();
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final crossAxisCount = switch (width) {
-      < 600 => 2,
-      < 900 => 3,
-      _ => 4,
-    };
-
     return GridView.builder(
-      padding: const EdgeInsets.all(LumiSpacing.sm),
+      padding: const EdgeInsets.all(LumiSpacing.md),
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
         crossAxisSpacing: LumiSpacing.sm,
         mainAxisSpacing: LumiSpacing.sm,
-        childAspectRatio: 0.62,
+        childAspectRatio: 0.75,
       ),
-      itemCount: 6,
+      itemCount: 12,
       itemBuilder: (_, __) => Container(
         decoration: BoxDecoration(
           color: LumiColors.surface,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(12),
         ),
       ),
     );
@@ -237,7 +245,7 @@ class _ErrorState extends StatelessWidget {
           '載入失敗：$message',
           textAlign: TextAlign.center,
           style: const TextStyle(
-            fontSize: 15,
+            fontSize: 14,
             color: LumiColors.warning,
             height: 1.5,
           ),

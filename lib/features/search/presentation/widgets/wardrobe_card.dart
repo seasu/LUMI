@@ -25,7 +25,7 @@ class WardrobeCard extends ConsumerWidget {
       child: Container(
         decoration: BoxDecoration(
           color: LumiColors.surface,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(12),
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
@@ -100,12 +100,12 @@ class _PendingOverlay extends StatelessWidget {
           if (isQuota)
             const Icon(Icons.lock_outline, color: Colors.white, size: 26)
           else
-            const SizedBox(
+            Container(
               width: 22,
               height: 22,
-              child: CircularProgressIndicator(
-                color: LumiColors.glow,
-                strokeWidth: 2,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: LumiColors.glow.withOpacity(0.8),
               ),
             ),
           const SizedBox(height: 6),

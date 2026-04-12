@@ -45,6 +45,9 @@ class UserRepository {
     }
   }
 
+  Future<void> markOnboardingComplete(String userId) =>
+      _ref(userId).update({'onboardingCompleted': true});
+
   Stream<UserProfile?> watchProfile(String userId) =>
       _ref(userId).snapshots().map(
             (doc) => doc.exists ? UserProfile.fromFirestore(doc) : null,

@@ -145,18 +145,18 @@ class SnapNotifier extends Notifier<SnapState> {
     final firebaseAuth = ref.read(firebaseAuthProvider);
     if (firebaseAuth.currentUser == null) return null;
 
-    // GIS requestScopes() / TokenClient triggers One Tap internally for account
-    // selection.  On browsers where FedCM is rolling out, One Tap never resolves
-    // — so requestScopes() hangs indefinitely regardless of call timing.
-    //
-    // Fix: use FirebaseAuth.signInWithPopup() with a GoogleAuthProvider that
-    // includes the Photos scopes.  Firebase opens a direct window.open() OAuth2
-    // popup, completely bypassing GIS TokenClient and One Tap.  If the user is
-    // already signed in to Google the popup shows their account pre-selected and
-    // no password re-entry is required.
+    // Use signInWithPopup with prompt:'consent' to force Google to show the
+    // full scope consent screen every time.  Without this, Google may return
+    // a cached token that only has the basic email/profile scopes from the
+    // initial login — resulting in a 403 "insufficient authentication scopes"
+    // error when calling the Photos Library API.
     final provider = GoogleAuthProvider()
       ..addScope('https://www.googleapis.com/auth/photoslibrary.appendonly')
-      ..addScope('https://www.googleapis.com/auth/photoslibrary.readonly');
+      ..addScope('https://www.googleapis.com/auth/photoslibrary.readonly')
+      ..setCustomParameters({
+        'prompt': 'consent',
+        'access_type': 'online',
+      });
 
     try {
       final result = await firebaseAuth.signInWithPopup(provider);

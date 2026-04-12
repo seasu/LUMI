@@ -11,6 +11,15 @@ class UserProfile {
     required this.freeQuota,
     required this.createdAt,
     required this.onboardingCompleted,
+    // Body measurements
+    this.heightCm,
+    this.weightKg,
+    this.birthday,
+    this.headCircumferenceCm,
+    this.chestCm,
+    this.waistCm,
+    this.hipCm,
+    this.legLengthCm,
   });
 
   final String uid;
@@ -32,6 +41,16 @@ class UserProfile {
   /// True once the user has completed the 3-step onboarding flow.
   final bool onboardingCompleted;
 
+  // ── Body measurements ──────────────────────────────────────────────────────
+  final double? heightCm;
+  final double? weightKg;
+  final String? birthday;          // "YYYY-MM-DD"
+  final double? headCircumferenceCm;
+  final double? chestCm;
+  final double? waistCm;
+  final double? hipCm;
+  final double? legLengthCm;
+
   bool get isOverQuota => analyzedCount >= freeQuota;
   int get remainingQuota => (freeQuota - analyzedCount).clamp(0, freeQuota);
 
@@ -47,6 +66,14 @@ class UserProfile {
       freeQuota: (d['freeQuota'] as num?)?.toInt() ?? 100,
       createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       onboardingCompleted: (d['onboardingCompleted'] as bool?) ?? false,
+      heightCm: (d['heightCm'] as num?)?.toDouble(),
+      weightKg: (d['weightKg'] as num?)?.toDouble(),
+      birthday: d['birthday'] as String?,
+      headCircumferenceCm: (d['headCircumferenceCm'] as num?)?.toDouble(),
+      chestCm: (d['chestCm'] as num?)?.toDouble(),
+      waistCm: (d['waistCm'] as num?)?.toDouble(),
+      hipCm: (d['hipCm'] as num?)?.toDouble(),
+      legLengthCm: (d['legLengthCm'] as num?)?.toDouble(),
     );
   }
 }

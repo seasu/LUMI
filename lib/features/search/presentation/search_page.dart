@@ -105,7 +105,7 @@ class _SnapFab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push('/snap'),
+      onTap: () => context.push('/check'),
       child: Container(
         width: 56,
         height: 56,
@@ -114,7 +114,7 @@ class _SnapFab extends StatelessWidget {
           shape: BoxShape.circle,
         ),
         child: const Icon(
-          Icons.add_a_photo_outlined,
+          Icons.image_search_outlined,
           color: Colors.white,
           size: 24,
         ),

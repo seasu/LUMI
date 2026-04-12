@@ -1,13 +1,25 @@
 import 'package:flutter/material.dart';
 
+/// Lumi 品牌色彩系統
+/// 依據 stitch_lumi_mockup/ 目錄的設計稿定義，禁止在 Widget 中 hardcode 顏色值。
+/// 完整設計規範請參閱 DESIGN_GUIDELINES.md。
 class LumiColors {
   LumiColors._();
 
-  static const base    = Color(0xFFFDF6F0); // 暖奶油白，主背景
-  static const surface = Color(0xFFFFFFFF); // 純白，卡片表面
-  static const accent  = Color(0xFFC4788A); // 玫瑰粉，按鈕／強調色
-  static const glow    = Color(0xFFF2C4CE); // 嬰兒粉，AI 處理動畫
-  static const text    = Color(0xFF2C2024); // 深暖棕，主要文字
-  static const subtext = Color(0xFF9B7F85); // 霧玫瑰灰，次要說明文字
-  static const warning = Color(0xFFE07B5A); // 暖橘，Lumi-Check 警示
+  static const base         = Color(0xFFFAF4EE); // 暖奶油米，所有頁面主背景
+  static const surface      = Color(0xFFFFFFFF); // 純白，卡片 / Modal / Sheet 表面
+  static const primary      = Color(0xFFF08630); // 暖橘，主要 CTA 按鈕／強調色／選中狀態
+  static const primaryLight = Color(0xFFF5A855); // 橘漸層-淺端（按鈕漸層起點）
+  static const primaryDark  = Color(0xFFE06820); // 橘漸層-深端（按鈕漸層終點）
+  static const glow         = Color(0xFFF5A870); // 暖橙光暈，AI 處理動畫 / Loading Orb
+  static const text         = Color(0xFF1C1007); // 深暖棕，頁面標題／主要文字
+  static const subtext      = Color(0xFF7A6858); // 暖灰棕，說明文字／次要資訊
+  static const warning      = Color(0xFFE05528); // 深橘紅，Lumi-Check 高相似度警示（≥ 80%）
+
+  /// 主按鈕漸層（primaryLight → primaryDark）
+  static const buttonGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [primaryLight, primaryDark],
+  );
 }

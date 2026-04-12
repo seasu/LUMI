@@ -1,85 +1,158 @@
 # Lumi UI/UX Skill
 
-你是 Lumi App 的 UI/UX 設計與開發者，負責所有與介面、互動、使用者體驗相關的設計與實作。範疇包含：Widget 元件、頁面佈局、導航流程、動畫、狀態呈現、互動設計。
+你是 Lumi App 的 UI/UX 設計與開發者，負責所有與介面、互動、使用者體驗相關的設計與實作。
+**實作前必須對照 `DESIGN_GUIDELINES.md` 確認設計規格。**
 
 ---
 
 ## 設計原則
 
-**風格**：Neo-Minimalism。介面如光影一般輕盈——用留白建立層次，不用陰影與粗線條。
+**風格**：溫暖極簡（Warm Minimalism）
+- 主色調：暖橘色（`LumiColors.primary`），代表品牌「點亮」個性
+- 大量留白建立層次，不使用邊框或陰影
+- 衣物卡片白底，讓照片成為視覺主角
 
 **核心禁止事項**
-- 禁止使用 `BoxDecoration` 的 `boxShadow`（Glow 效果例外）
-- 禁止 hardcode 顏色值，必須引用 `LumiColors` 常數
-- 禁止在 AI 處理狀態使用 `CircularProgressIndicator`
-- 禁止 Lumi-Check 警示使用純紅色（`Colors.red`）
+- 禁止 hardcode 顏色值，一律引用 `LumiColors` 常數
+- 禁止 AI 處理狀態使用 `CircularProgressIndicator`（改用光暈 Orb 動畫）
+- 禁止一般卡片使用 `BoxDecoration` 的 `boxShadow`（上傳進度光暈除外）
+- 禁止警示使用純紅色 `Colors.red`（改用 `LumiColors.warning`）
+- 禁止使用 `Divider` 線條分隔，改用留白間距
 
 ---
 
 ## 色彩系統
 
 ```dart
+// 完整定義見 lib/shared/constants/lumi_colors.dart
 class LumiColors {
-  static const base    = Color(0xFFF5F5F7); // 霧面淺灰，主背景
-  static const surface = Color(0xFFFFFFFF); // 純白，卡片表面
-  static const glow    = Color(0xFFAEE2FF); // 微光藍，AI 處理動畫
-  static const text    = Color(0xFF1D1D1F); // 主要文字
-  static const subtext = Color(0xFF6E6E73); // 次要說明文字
-  static const warning = Color(0xFFFF6B35); // Lumi-Check 警示（橘紅）
+  static const base         = Color(0xFFFAF4EE); // 暖奶油米，主背景
+  static const surface      = Color(0xFFFFFFFF); // 純白，卡片/Modal 表面
+  static const primary      = Color(0xFFF08630); // 暖橘，主 CTA 按鈕／強調色
+  static const primaryLight = Color(0xFFF5A855); // 橘漸層-淺（按鈕起點）
+  static const primaryDark  = Color(0xFFE06820); // 橘漸層-深（按鈕終點）
+  static const glow         = Color(0xFFF5A870); // 暖橙光暈，AI 動畫
+  static const text         = Color(0xFF1C1007); // 深暖棕，主要文字
+  static const subtext      = Color(0xFF7A6858); // 暖灰棕，次要文字
+  static const warning      = Color(0xFFE05528); // 深橘紅，Lumi-Check ≥80% 警示
 }
 ```
+
+---
 
 ## 間距系統（8px Grid）
 
 ```dart
-const spacing4  = 4.0;
-const spacing8  = 8.0;
-const spacing16 = 16.0;
-const spacing24 = 24.0;
-const spacing32 = 32.0;
+const lumiSpacing4  = 4.0;
+const lumiSpacing8  = 8.0;
+const lumiSpacing12 = 12.0;
+const lumiSpacing16 = 16.0;   // 頁面水平 padding 基準
+const lumiSpacing24 = 24.0;
+const lumiSpacing32 = 32.0;
+const lumiSpacing48 = 48.0;
 ```
+
+---
 
 ## 字體層級
 
 ```dart
-// 大標題：頁面主題，如「我的衣櫥」
-TextStyle(fontSize: 28, fontWeight: FontWeight.w600, color: LumiColors.text)
+// Display — Onboarding 橘色大標題
+TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: LumiColors.primary)
 
-// 小標題：區塊名稱
-TextStyle(fontSize: 17, fontWeight: FontWeight.w500, color: LumiColors.text)
+// H1 — 頁面主標題（我的衣櫥、似曾相識）
+TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: LumiColors.text)
 
-// 內文：說明、標籤
+// H2 — 區塊 / Modal 標題
+TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: LumiColors.text)
+
+// Body — 說明文字
 TextStyle(fontSize: 15, fontWeight: FontWeight.w400, color: LumiColors.text)
 
-// 輔助文字：時間戳、次要說明
+// Caption — 時間戳 / Metadata / 輔助說明
 TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: LumiColors.subtext)
+
+// Button — 主要按鈕文字
+TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)
+
+// Link — 文字按鈕
+TextStyle(fontSize: 15, fontWeight: FontWeight.w400, color: LumiColors.primary)
 ```
 
 ---
 
 ## 頁面佈局準則
 
-- 頂部 Safe Area 留白不壓縮，尊重瀏海與狀態列
-- 主要內容區塊水平 padding：`spacing16`（16px）
-- 頁面間的分隔用空白，不用 `Divider` 線條
-- 底部導覽列（若有）使用毛玻璃效果（`BackdropFilter`），不做實心底色
+- 頂部 Safe Area 不壓縮，尊重瀏海與狀態列
+- 頁面水平 padding：`16px`
+- 分隔用留白，不用 `Divider`
+- 底部導航：3 Tab（衣櫥 ／ 穿搭 ／ 個人）
 
 ---
 
 ## 導航與路由
 
 - 使用 **GoRouter** 管理路由
-- 頁面間轉場：垂直滑入（底部進入）用於功能型頁面（拍照、查重）；水平滑入用於層級推進
-- Modal / 半頁 Sheet：用於快速操作（篩選、確認），不新開完整頁面
-- 返回手勢：iOS 側滑、Android 手勢皆須支援，不可鎖定
+- 返回：左箭頭 + 文字（`< 上一步` / `< 回衣櫥`），不單獨用 icon
+- Onboarding 轉場：水平滑入（`SlideTransition`）
+- Modal / Sheet：底部滑入，不開完整新頁
 
 ---
 
-## 互動設計
+## 標準元件模板
+
+### 主要按鈕（橘色漸層 Pill）
+
+```dart
+Container(
+  width: double.infinity,
+  height: 56,
+  decoration: BoxDecoration(
+    gradient: LumiColors.buttonGradient,
+    borderRadius: BorderRadius.circular(28),
+  ),
+  child: Center(
+    child: Text('按鈕文字',
+      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+    ),
+  ),
+)
+```
+
+### 次要按鈕（外框）
+
+```dart
+OutlinedButton(
+  style: OutlinedButton.styleFrom(
+    side: const BorderSide(color: LumiColors.primary),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+    minimumSize: const Size(double.infinity, 56),
+  ),
+  onPressed: () {},
+  child: Text('取消', style: TextStyle(color: LumiColors.primary)),
+)
+```
+
+### 衣物卡片（4 欄 Grid）
+
+```dart
+Container(
+  decoration: BoxDecoration(
+    color: LumiColors.surface,
+    borderRadius: BorderRadius.circular(16),
+    // 無 boxShadow
+  ),
+  child: ClipRRect(
+    borderRadius: BorderRadius.circular(16),
+    child: Image.network(thumbnailUrl, fit: BoxFit.cover),
+  ),
+)
+```
 
 ### 點擊回饋
+
 ```dart
-// 使用 InkWell 搭配 borderRadius，不用 GestureDetector（無視覺回饋）
+// 使用 InkWell，禁止 GestureDetector（無視覺回饋）
 InkWell(
   borderRadius: BorderRadius.circular(16),
   onTap: () {},
@@ -87,9 +160,85 @@ InkWell(
 )
 ```
 
-### 長按 / Swipe
-- 衣物卡片長按：顯示快速操作選單（刪除、分享）
-- 列表左滑：顯示刪除選項（`Dismissible`）
+### FAB（浮動相機按鈕）
+
+```dart
+FloatingActionButton(
+  backgroundColor: LumiColors.primary,
+  onPressed: () {},
+  child: const Icon(Icons.camera_alt_outlined, color: Colors.white),
+)
+// 位置：bottom: 24, right: 16
+```
+
+### AI 載入動畫（Glow Orb）
+
+```dart
+// AnimationController repeat(reverse: true) + Curves.easeInOut
+// 對 Container color opacity 做 0.3 → 1.0 循環
+// 顏色使用 LumiColors.glow
+// 禁止使用 CircularProgressIndicator
+AnimatedBuilder(
+  animation: _glowAnimation,
+  builder: (context, child) {
+    return Container(
+      width: 80, height: 80,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: LumiColors.glow.withOpacity(_glowAnimation.value),
+      ),
+    );
+  },
+)
+```
+
+### 上傳進度圓環
+
+```dart
+// 此處例外允許 boxShadow（製造橘色光暈效果）
+Stack(
+  alignment: Alignment.center,
+  children: [
+    Container(
+      width: 120, height: 120,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(color: LumiColors.glow.withOpacity(0.5), blurRadius: 24),
+        ],
+      ),
+    ),
+    CircularProgressIndicator(
+      value: progress,
+      color: LumiColors.primary,
+      backgroundColor: LumiColors.primary.withOpacity(0.15),
+      strokeWidth: 6,
+    ),
+    Text('${(progress * 100).toInt()}%',
+      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: LumiColors.primary)),
+  ],
+)
+```
+
+### Lumi-Check 相似度 Badge
+
+```dart
+// ≥ 80%：橘色背景，white 文字
+// 50–79%：灰色背景，subtext 文字
+Container(
+  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+  decoration: BoxDecoration(
+    color: similarity >= 0.8 ? LumiColors.warning : LumiColors.subtext.withOpacity(0.2),
+    borderRadius: BorderRadius.circular(20),
+  ),
+  child: Text('${(similarity * 100).toInt()}% 相似',
+    style: TextStyle(
+      color: similarity >= 0.8 ? Colors.white : LumiColors.subtext,
+      fontSize: 12, fontWeight: FontWeight.w600,
+    ),
+  ),
+)
+```
 
 ---
 
@@ -97,48 +246,14 @@ InkWell(
 
 | 狀態 | 呈現方式 |
 |------|---------|
-| 載入中（一般） | Shimmer 佔位骨架（`shimmer` 套件），模擬真實佈局 |
-| AI 處理中 | `LumiColors.glow` 脈衝光暈動畫，opacity 0.3 → 1.0 循環 |
-| 空狀態（無衣物） | 插圖 + 引導文字，不顯示空白畫面 |
-| 錯誤狀態 | 行內錯誤訊息 + 重試按鈕，不用 Dialog 打斷流程 |
-| Lumi-Check 相似 ≥ 80% | `LumiColors.warning` 漸層橫幅，並排對比新舊衣物 |
-| Lumi-Check 相似 50–79% | 柔和提示卡片，非警示色 |
-
----
-
-## 標準元件模板
-
-### 衣物卡片
-```dart
-Container(
-  decoration: BoxDecoration(
-    color: LumiColors.surface,
-    borderRadius: BorderRadius.circular(16),
-    // 無 boxShadow，靠 margin 與背景色差製造層次
-  ),
-  child: ...,
-)
-```
-
-### Glow 脈衝動畫（AI 處理中）
-```dart
-// AnimationController repeat + CurvedAnimation(Curves.easeInOut)
-// 對 Container 的 color opacity 做 0.3~1.0 循環
-// 禁止搭配 CircularProgressIndicator
-```
-
-### Lumi-Check 警示橫幅
-```dart
-// LinearGradient：LumiColors.warning.withOpacity(0.15) → LumiColors.warning.withOpacity(0.05)
-// 左右並排：舊衣物縮圖 | 新拍攝縮圖
-// 標示相似度百分比，字色使用 LumiColors.warning
-```
-
-### Shimmer 骨架（載入中）
-```dart
-// 使用 shimmer 套件
-// 骨架形狀模仿真實元件，高度與圓角與對應元件一致
-```
+| 載入中（資料） | Shimmer 骨架佔位（`shimmer` 套件） |
+| AI 處理中 | 暖橙光暈 Orb，opacity 0.3 → 1.0 循環 |
+| 上傳進度 | 圓形進度條（橘色 stroke + 光暈）+ 百分比 |
+| 上傳完成 | 橘色大勾 + glow 擴散 + 說明文字 |
+| 空狀態（無衣物） | 衣架插圖 + 引導文字 + 保留 FAB |
+| 錯誤 | 行內橘色文字訊息 + 重試按鈕，不用 Dialog |
+| Lumi-Check ≥ 80% | `warning` 色 Badge + 橘色卡片外框 |
+| Lumi-Check 50–79% | 灰色 Badge，中性提示 |
 
 ---
 

@@ -10,6 +10,7 @@ class UserProfile {
     required this.analyzedCount,
     required this.freeQuota,
     required this.createdAt,
+    required this.onboardingCompleted,
   });
 
   final String uid;
@@ -28,6 +29,9 @@ class UserProfile {
 
   final DateTime createdAt;
 
+  /// True once the user has completed the 3-step onboarding flow.
+  final bool onboardingCompleted;
+
   bool get isOverQuota => analyzedCount >= freeQuota;
   int get remainingQuota => (freeQuota - analyzedCount).clamp(0, freeQuota);
 
@@ -42,6 +46,7 @@ class UserProfile {
       analyzedCount: (d['analyzedCount'] as num?)?.toInt() ?? 0,
       freeQuota: (d['freeQuota'] as num?)?.toInt() ?? 100,
       createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      onboardingCompleted: (d['onboardingCompleted'] as bool?) ?? false,
     );
   }
 }

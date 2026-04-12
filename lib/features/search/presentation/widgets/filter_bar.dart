@@ -4,7 +4,32 @@ import '../../../../shared/constants/lumi_colors.dart';
 import '../../../../shared/constants/lumi_spacing.dart';
 import '../providers/search_provider.dart';
 
-const _categories = ['上衣', '褲子', '外套', '配件', '鞋子'];
+// 分類與 Gemini 輸出對應
+const _categories = <_CategoryTab>[
+  _CategoryTab('全部', null),
+  _CategoryTab('連身裙', '連身裙'),
+  _CategoryTab('上衣', '上衣'),
+  _CategoryTab('下身', '下身'),
+  _CategoryTab('鞋履', '鞋履'),
+  _CategoryTab('包款', '包款'),
+  _CategoryTab('配件', '配件'),
+];
+
+// 顏色篩選選項（近似色）
+const _colorOptions = <_ColorOption>[
+  _ColorOption('紅', Color(0xFFE53935)),
+  _ColorOption('橘', Color(0xFFF57C00)),
+  _ColorOption('黃', Color(0xFFFDD835)),
+  _ColorOption('綠', Color(0xFF43A047)),
+  _ColorOption('藍', Color(0xFF1E88E5)),
+  _ColorOption('紫', Color(0xFF8E24AA)),
+  _ColorOption('粉', Color(0xFFEC407A)),
+  _ColorOption('棕', Color(0xFF6D4C41)),
+  _ColorOption('米', Color(0xFFD7CCC8)),
+  _ColorOption('黑', Color(0xFF212121)),
+  _ColorOption('白', Color(0xFFF5F5F5)),
+  _ColorOption('灰', Color(0xFF9E9E9E)),
+];
 
 class FilterBar extends ConsumerWidget {
   const FilterBar({super.key});
@@ -14,51 +39,18 @@ class FilterBar extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _KeywordField(),
-        const SizedBox(height: LumiSpacing.sm),
-        _CategoryChips(),
+        _CategoryTabs(),
+        const SizedBox(height: LumiSpacing.xs),
+        _ColorDotRow(),
         const SizedBox(height: LumiSpacing.sm),
       ],
     );
   }
 }
 
-// ── Keyword search ────────────────────────────────────────────────────────────
+// ── 分類 Tabs ─────────────────────────────────────────────────────────────────
 
-class _KeywordField extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.md),
-      child: TextField(
-        onChanged: (v) =>
-            ref.read(wardrobeFilterProvider.notifier).setKeyword(v),
-        style: const TextStyle(fontSize: 15, color: LumiColors.text),
-        decoration: InputDecoration(
-          hintText: '搜尋（毛衣、藍色…）',
-          hintStyle:
-              const TextStyle(fontSize: 15, color: LumiColors.subtext),
-          prefixIcon:
-              const Icon(Icons.search, color: LumiColors.subtext, size: 20),
-          filled: true,
-          fillColor: LumiColors.surface,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: LumiSpacing.md,
-            vertical: LumiSpacing.sm,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Category chips ────────────────────────────────────────────────────────────
-
-class _CategoryChips extends ConsumerWidget {
+class _CategoryTabs extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(
@@ -66,68 +58,118 @@ class _CategoryChips extends ConsumerWidget {
     );
 
     return SizedBox(
-      height: 36,
-      child: ListView(
+      height: 40,
+      child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.md),
-        children: [
-          _Chip(
-            label: '全部',
-            selected: selected == null,
-            onTap: () =>
-                ref.read(wardrobeFilterProvider.notifier).setCategory(null),
-          ),
-          ..._categories.map(
-            (cat) => _Chip(
-              label: cat,
-              selected: selected == cat,
-              onTap: () => ref
-                  .read(wardrobeFilterProvider.notifier)
-                  .setCategory(selected == cat ? null : cat),
+        itemCount: _categories.length,
+        itemBuilder: (context, i) {
+          final tab = _categories[i];
+          final isSelected = selected == tab.category;
+          return GestureDetector(
+            onTap: () => ref
+                .read(wardrobeFilterProvider.notifier)
+                .setCategory(isSelected ? null : tab.category),
+            child: Container(
+              margin: const EdgeInsets.only(right: LumiSpacing.md),
+              padding: const EdgeInsets.only(bottom: 4),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: isSelected
+                        ? LumiColors.primary
+                        : Colors.transparent,
+                    width: 2.5,
+                  ),
+                ),
+              ),
+              child: Text(
+                tab.label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight:
+                      isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color: isSelected ? LumiColors.primary : LumiColors.subtext,
+                ),
+              ),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 }
 
-class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
+// ── 顏色圓形色票列 ─────────────────────────────────────────────────────────────
 
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
+class _ColorDotRow extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        margin: const EdgeInsets.only(right: LumiSpacing.sm),
-        padding: const EdgeInsets.symmetric(
-          horizontal: LumiSpacing.md,
-          vertical: LumiSpacing.xs,
-        ),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: selected ? LumiColors.accent : LumiColors.surface,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: selected ? LumiColors.surface : LumiColors.subtext,
-          ),
-        ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedColors = ref.watch(
+      wardrobeFilterProvider.select((f) => f.colors),
+    );
+
+    return SizedBox(
+      height: 32,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.md),
+        itemCount: _colorOptions.length,
+        itemBuilder: (context, i) {
+          final opt = _colorOptions[i];
+          final hexStr = _colorToHex(opt.color);
+          final isSelected = selectedColors.contains(hexStr);
+
+          return GestureDetector(
+            onTap: () {
+              final notifier = ref.read(wardrobeFilterProvider.notifier);
+              if (isSelected) {
+                notifier.removeColor(hexStr);
+              } else {
+                notifier.addColor(hexStr);
+              }
+            },
+            child: Container(
+              width: 28,
+              height: 28,
+              margin: const EdgeInsets.only(right: LumiSpacing.sm),
+              decoration: BoxDecoration(
+                color: opt.color,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected
+                      ? LumiColors.primary
+                      : Colors.black.withOpacity(0.08),
+                  width: isSelected ? 2.5 : 1,
+                ),
+              ),
+              child: isSelected
+                  ? const Icon(Icons.check, size: 14, color: Colors.white)
+                  : null,
+            ),
+          );
+        },
       ),
     );
   }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+String _colorToHex(Color color) {
+  return '#${color.red.toRadixString(16).padLeft(2, '0')}'
+         '${color.green.toRadixString(16).padLeft(2, '0')}'
+         '${color.blue.toRadixString(16).padLeft(2, '0')}';
+}
+
+class _CategoryTab {
+  const _CategoryTab(this.label, this.category);
+  final String label;
+  final String? category;
+}
+
+class _ColorOption {
+  const _ColorOption(this.name, this.color);
+  final String name;
+  final Color color;
 }

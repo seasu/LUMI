@@ -23,7 +23,10 @@ async function photosGet(path: string, accessToken: string): Promise<unknown> {
   const res = await fetch(`${PHOTOS_BASE_URL}${path}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  if (!res.ok) throw new Error(`GET ${path} failed: ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`GET ${path} failed: ${res.status} – ${body}`);
+  }
   return res.json();
 }
 

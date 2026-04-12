@@ -300,6 +300,8 @@ class _ResultView extends StatelessWidget {
                 child: _SimilarCard(
                   similarity: similarity,
                   isHighlighted: isHigh,
+                  category: matchedCategory,
+                  pct: pct,
                   child: Image.network(
                     matchedThumbnailUrl,
                     fit: BoxFit.cover,
@@ -308,8 +310,6 @@ class _ResultView extends StatelessWidget {
                       color: LumiColors.subtext,
                     ),
                   ),
-                  category: matchedCategory,
-                  pct: pct,
                 ),
               ),
             ],

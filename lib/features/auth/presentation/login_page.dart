@@ -101,8 +101,8 @@ class _LumiLogo extends StatelessWidget {
           child: Container(
             width: 18,
             height: 18,
-            decoration: BoxDecoration(
-              gradient: const RadialGradient(
+            decoration: const BoxDecoration(
+              gradient: RadialGradient(
                 colors: [LumiColors.primaryLight, Colors.transparent],
               ),
               shape: BoxShape.circle,

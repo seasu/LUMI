@@ -47,7 +47,7 @@ class _OotdAddPageState extends ConsumerState<OotdAddPage> {
 
     return PopScope(
       canPop: state is! OotdAddSaving,
-      onPopInvokedWithResult: (didPop, _) {
+      onPopInvoked: (didPop) {
         if (didPop) ref.read(ootdAddProvider.notifier).reset();
       },
       child: switch (state) {

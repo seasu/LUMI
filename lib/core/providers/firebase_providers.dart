@@ -22,8 +22,9 @@ final googleSignInProvider = Provider<GoogleSignIn>((ref) {
     clientId: const String.fromEnvironment('GOOGLE_CLIENT_ID'),
     scopes: [
       'email',
+      // appendonly: create albums + upload media items.
+      // No readonly needed — we never list the full library.
       'https://www.googleapis.com/auth/photoslibrary.appendonly',
-      'https://www.googleapis.com/auth/photoslibrary.readonly',
     ],
   );
 });

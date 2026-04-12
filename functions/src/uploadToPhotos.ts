@@ -19,17 +19,6 @@ interface UploadToPhotosResult {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-async function photosGet(path: string, accessToken: string): Promise<unknown> {
-  const res = await fetch(`${PHOTOS_BASE_URL}${path}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`GET ${path} failed: ${res.status} – ${body}`);
-  }
-  return res.json();
-}
-
 async function photosPost(
   path: string,
   accessToken: string,
@@ -52,26 +41,6 @@ async function photosPost(
 
 // ── Album management ──────────────────────────────────────────────────────────
 
-async function findAlbum(accessToken: string): Promise<string | null> {
-  let pageToken: string | undefined;
-
-  do {
-    const url =
-      `/albums?pageSize=50` + (pageToken ? `&pageToken=${pageToken}` : "");
-    const data = (await photosGet(url, accessToken)) as {
-      albums?: { id: string; title: string }[];
-      nextPageToken?: string;
-    };
-
-    const match = data.albums?.find((a) => a.title === ALBUM_TITLE);
-    if (match) return match.id;
-
-    pageToken = data.nextPageToken;
-  } while (pageToken);
-
-  return null;
-}
-
 async function createAlbum(accessToken: string): Promise<string> {
   const data = (await photosPost("/albums", accessToken, {
     album: { title: ALBUM_TITLE },
@@ -81,9 +50,8 @@ async function createAlbum(accessToken: string): Promise<string> {
 
 /**
  * Returns the Lumi_Wardrobe albumId.
- * Firestore is used as an optional cache: if the runtime service account lacks
- * Cloud Datastore IAM permissions the function falls back gracefully to
- * searching Google Photos on every call (one extra API round-trip).
+ * Uses Firestore as a cache. On cache miss, creates a new album via the
+ * Photos API (requires only photoslibrary.appendonly scope — no GET /albums).
  */
 async function getOrCreateAlbum(
   accessToken: string,
@@ -100,25 +68,18 @@ async function getOrCreateAlbum(
       | undefined;
 
     if (cachedAlbumId) {
-      try {
-        await photosGet(`/albums/${cachedAlbumId}`, accessToken);
-        return cachedAlbumId; // cache hit ✓
-      } catch {
-        // Cached ID is stale, fall through to search
-      }
+      // Trust the cached ID — app-created albums persist until the user
+      // manually deletes them. Avoid a GET /albums call which requires
+      // photoslibrary.readonly; appendonly is the only scope we request.
+      return cachedAlbumId;
     }
   } catch {
-    // Firestore not accessible (service account lacks datastore.user role).
-    // Continue without cache — grant roles/datastore.user to the Compute SA
-    // to enable caching: gcloud projects add-iam-policy-binding lumi-309ff
-    //   --member="serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com"
-    //   --role="roles/datastore.user"
+    // Firestore not accessible — continue without cache
     firestoreRef = undefined;
   }
 
-  // ── Search / create album via Photos API ──────────────────────────────────
-  let albumId = await findAlbum(accessToken);
-  if (!albumId) albumId = await createAlbum(accessToken);
+  // ── Create album via Photos API (appendonly scope is sufficient) ──────────
+  const albumId = await createAlbum(accessToken);
 
   // ── Write cache (best-effort) ─────────────────────────────────────────────
   if (firestoreRef) {

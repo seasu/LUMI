@@ -48,6 +48,11 @@ class UserRepository {
   Future<void> markOnboardingComplete(String userId) =>
       _ref(userId).update({'onboardingCompleted': true});
 
+  /// Updates a single body measurement field (e.g. 'heightCm', 'weightKg').
+  Future<void> updateMeasurement(
+          String userId, String field, dynamic value) =>
+      _ref(userId).update({field: value});
+
   Stream<UserProfile?> watchProfile(String userId) =>
       _ref(userId).snapshots().map(
             (doc) => doc.exists ? UserProfile.fromFirestore(doc) : null,

@@ -6,11 +6,16 @@ import { analyzeImage, generateEmbedding } from "./gemini";
 
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
 
-interface CompareClothingResult {
+interface MatchedItem {
   similarity: number;
-  matchedMediaItemId: string | null;
-  matchedThumbnailUrl: string | null;
-  matchedCategory: string | null;
+  mediaItemId: string;
+  thumbnailUrl: string;
+  category: string;
+  colors: string[];
+}
+
+interface CompareClothingResult {
+  topMatches: MatchedItem[];
 }
 
 interface WardrobeDoc {
@@ -18,6 +23,7 @@ interface WardrobeDoc {
   embedding: number[];
   thumbnailUrl: string;
   category: string;
+  colors: string[];
 }
 
 function cosineSimilarity(a: number[], b: number[]): number {
@@ -74,39 +80,35 @@ export const compareClothing = onCall(
         .collection("users")
         .doc(userId)
         .collection("wardrobe")
-        .select("mediaItemId", "embedding", "thumbnailUrl", "category")
+        .select("mediaItemId", "embedding", "thumbnailUrl", "category", "colors")
         .get();
 
       if (snapshot.empty) {
-        return {
-          similarity: 0,
-          matchedMediaItemId: null,
-          matchedThumbnailUrl: null,
-          matchedCategory: null,
-        };
+        return { topMatches: [] };
       }
 
       // Step 3: Brute-force cosine similarity (ADR-004)
-      let bestSimilarity = 0;
-      let bestDoc: WardrobeDoc | null = null;
+      const scored: Array<{ sim: number; doc: WardrobeDoc }> = [];
 
       for (const doc of snapshot.docs) {
         const data = doc.data() as WardrobeDoc;
         if (!data.embedding?.length) continue;
 
         const sim = cosineSimilarity(queryEmbedding, data.embedding);
-        if (sim > bestSimilarity) {
-          bestSimilarity = sim;
-          bestDoc = data;
-        }
+        scored.push({ sim, doc: data });
       }
 
-      return {
-        similarity: bestSimilarity,
-        matchedMediaItemId: bestDoc?.mediaItemId ?? null,
-        matchedThumbnailUrl: bestDoc?.thumbnailUrl ?? null,
-        matchedCategory: bestDoc?.category ?? null,
-      };
+      // Sort descending by similarity, return top 5
+      scored.sort((a, b) => b.sim - a.sim);
+      const topMatches: MatchedItem[] = scored.slice(0, 5).map(({ sim, doc }) => ({
+        similarity: sim,
+        mediaItemId: doc.mediaItemId,
+        thumbnailUrl: doc.thumbnailUrl,
+        category: doc.category ?? "",
+        colors: doc.colors ?? [],
+      }));
+
+      return { topMatches };
     } catch (err) {
       if (err instanceof HttpsError) throw err;
       const msg = err instanceof Error ? err.message : String(err);

@@ -37,19 +37,18 @@ class CheckNotifier extends Notifier<CheckState> {
         mimeType: mimeType,
       );
 
-      if (result.similarity >= 0.8 &&
-          result.matchedThumbnailUrl != null &&
-          result.matchedCategory != null) {
+      final matches = result.topMatches;
+      final topSimilarity = matches.isNotEmpty ? matches.first.similarity : 0.0;
+
+      if (topSimilarity >= 0.8) {
         state = CheckHighSimilarity(
-          similarity: result.similarity,
-          matchedThumbnailUrl: result.matchedThumbnailUrl!,
-          matchedCategory: result.matchedCategory!,
+          topMatches: matches,
           newImageBytes: bytes,
         );
-      } else if (result.similarity >= 0.5 && result.matchedCategory != null) {
+      } else if (topSimilarity >= 0.5) {
         state = CheckMediumSimilarity(
-          similarity: result.similarity,
-          matchedCategory: result.matchedCategory!,
+          similarity: topSimilarity,
+          matchedCategory: matches.first.category,
         );
       } else {
         state = const CheckNone();

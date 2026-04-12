@@ -58,12 +58,19 @@ class CloudFunctionsService {
     });
 
     final data = Map<String, dynamic>.from(result.data);
-    return CompareClothingResult(
-      similarity: (data['similarity'] as num).toDouble(),
-      matchedMediaItemId: data['matchedMediaItemId'] as String?,
-      matchedThumbnailUrl: data['matchedThumbnailUrl'] as String?,
-      matchedCategory: data['matchedCategory'] as String?,
-    );
+    final rawMatches = data['topMatches'] as List? ?? [];
+    final topMatches = rawMatches.map((e) {
+      final m = Map<String, dynamic>.from(e as Map);
+      return MatchedClothingItem(
+        similarity: (m['similarity'] as num).toDouble(),
+        mediaItemId: m['mediaItemId'] as String,
+        thumbnailUrl: m['thumbnailUrl'] as String,
+        category: m['category'] as String? ?? '',
+        colors: List<String>.from(m['colors'] as List? ?? []),
+      );
+    }).toList();
+
+    return CompareClothingResult(topMatches: topMatches);
   }
 }
 
@@ -91,16 +98,24 @@ class UploadToPhotosResult {
   final String thumbnailUrl;
 }
 
-class CompareClothingResult {
-  const CompareClothingResult({
+class MatchedClothingItem {
+  const MatchedClothingItem({
     required this.similarity,
-    this.matchedMediaItemId,
-    this.matchedThumbnailUrl,
-    this.matchedCategory,
+    required this.mediaItemId,
+    required this.thumbnailUrl,
+    required this.category,
+    required this.colors,
   });
 
   final double similarity;
-  final String? matchedMediaItemId;
-  final String? matchedThumbnailUrl;
-  final String? matchedCategory;
+  final String mediaItemId;
+  final String thumbnailUrl;
+  final String category;
+  final List<String> colors;
+}
+
+class CompareClothingResult {
+  const CompareClothingResult({required this.topMatches});
+
+  final List<MatchedClothingItem> topMatches;
 }

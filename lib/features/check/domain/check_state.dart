@@ -1,3 +1,5 @@
+import '../../../features/snap/data/cloud_functions_service.dart';
+
 sealed class CheckState {
   const CheckState();
 }
@@ -10,22 +12,18 @@ class CheckAnalyzing extends CheckState {
   const CheckAnalyzing();
 }
 
-/// similarity >= 0.8
+/// similarity >= 0.8 for the top match
 class CheckHighSimilarity extends CheckState {
   const CheckHighSimilarity({
-    required this.similarity,
-    required this.matchedThumbnailUrl,
-    required this.matchedCategory,
+    required this.topMatches,
     required this.newImageBytes,
   });
 
-  final double similarity;
-  final String matchedThumbnailUrl;
-  final String matchedCategory;
+  final List<MatchedClothingItem> topMatches;
   final List<int> newImageBytes;
 }
 
-/// 0.5 <= similarity < 0.8
+/// 0.5 <= similarity < 0.8 for the top match
 class CheckMediumSimilarity extends CheckState {
   const CheckMediumSimilarity({
     required this.similarity,

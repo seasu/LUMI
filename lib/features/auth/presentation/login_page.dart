@@ -131,17 +131,19 @@ class _LumiLogoState extends State<_LumiLogo>
             builder: (_, __) {
               final t = _sparkleAnimation.value;
               return Container(
-                width: 14 + (t * 4),
-                height: 14 + (t * 4),
+                width: 18 + (t * 8),
+                height: 18 + (t * 8),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      LumiColors.glow.withOpacity(0.9),
-                      LumiColors.primaryLight.withOpacity(0.4 + t * 0.3),
+                      Colors.white.withOpacity(0.95),
+                      LumiColors.glow.withOpacity(0.92),
+                      LumiColors.primaryLight.withOpacity(0.65 + t * 0.25),
+                      LumiColors.primary.withOpacity(0.22 + t * 0.2),
                       Colors.transparent,
                     ],
-                    stops: const [0.0, 0.45, 1.0],
+                    stops: const [0.0, 0.22, 0.5, 0.72, 1.0],
                   ),
                 ),
               );

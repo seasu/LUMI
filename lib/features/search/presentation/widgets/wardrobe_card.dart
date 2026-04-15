@@ -25,7 +25,7 @@ class WardrobeCard extends ConsumerWidget {
       child: Container(
         decoration: BoxDecoration(
           color: LumiColors.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
@@ -93,7 +93,7 @@ class _PendingOverlay extends StatelessWidget {
     final isQuota = item.isQuotaExceeded;
 
     return Container(
-      color: Colors.black.withOpacity(0.50),
+      color: LumiColors.text.withOpacity(0.35),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/constants/lumi_colors.dart';
-import '../../../../shared/constants/lumi_spacing.dart';
 import '../../../wardrobe/data/wardrobe_item.dart';
 import '../../../wardrobe/data/wardrobe_repository.dart';
 import '../../../../core/providers/firebase_providers.dart';
@@ -57,6 +56,65 @@ class WardrobeCard extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Thumbnail with stale-check ────────────────────────────────────────────────
+
+final _thumbnailUrlProvider =
+    Provider.family<String, WardrobeItem>((ref, item) {
+  if (item.isThumbnailStale) {
+    _refreshInBackground(ref, item);
+  }
+  return item.thumbnailUrl;
+});
+
+void _refreshInBackground(Ref ref, WardrobeItem item) {
+  final user = ref.read(firebaseAuthProvider).currentUser;
+  if (user == null) return;
+
+  Future(() async {
+    try {
+      final googleSignIn = ref.read(googleSignInProvider);
+      final gUser =
+          googleSignIn.currentUser ?? await googleSignIn.signInSilently();
+      final accessToken = (await gUser?.authentication)?.accessToken;
+      if (accessToken == null) return;
+
+      await ref.read(wardrobeRepositoryProvider).refreshThumbnailUrl(
+            userId: user.uid,
+            mediaItemId: item.mediaItemId,
+            accessToken: accessToken,
+          );
+    } catch (_) {
+      // Silent fail — stale URL still works until ~60 min
+    }
+  });
+}
+
+class _ThumbnailImage extends StatelessWidget {
+  const _ThumbnailImage({required this.url});
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      errorBuilder: (_, __, ___) => const ColoredBox(
+        color: LumiColors.base,
+        child: Center(
+          child: Icon(Icons.checkroom_outlined, color: LumiColors.subtext, size: 32),
+        ),
+      ),
+      loadingBuilder: (_, child, progress) {
+        if (progress == null) return child;
+        return const ColoredBox(color: LumiColors.base);
+      },
     );
   }
 }

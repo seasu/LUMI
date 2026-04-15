@@ -102,8 +102,8 @@ class _SnapPageState extends ConsumerState<SnapPage>
   }
 
   String _appBarTitle(SnapState state) => switch (state) {
-        SnapIdle() || SnapPreviewing() || SnapError() => '確認上傳',
-        SnapUploading() => '確認上傳',
+        SnapIdle() || SnapPreviewing() || SnapError() => '加入新品',
+        SnapUploading() => '加入新品',
         SnapDone() => '上傳完成',
       };
 
@@ -165,7 +165,7 @@ class _ConfirmView extends StatelessWidget {
             ),
             const SizedBox(height: LumiSpacing.sm),
             const Text(
-              '一次最多 20 張，AI 會在背景自動分類',
+              '一次最多 10 張，AI 會在背景自動分類',
               style: TextStyle(fontSize: 14, color: LumiColors.subtext),
             ),
             const Spacer(),
@@ -195,6 +195,19 @@ class _ConfirmView extends StatelessWidget {
             ),
             itemCount: files.length,
             itemBuilder: (_, i) => _PreviewTile(file: files[i]),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.md),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '已選取 ${files.length} / 10',
+              style: const TextStyle(
+                fontSize: 13,
+                color: LumiColors.subtext,
+              ),
+            ),
           ),
         ),
         Padding(
@@ -247,7 +260,7 @@ class _PreviewTileState extends State<_PreviewTile> {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
       child: _bytes == null
           ? const ColoredBox(color: LumiColors.surface)
           : Image.memory(_bytes!, fit: BoxFit.cover),
@@ -353,7 +366,7 @@ class _UploadingView extends StatelessWidget {
             onPressed: onCancel,
             child: const Text(
               '取消',
-              style: TextStyle(fontSize: 15, color: LumiColors.subtext),
+              style: TextStyle(fontSize: 15, color: LumiColors.primary),
             ),
           ),
         ],
@@ -383,14 +396,14 @@ class _DoneView extends StatelessWidget {
             height: 100,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: LumiColors.glow.withOpacity(0.15),
-              boxShadow: [
-                BoxShadow(
-                  color: LumiColors.glow.withOpacity(0.3),
-                  blurRadius: 30,
-                  spreadRadius: 10,
-                ),
-              ],
+              gradient: RadialGradient(
+                colors: [
+                  LumiColors.glow.withOpacity(0.35),
+                  LumiColors.glow.withOpacity(0.10),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 0.58, 1.0],
+              ),
             ),
             child: const Icon(
               Icons.check_rounded,
@@ -486,7 +499,7 @@ class _CancelDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: LumiColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
             LumiSpacing.lg, LumiSpacing.lg, LumiSpacing.lg, LumiSpacing.md),
@@ -519,9 +532,9 @@ class _CancelDialog extends StatelessWidget {
                     onPressed: onCancel,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: LumiColors.subtext,
-                      side: const BorderSide(color: LumiColors.subtext),
+                      side: BorderSide(color: LumiColors.subtext.withOpacity(0.35)),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24)),
+                          borderRadius: BorderRadius.circular(9999)),
                       padding: const EdgeInsets.symmetric(
                           vertical: LumiSpacing.md),
                     ),
@@ -536,7 +549,7 @@ class _CancelDialog extends StatelessWidget {
                       height: 48,
                       decoration: BoxDecoration(
                         gradient: LumiColors.buttonGradient,
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(9999),
                       ),
                       child: const Center(
                         child: Text(
@@ -578,7 +591,7 @@ class _PrimaryButton extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: onTap != null ? LumiColors.buttonGradient : null,
           color: onTap == null ? LumiColors.primary.withOpacity(0.4) : null,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(9999),
         ),
         child: Center(
           child: Text(

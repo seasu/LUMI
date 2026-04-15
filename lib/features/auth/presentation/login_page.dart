@@ -15,29 +15,28 @@ class LoginPage extends ConsumerWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // 暖色漸層背景（模擬衣櫥情境）
+          // 歡迎頁使用柔和漸層背景，維持留白與質感層次。
           Container(
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFF0E6D8),
-                  Color(0xFFE8D5C0),
-                  Color(0xFFF5EDE0),
-                ],
-              ),
-            ),
-          ),
-          // 半透明覆層讓文字更易讀
-          Container(
-            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.08),
+                  LumiColors.base,
+                  LumiColors.baseAlt,
+                ],
+              ),
+            ),
+          ),
+          // 微暖色塊，讓歡迎區更聚焦。
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  LumiColors.primary.withOpacity(0.06),
+                  LumiColors.surface.withOpacity(0.0),
                 ],
               ),
             ),
@@ -45,26 +44,26 @@ class LoginPage extends ConsumerWidget {
           // 內容層
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.only(left: 24, right: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Spacer(flex: 3),
+                  const Spacer(flex: 2),
                   _LumiLogo(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   const Text(
                     '用 Google 相片點亮妳的衣櫥',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 17,
+                      fontSize: 16,
                       fontWeight: FontWeight.w400,
-                      color: Color(0xFF3A2010),
+                      color: LumiColors.subtext,
                       height: 1.5,
                     ),
                   ),
-                  const Spacer(flex: 4),
+                  const Spacer(flex: 5),
                   _GoogleSignInButton(isLoading: isLoading, ref: ref),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 32),
                 ],
               ),
             ),
@@ -87,11 +86,11 @@ class _LumiLogo extends StatelessWidget {
         const Text(
           'Lumi',
           style: TextStyle(
-            fontSize: 64,
-            fontWeight: FontWeight.w300,
-            color: Color(0xFF3A2010),
+            fontSize: 56,
+            fontWeight: FontWeight.w600,
+            color: LumiColors.text,
             fontStyle: FontStyle.italic,
-            letterSpacing: 2,
+            letterSpacing: 0.8,
           ),
         ),
         // 橘橙 sparkle
@@ -99,11 +98,14 @@ class _LumiLogo extends StatelessWidget {
           top: 4,
           right: 0,
           child: Container(
-            width: 18,
-            height: 18,
-            decoration: const BoxDecoration(
+            width: 16,
+            height: 16,
+            decoration: BoxDecoration(
               gradient: RadialGradient(
-                colors: [LumiColors.primaryLight, Colors.transparent],
+                colors: [
+                  LumiColors.glow.withOpacity(0.9),
+                  Colors.transparent,
+                ],
               ),
               shape: BoxShape.circle,
             ),
@@ -147,11 +149,9 @@ class _GoogleSignInButton extends StatelessWidget {
         width: double.infinity,
         height: 56,
         decoration: BoxDecoration(
-          gradient: isLoading
-              ? null
-              : LumiColors.buttonGradient,
+          gradient: isLoading ? null : LumiColors.buttonGradient,
           color: isLoading ? LumiColors.primary.withOpacity(0.6) : null,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(9999),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -202,7 +202,7 @@ class _GoogleIcon extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF4285F4),
+            color: LumiColors.text,
           ),
         ),
       ),

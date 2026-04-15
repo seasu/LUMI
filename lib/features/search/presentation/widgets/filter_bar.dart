@@ -40,9 +40,9 @@ class FilterBar extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _CategoryTabs(),
-        const SizedBox(height: LumiSpacing.xs),
-        _ColorDotRow(),
         const SizedBox(height: LumiSpacing.sm),
+        _ColorDotRow(),
+        const SizedBox(height: LumiSpacing.md),
       ],
     );
   }
@@ -58,7 +58,7 @@ class _CategoryTabs extends ConsumerWidget {
     );
 
     return SizedBox(
-      height: 40,
+      height: 42,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.md),
@@ -72,7 +72,7 @@ class _CategoryTabs extends ConsumerWidget {
                 .setCategory(isSelected ? null : tab.category),
             child: Container(
               margin: const EdgeInsets.only(right: LumiSpacing.md),
-              padding: const EdgeInsets.only(bottom: 4),
+              padding: const EdgeInsets.only(bottom: 6),
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
@@ -86,7 +86,7 @@ class _CategoryTabs extends ConsumerWidget {
               child: Text(
                 tab.label,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 15,
                   fontWeight:
                       isSelected ? FontWeight.w600 : FontWeight.w400,
                   color: isSelected ? LumiColors.primary : LumiColors.subtext,
@@ -110,7 +110,7 @@ class _ColorDotRow extends ConsumerWidget {
     );
 
     return SizedBox(
-      height: 32,
+      height: 34,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.md),
@@ -137,10 +137,8 @@ class _ColorDotRow extends ConsumerWidget {
                 color: opt.color,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected
-                      ? LumiColors.primary
-                      : Colors.black.withOpacity(0.08),
-                  width: isSelected ? 2.5 : 1,
+                  color: isSelected ? LumiColors.primary : Colors.black.withOpacity(0.08),
+                  width: isSelected ? 2.5 : 1.0,
                 ),
               ),
               child: isSelected

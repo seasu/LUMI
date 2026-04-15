@@ -39,7 +39,7 @@ class SearchPage extends ConsumerWidget {
             ),
             // 右下角 FAB
             Positioned(
-              bottom: 16,
+              bottom: 24,
               right: 16,
               child: _SnapFab(),
             ),
@@ -58,23 +58,14 @@ class _WardrobeHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        LumiSpacing.md,
-        LumiSpacing.md,
-        LumiSpacing.md,
-        LumiSpacing.sm,
-      ),
+      padding: const EdgeInsets.fromLTRB(24, LumiSpacing.md, 16, LumiSpacing.sm),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const Expanded(
             child: Text(
               '我的衣櫥',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                color: LumiColors.text,
-              ),
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: LumiColors.text),
             ),
           ),
           TextButton.icon(
@@ -89,8 +80,7 @@ class _WardrobeHeader extends ConsumerWidget {
               ),
             ),
             style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: LumiSpacing.sm, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.sm, vertical: 4),
             ),
           ),
         ],
@@ -114,7 +104,7 @@ class _SnapFab extends StatelessWidget {
           shape: BoxShape.circle,
         ),
         child: const Icon(
-          Icons.image_search_outlined,
+          Icons.camera_alt_outlined,
           color: Colors.white,
           size: 24,
         ),
@@ -133,12 +123,7 @@ class _WardrobeGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(
-        LumiSpacing.md,
-        LumiSpacing.sm,
-        LumiSpacing.md,
-        80,
-      ),
+      padding: const EdgeInsets.fromLTRB(LumiSpacing.md, LumiSpacing.sm, LumiSpacing.md, 92),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
         crossAxisSpacing: LumiSpacing.sm,
@@ -172,7 +157,7 @@ class _EmptyState extends StatelessWidget {
           children: [
             // 衣架插圖（用 icon 模擬）
             Icon(
-              Icons.checkroom_outlined,
+              Icons.dry_cleaning_outlined,
               size: 72,
               color: LumiColors.subtext.withOpacity(0.4),
             ),

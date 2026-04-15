@@ -76,39 +76,112 @@ class LoginPage extends ConsumerWidget {
 
 // ── Logo ──────────────────────────────────────────────────────────────────────
 
-class _LumiLogo extends StatelessWidget {
+class _LumiLogo extends StatefulWidget {
+  @override
+  State<_LumiLogo> createState() => _LumiLogoState();
+}
+
+class _LumiLogoState extends State<_LumiLogo>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _sparkleController;
+  late final Animation<double> _sparkleSizeAnimation;
+  late final Animation<double> _sparkleGlowAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _sparkleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat();
+    _sparkleSizeAnimation = TweenSequence<double>([
+      // 快閃：快速放大再收回
+      TweenSequenceItem(
+        tween: Tween(begin: 0.0, end: 1.0).chain(
+          CurveTween(curve: Curves.easeOutCubic),
+        ),
+        weight: 15,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 1.0, end: 0.25).chain(
+          CurveTween(curve: Curves.easeInCubic),
+        ),
+        weight: 15,
+      ),
+      // 慢呼吸：長時間柔和起伏
+      TweenSequenceItem(
+        tween: Tween(begin: 0.25, end: 0.75).chain(
+          CurveTween(curve: Curves.easeInOut),
+        ),
+        weight: 35,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 0.75, end: 0.35).chain(
+          CurveTween(curve: Curves.easeInOut),
+        ),
+        weight: 35,
+      ),
+    ]).animate(_sparkleController);
+    _sparkleGlowAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 15),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.35), weight: 15),
+      TweenSequenceItem(tween: Tween(begin: 0.35, end: 0.72), weight: 35),
+      TweenSequenceItem(tween: Tween(begin: 0.72, end: 0.4), weight: 35),
+    ]).animate(
+      CurvedAnimation(parent: _sparkleController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _sparkleController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
       alignment: Alignment.center,
       children: [
-        // 草書風格 Logo 文字
+        // 英文字草寫風格 Logo
         const Text(
           'Lumi',
           style: TextStyle(
             fontSize: 56,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             color: LumiColors.text,
             fontStyle: FontStyle.italic,
-            letterSpacing: 0.8,
+            letterSpacing: 0.3,
+            fontFamily: 'cursive',
           ),
         ),
-        // 橘橙 sparkle
+        // i 上方閃爍橘光
         Positioned(
-          top: 4,
-          right: 0,
-          child: Container(
-            width: 16,
-            height: 16,
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                colors: [
-                  LumiColors.glow.withOpacity(0.9),
-                  Colors.transparent,
-                ],
-              ),
-              shape: BoxShape.circle,
-            ),
+          top: 6,
+          right: 8,
+          child: AnimatedBuilder(
+            animation: _sparkleController,
+            builder: (_, __) {
+              final t = _sparkleSizeAnimation.value;
+              final g = _sparkleGlowAnimation.value;
+              return Container(
+                width: 18 + (t * 8),
+                height: 18 + (t * 8),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      Colors.white.withOpacity(0.7 + g * 0.28),
+                      LumiColors.glow.withOpacity(0.55 + g * 0.38),
+                      LumiColors.primaryLight.withOpacity(0.4 + g * 0.42),
+                      LumiColors.primary.withOpacity(0.15 + g * 0.3),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.22, 0.5, 0.72, 1.0],
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ],

@@ -44,7 +44,7 @@ class _CheckPageState extends ConsumerState<CheckPage>
   Widget build(BuildContext context) {
     final state = ref.watch(checkProvider);
     final isAnalyzing = state is CheckAnalyzing;
-    final isResult = state is CheckHighSimilarity;
+    final canGoBackToIdle = state is! CheckIdle && state is! CheckAnalyzing;
 
     return Scaffold(
       backgroundColor: LumiColors.base,
@@ -56,14 +56,14 @@ class _CheckPageState extends ConsumerState<CheckPage>
           onPressed: isAnalyzing
               ? null
               : () {
-                  if (isResult) {
+                  if (canGoBackToIdle) {
                     ref.read(checkProvider.notifier).reset();
                   } else {
                     context.pop();
                   }
                 },
           child: Text(
-            isResult ? '< 上一步' : '< 回衣櫥',
+            canGoBackToIdle ? '< 上一步' : '< 回衣櫥',
             style: const TextStyle(
               fontSize: 14,
               color: LumiColors.primary,
@@ -98,7 +98,7 @@ class _CheckPageState extends ConsumerState<CheckPage>
               onReset: () => ref.read(checkProvider.notifier).reset(),
               onAdd: () {
                 ref.read(checkProvider.notifier).reset();
-                context.pop();
+                context.push('/snap');
               },
             ),
           CheckMediumSimilarity(
@@ -687,7 +687,7 @@ class _PrimaryButton extends StatelessWidget {
         height: 56,
         decoration: BoxDecoration(
           gradient: LumiColors.buttonGradient,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(9999),
         ),
         child: Center(
           child: Text(

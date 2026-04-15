@@ -121,6 +121,7 @@ jobs:
           flutter build web --release \
             --pwa-strategy=none \
             --base-href "/LUMI/" \
+            --dart-define=APP_BUILD_VERSION=$(git rev-parse --short HEAD) \
             --dart-define=FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }} \
             --dart-define=FIREBASE_AUTH_DOMAIN=${{ secrets.FIREBASE_AUTH_DOMAIN }} \
             --dart-define=FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }} \

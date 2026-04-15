@@ -76,39 +76,76 @@ class LoginPage extends ConsumerWidget {
 
 // ── Logo ──────────────────────────────────────────────────────────────────────
 
-class _LumiLogo extends StatelessWidget {
+class _LumiLogo extends StatefulWidget {
+  @override
+  State<_LumiLogo> createState() => _LumiLogoState();
+}
+
+class _LumiLogoState extends State<_LumiLogo>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _sparkleController;
+  late final Animation<double> _sparkleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _sparkleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _sparkleAnimation = CurvedAnimation(
+      parent: _sparkleController,
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _sparkleController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
       alignment: Alignment.center,
       children: [
-        // 草書風格 Logo 文字
+        // 英文字草寫風格 Logo
         const Text(
           'Lumi',
           style: TextStyle(
             fontSize: 56,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             color: LumiColors.text,
             fontStyle: FontStyle.italic,
-            letterSpacing: 0.8,
+            letterSpacing: 0.3,
+            fontFamily: 'cursive',
           ),
         ),
-        // 橘橙 sparkle
+        // i 上方閃爍橘光
         Positioned(
-          top: 4,
-          right: 0,
-          child: Container(
-            width: 16,
-            height: 16,
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                colors: [
-                  LumiColors.glow.withOpacity(0.9),
-                  Colors.transparent,
-                ],
-              ),
-              shape: BoxShape.circle,
-            ),
+          top: 6,
+          right: 8,
+          child: AnimatedBuilder(
+            animation: _sparkleAnimation,
+            builder: (_, __) {
+              final t = _sparkleAnimation.value;
+              return Container(
+                width: 14 + (t * 4),
+                height: 14 + (t * 4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      LumiColors.glow.withOpacity(0.9),
+                      LumiColors.primaryLight.withOpacity(0.4 + t * 0.3),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.45, 1.0],
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ],

@@ -39,6 +39,15 @@ Lumi 是一款 Flutter App，讓使用者用 Google Photos 管理衣櫥，並透
 
 ---
 
+## 設計規範唯一來源（必讀）
+
+- 專案 UI/UX 實作唯一設計規範檔案為 `DESIGN.md`。
+- `DESIGN.md` 為 design source of truth，禁止再建立或引用其他平行版設計規範檔（例如 `DESIGN_GUIDELINES.md`）。
+- 若 Figma 與 `DESIGN.md` 不一致，必須先整理差異清單並與使用者確認後，才能開始實作。
+- 未經確認不得自行覆蓋 `DESIGN.md` 既有 token（顏色、字級、間距、圓角）或互動規則。
+
+---
+
 ## 需求處理流程
 
 收到新需求時，依序執行：

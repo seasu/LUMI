@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../constants/lumi_colors.dart';
 
 /// Shared Lumi wordmark to keep Welcome/Loading branding consistent.
@@ -81,19 +82,17 @@ class _LumiLogoWordmarkState extends State<LumiLogoWordmark>
         children: [
           Text(
             'Lumi',
-            style: TextStyle(
+            style: GoogleFonts.allura(
               fontSize: widget.fontSize,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               color: LumiColors.text,
-              fontStyle: FontStyle.italic,
-              letterSpacing: 0.3,
-              fontFamily: 'cursive',
+              height: 1.0,
             ),
           ),
           // i 上方閃爍橘光（依字體大小動態定位）
           Positioned(
-            top: widget.fontSize * 0.09,
-            right: widget.fontSize * 0.34,
+            top: widget.fontSize * 0.16,
+            right: widget.fontSize * 0.43,
             child: AnimatedBuilder(
               animation: _sparkleController,
               builder: (_, __) {

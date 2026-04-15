@@ -15,6 +15,7 @@ class OnboardingPage extends ConsumerStatefulWidget {
 class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   final _controller = PageController();
   int _currentPage = 0;
+  static const _stepCount = 3;
 
   @override
   void dispose() {
@@ -23,7 +24,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   }
 
   void _next() {
-    if (_currentPage < 2) {
+    if (_currentPage < _stepCount - 1) {
       _controller.nextPage(
         duration: const Duration(milliseconds: 350),
         curve: Curves.easeInOut,
@@ -52,25 +53,22 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
             onPageChanged: (i) => setState(() => _currentPage = i),
             children: const [
               _OnboardingStep(
-                gradientColors: [Color(0xFFE8D5C0), Color(0xFFD4B896)],
+                gradientColors: [LumiColors.baseAlt, LumiColors.base],
                 icon: Icons.photo_library_outlined,
                 title: '零摩擦數位化衣櫥',
                 description: 'LUMI 與 Google 相片自動同步，妳無需手動上傳任何內容。',
-                isLast: false,
               ),
               _OnboardingStep(
-                gradientColors: [Color(0xFFF0D8C0), Color(0xFFE0C090)],
+                gradientColors: [LumiColors.base, LumiColors.baseAlt],
                 icon: Icons.auto_awesome_outlined,
                 title: 'AI 智慧分析',
                 description: 'Lumi 透過 Gemini AI 自動辨識顏色、材質與款式，讓搜尋變得毫不費力。',
-                isLast: false,
               ),
               _OnboardingStep(
-                gradientColors: [Color(0xFFF5E0C8), Color(0xFFEAC8A0)],
+                gradientColors: [LumiColors.baseAlt, LumiColors.base],
                 icon: Icons.compare_arrows_rounded,
                 title: '聰明消費不重複',
                 description: '「似曾相識」讓妳在購物現場即時比對衣櫥，避免買到重複款式。',
-                isLast: true,
               ),
             ],
           ),
@@ -81,7 +79,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
             right: 0,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(3, (i) {
+              children: List.generate(_stepCount, (i) {
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
                   margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -108,11 +106,11 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 height: 56,
                 decoration: BoxDecoration(
                   gradient: LumiColors.buttonGradient,
-                  borderRadius: BorderRadius.circular(28),
+                  borderRadius: BorderRadius.circular(9999),
                 ),
                 child: Center(
                   child: Text(
-                    _currentPage < 2 ? '下一步' : '開始使用',
+                    _currentPage < _stepCount - 1 ? '下一步' : '開始使用',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -137,15 +135,12 @@ class _OnboardingStep extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.description,
-    required this.isLast,
   });
 
   final List<Color> gradientColors;
   final IconData icon;
   final String title;
   final String description;
-  final bool isLast;
-
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.sizeOf(context).height;
@@ -163,10 +158,23 @@ class _OnboardingStep extends StatelessWidget {
             ),
           ),
           child: Center(
-            child: Icon(
-              icon,
-              size: 80,
-              color: Colors.white.withOpacity(0.9),
+            child: Container(
+              width: 108,
+              height: 108,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    LumiColors.glow.withOpacity(0.35),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+              child: Icon(
+                icon,
+                size: 52,
+                color: LumiColors.primary,
+              ),
             ),
           ),
         ),
@@ -186,7 +194,7 @@ class _OnboardingStep extends StatelessWidget {
                   title,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 28,
+                    fontSize: 32,
                     fontWeight: FontWeight.w700,
                     color: LumiColors.primary,
                   ),

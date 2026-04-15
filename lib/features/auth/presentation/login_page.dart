@@ -23,12 +23,12 @@ class LoginPage extends ConsumerWidget {
                 end: Alignment.bottomCenter,
                 colors: [
                   LumiColors.base,
-                  Color(0xFFFAF9F8),
+                  LumiColors.baseAlt,
                 ],
               ),
             ),
           ),
-          // 微暖色塊，讓登入區更聚焦。
+          // 微暖色塊，讓歡迎區更聚焦。
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(

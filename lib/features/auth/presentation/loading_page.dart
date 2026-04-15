@@ -75,11 +75,11 @@ class _LoadingPageState extends ConsumerState<LoadingPage>
             const Text(
               'Lumi',
               style: TextStyle(
-                fontSize: 52,
-                fontWeight: FontWeight.w300,
-                color: Color(0xFF5A3A20),
+                fontSize: 56,
+                fontWeight: FontWeight.w600,
+                color: LumiColors.text,
                 fontStyle: FontStyle.italic,
-                letterSpacing: 2,
+                letterSpacing: 0.8,
               ),
             ),
             const SizedBox(height: 48),

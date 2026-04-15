@@ -82,7 +82,7 @@ class _LumiLogoWordmarkState extends State<LumiLogoWordmark>
         children: [
           Text(
             'Lumi',
-            style: GoogleFonts.greatVibes(
+            style: GoogleFonts.dancingScript(
               fontSize: widget.fontSize,
               fontWeight: FontWeight.w600,
               color: LumiColors.text,

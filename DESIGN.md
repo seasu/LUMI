@@ -34,12 +34,13 @@ For floating elements like "Add to Outfit" FABs or Navigation Bars, use **Glassm
 ---
 
 ## 3. Typography: The Editorial Voice
-We use **Manrope** for its geometric yet warm character in headlines, and **Inter** for precision-focused labels.
+We use **Noto Sans TC** as the default app typeface for all non-logo UI text to ensure consistent Traditional Chinese readability across screens.
+For the Lumi wordmark only, use **Great Vibes** as the brand script font.
 
-*   **Display-LG (Manrope, 3.5rem):** Reserved for "Zero-State" screens or large seasonal headers. Use -0.02em letter spacing.
-*   **Headline-MD (Manrope, 1.75rem):** Used for wardrobe category titles (e.g., "Summer Silks"). 
-*   **Title-SM (Manrope, 1rem):** The standard for item names. Bold weight for "Quiet Luxury" authority.
-*   **Label-MD (Inter, 0.75rem):** Used for metadata like "Last worn 2 days ago." Inter’s high x-height ensures readability at small scales.
+*   **Display-LG (Noto Sans TC, 3.5rem):** Reserved for "Zero-State" screens or large seasonal headers. Use -0.02em letter spacing.
+*   **Headline-MD (Noto Sans TC, 1.75rem):** Used for wardrobe category titles (e.g., "Summer Silks"). 
+*   **Title-SM (Noto Sans TC, 1rem):** The standard for item names. Bold weight for "Quiet Luxury" authority.
+*   **Label-MD (Noto Sans TC, 0.75rem):** Used for metadata like "Last worn 2 days ago." Noto Sans TC keeps Chinese and Latin mixed text readable at small sizes.
 
 ---
 

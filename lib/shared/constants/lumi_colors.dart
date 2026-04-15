@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Lumi 品牌色彩系統
-/// 依據 stitch_lumi_mockup/ 目錄的設計稿定義，禁止在 Widget 中 hardcode 顏色值。
-/// 完整設計規範請參閱 DESIGN_GUIDELINES.md。
+/// 依據 DESIGN.md 定義，禁止在 Widget 中 hardcode 顏色值。
 class LumiColors {
   LumiColors._();
 

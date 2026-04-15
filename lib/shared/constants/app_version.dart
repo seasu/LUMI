@@ -1,4 +1,6 @@
-const appVersion = String.fromEnvironment(
-  'APP_VERSION',
+const appBuildVersion = String.fromEnvironment(
+  'APP_BUILD_VERSION',
   defaultValue: 'dev',
 );
+
+const appVersionLabel = 'v$appBuildVersion';

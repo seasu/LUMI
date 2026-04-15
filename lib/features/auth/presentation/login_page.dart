@@ -64,9 +64,9 @@ class LoginPage extends ConsumerWidget {
                     ),
                   ),
                   const Spacer(flex: 5),
-                  const Text(
+                  Text(
                     appVersionLabel,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 11,
                       color: LumiColors.subtext,
                       letterSpacing: 0.2,

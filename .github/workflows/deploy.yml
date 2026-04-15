@@ -119,6 +119,7 @@ jobs:
       - name: Build Web
         run: |
           flutter build web --release \
+            --pwa-strategy=none \
             --base-href "/LUMI/" \
             --dart-define=FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }} \
             --dart-define=FIREBASE_AUTH_DOMAIN=${{ secrets.FIREBASE_AUTH_DOMAIN }} \

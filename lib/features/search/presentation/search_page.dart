@@ -95,7 +95,7 @@ class _SnapFab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push('/snap'),
+      onTap: () => context.push('/check'),
       child: Container(
         width: 56,
         height: 56,

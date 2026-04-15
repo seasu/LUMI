@@ -62,25 +62,36 @@ class _WardrobeHeader extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          const Icon(Icons.menu, size: 20, color: LumiColors.text),
+          const SizedBox(width: LumiSpacing.sm),
           const Expanded(
             child: Text(
               '我的衣櫥',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: LumiColors.text),
             ),
           ),
-          TextButton.icon(
-            onPressed: () => context.push('/snap'),
-            icon: const Icon(Icons.add, size: 18, color: LumiColors.primary),
-            label: const Text(
-              '加入新品',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+          GestureDetector(
+            onTap: () => context.push('/snap'),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
                 color: LumiColors.primary,
+                borderRadius: BorderRadius.circular(9999),
               ),
-            ),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.sm, vertical: 4),
+              child: const Row(
+                children: [
+                  Icon(Icons.add, size: 14, color: Colors.white),
+                  SizedBox(width: 4),
+                  Text(
+                    '加入新品',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -103,10 +114,15 @@ class _SnapFab extends StatelessWidget {
           gradient: LumiColors.buttonGradient,
           shape: BoxShape.circle,
         ),
-        child: const Icon(
-          Icons.camera_alt_outlined,
-          color: Colors.white,
-          size: 24,
+        child: const Center(
+          child: Text(
+            '似',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
       ),
     );
@@ -125,10 +141,10 @@ class _WardrobeGrid extends StatelessWidget {
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(LumiSpacing.md, LumiSpacing.sm, LumiSpacing.md, 92),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
+        crossAxisCount: 2,
         crossAxisSpacing: LumiSpacing.sm,
         mainAxisSpacing: LumiSpacing.sm,
-        childAspectRatio: 0.75,
+        childAspectRatio: 0.66,
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {

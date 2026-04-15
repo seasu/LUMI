@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/constants/lumi_colors.dart';
-import '../../../../shared/constants/lumi_spacing.dart';
 import '../../../wardrobe/data/wardrobe_item.dart';
 import '../../../wardrobe/data/wardrobe_repository.dart';
 import '../../../../core/providers/firebase_providers.dart';
@@ -14,111 +13,49 @@ class WardrobeCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final thumbnailUrl = ref.watch(_thumbnailUrlProvider(item));
+    final colorText = item.colors.isNotEmpty ? item.colors.first : '—';
 
-    // Spring entrance: scale from 0.92 → 1.0 with easeOutBack
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.92, end: 1.0),
-      duration: const Duration(milliseconds: 380),
-      curve: Curves.easeOutBack,
-      builder: (_, scale, child) =>
-          Transform.scale(scale: scale, child: child),
-      child: Container(
-        decoration: BoxDecoration(
-          color: LumiColors.surface,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Full-bleed image
-            _ThumbnailImage(url: thumbnailUrl),
-            // Bottom gradient overlay with label (only when analyzed)
-            if (item.analyzed)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(
-                    LumiSpacing.sm,
-                    LumiSpacing.xl,
-                    LumiSpacing.sm,
-                    LumiSpacing.sm,
-                  ),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [Color(0xCC000000), Colors.transparent],
-                    ),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          item.category,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ),
-                      ...item.colors.take(3).map((hex) => _ColorDot(hex: hex)),
-                    ],
-                  ),
-                ),
-              ),
-            // Pending / quota overlay
-            if (!item.analyzed) _PendingOverlay(item: item),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Pending overlay ───────────────────────────────────────────────────────────
-
-class _PendingOverlay extends StatelessWidget {
-  const _PendingOverlay({required this.item});
-
-  final WardrobeItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final isQuota = item.isQuotaExceeded;
-
-    return Container(
-      color: LumiColors.text.withOpacity(0.35),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (isQuota)
-            const Icon(Icons.lock_outline, color: Colors.white, size: 26)
-          else
-            Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: LumiColors.glow.withOpacity(0.8),
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              color: LumiColors.surface,
+              borderRadius: BorderRadius.circular(22),
             ),
-          const SizedBox(height: 6),
-          Text(
-            isQuota ? '配額已用完' : 'AI 分析中',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                _ThumbnailImage(url: thumbnailUrl),
+                if (!item.analyzed) _PendingOverlay(item: item),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          item.category.isEmpty ? '未分類' : item.category,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: LumiColors.text,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          colorText,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 10,
+            color: LumiColors.subtext,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -156,8 +93,6 @@ void _refreshInBackground(Ref ref, WardrobeItem item) {
   });
 }
 
-// ── Sub-widgets ───────────────────────────────────────────────────────────────
-
 class _ThumbnailImage extends StatelessWidget {
   const _ThumbnailImage({required this.url});
 
@@ -184,25 +119,43 @@ class _ThumbnailImage extends StatelessWidget {
   }
 }
 
-class _ColorDot extends StatelessWidget {
-  const _ColorDot({required this.hex});
+// ── Pending overlay ───────────────────────────────────────────────────────────
 
-  final String hex;
+class _PendingOverlay extends StatelessWidget {
+  const _PendingOverlay({required this.item});
+
+  final WardrobeItem item;
 
   @override
   Widget build(BuildContext context) {
-    final clean = hex.replaceAll('#', '');
-    final value = int.tryParse('FF$clean', radix: 16);
-    final color = value != null ? Color(value) : Colors.white;
+    final isQuota = item.isQuotaExceeded;
 
     return Container(
-      width: 10,
-      height: 10,
-      margin: const EdgeInsets.only(left: LumiSpacing.xs),
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withOpacity(0.6), width: 1),
+      color: LumiColors.text.withOpacity(0.35),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (isQuota)
+            const Icon(Icons.lock_outline, color: Colors.white, size: 24)
+          else
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: LumiColors.glow.withOpacity(0.8),
+              ),
+            ),
+          const SizedBox(height: 6),
+          Text(
+            isQuota ? '配額已用完' : 'AI 分析中',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }

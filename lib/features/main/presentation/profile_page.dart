@@ -16,24 +16,13 @@ class ProfilePage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: LumiColors.base,
-      appBar: AppBar(
-        backgroundColor: LumiColors.base,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: const Text(
-          '個人檔案',
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            color: LumiColors.text,
-          ),
-        ),
-        centerTitle: true,
+      body: SafeArea(
+        child: profile == null
+            ? const Center(
+                child: CircularProgressIndicator(color: LumiColors.primary),
+              )
+            : _ProfileContent(profile: profile),
       ),
-      body: profile == null
-          ? const Center(
-              child: CircularProgressIndicator(color: LumiColors.primary))
-          : _ProfileContent(profile: profile),
     );
   }
 }
@@ -45,8 +34,16 @@ class _ProfileContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.md),
+      padding: const EdgeInsets.fromLTRB(24, LumiSpacing.md, 16, LumiSpacing.lg),
       children: [
+        const Text(
+          '個人檔案',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+            color: LumiColors.text,
+          ),
+        ),
         const SizedBox(height: LumiSpacing.lg),
         // ── Avatar ─────────────────────────────────────────────────────────
         Center(
@@ -92,11 +89,10 @@ class _ProfileContent extends ConsumerWidget {
           onPressed: () => signOut(ref),
           style: OutlinedButton.styleFrom(
             foregroundColor: LumiColors.subtext,
-            side: const BorderSide(color: LumiColors.subtext),
-            padding:
-                const EdgeInsets.symmetric(vertical: LumiSpacing.md),
+            side: BorderSide(color: LumiColors.subtext.withOpacity(0.55)),
+            padding: const EdgeInsets.symmetric(vertical: LumiSpacing.md),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(9999),
             ),
           ),
           child: const Text('登出'),
@@ -245,7 +241,7 @@ class _MeasurementCard extends ConsumerWidget {
         ),
         decoration: BoxDecoration(
           color: LumiColors.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           children: [

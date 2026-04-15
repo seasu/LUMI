@@ -42,7 +42,7 @@ class OutfitPage extends ConsumerWidget {
             ),
             // Camera FAB
             Positioned(
-              bottom: 16,
+              bottom: 24,
               right: 16,
               child: _CameraFab(),
             ),
@@ -62,9 +62,9 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Padding(
       padding: EdgeInsets.fromLTRB(
+        24,
         LumiSpacing.md,
-        LumiSpacing.md,
-        LumiSpacing.md,
+        16,
         LumiSpacing.sm,
       ),
       child: Text(
@@ -153,33 +153,35 @@ class _OotdCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-                LumiSpacing.sm, LumiSpacing.sm, LumiSpacing.sm, 2),
-            child: Text(
-              dateStr,
-              style: const TextStyle(fontSize: 11, color: LumiColors.subtext),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-                LumiSpacing.sm, 0, LumiSpacing.sm, LumiSpacing.xs),
-            child: Text(
-              item.caption.isEmpty ? '無備註' : item.caption,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: LumiColors.text,
-              ),
-            ),
-          ),
           Expanded(
             child: bytes != null
                 ? Image.memory(bytes,
                     fit: BoxFit.cover, width: double.infinity)
                 : Container(color: LumiColors.base),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+                LumiSpacing.sm, LumiSpacing.sm, LumiSpacing.sm, LumiSpacing.sm),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.caption.isEmpty ? '無備註' : item.caption,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: LumiColors.text,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  dateStr,
+                  style: const TextStyle(fontSize: 11, color: LumiColors.subtext),
+                ),
+              ],
+            ),
           ),
         ],
       ),

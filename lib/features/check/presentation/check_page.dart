@@ -142,14 +142,14 @@ class _IdleView extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFFE8D5C0), Color(0xFFD4B896)],
+              colors: [LumiColors.baseAlt, LumiColors.base],
             ),
           ),
           child: const Center(
             child: Icon(
               Icons.shopping_bag_outlined,
-              size: 80,
-              color: Colors.white,
+              size: 76,
+              color: LumiColors.primary,
             ),
           ),
         ),
@@ -188,11 +188,11 @@ class _IdleView extends StatelessWidget {
                   alignment: Alignment.center,
                   children: [
                     Container(
-                      width: 80,
-                      height: 80,
+                      width: 84,
+                      height: 84,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: LumiColors.glow.withOpacity(0.2),
+                        color: LumiColors.glow.withOpacity(0.22),
                       ),
                     ),
                     const Icon(
@@ -305,6 +305,9 @@ class _ResultViewState extends State<_ResultView> {
 
   @override
   Widget build(BuildContext context) {
+    final currentItem = widget.topMatches[_currentPage];
+    final currentPct = (currentItem.similarity * 100).toStringAsFixed(0);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.md),
       child: Column(
@@ -314,6 +317,22 @@ class _ResultViewState extends State<_ResultView> {
           // 新品照片
           _NewItemCard(imageBytes: widget.newImageBytes),
           const SizedBox(height: LumiSpacing.md),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: LumiColors.warning.withOpacity(0.14),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '$currentPct% 相似',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: LumiColors.warning,
+              ),
+            ),
+          ),
+          const SizedBox(height: LumiSpacing.sm),
           // 相似衣物水平輪播
           SizedBox(
             height: 240,
@@ -443,15 +462,6 @@ class _SimilarCard extends StatelessWidget {
             ? Border.all(color: LumiColors.primary, width: 2.5)
             : Border.all(color: Colors.transparent, width: 2.5),
         color: LumiColors.surface,
-        boxShadow: isHighlighted
-            ? [
-                BoxShadow(
-                  color: LumiColors.primary.withOpacity(0.15),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                )
-              ]
-            : null,
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -506,7 +516,9 @@ class _SimilarCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: isHighlighted ? LumiColors.warning : LumiColors.text.withOpacity(0.55),
+                color: isHighlighted
+                    ? LumiColors.warning
+                    : LumiColors.subtext.withOpacity(0.65),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(

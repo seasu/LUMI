@@ -48,6 +48,18 @@ async function createAlbum(accessToken: string): Promise<string> {
   return data.id;
 }
 
+async function cacheAlbumId(userId: string, albumId: string): Promise<void> {
+  try {
+    const db = admin.firestore();
+    await db.collection("users").doc(userId).set(
+      { lumiWardrobeAlbumId: albumId },
+      { merge: true }
+    );
+  } catch {
+    // Caching is best-effort only.
+  }
+}
+
 /**
  * Returns the Lumi_Wardrobe albumId.
  * Uses Firestore as a cache. On cache miss, creates a new album via the
@@ -188,6 +200,38 @@ export const uploadToPhotos = onCall(
       );
       return await createMediaItem(accessToken, uploadToken, albumId, filename);
     } catch (err) {
+      // Recovery path:
+      // If cached albumId became stale (e.g. user deleted the album manually),
+      // recreate album and retry once end-to-end.
+      const msg = err instanceof Error ? err.message : String(err);
+      const albumGone =
+        msg.includes("Album not found") ||
+        msg.includes("NOT_FOUND") ||
+        msg.includes("createMediaItem failed");
+
+      if (albumGone) {
+        try {
+          const freshAlbumId = await createAlbum(accessToken);
+          await cacheAlbumId(userId, freshAlbumId);
+          const retryUploadToken = await uploadBytes(
+            accessToken,
+            imageBase64,
+            mimeType,
+            filename
+          );
+          return await createMediaItem(
+            accessToken,
+            retryUploadToken,
+            freshAlbumId,
+            filename
+          );
+        } catch (retryErr) {
+          const retryMsg =
+            retryErr instanceof Error ? retryErr.message : String(retryErr);
+          throw new HttpsError("internal", `Upload failed after retry: ${retryMsg}`);
+        }
+      }
+
       const msg = err instanceof Error ? err.message : String(err);
       throw new HttpsError("internal", `Upload failed: ${msg}`);
     }

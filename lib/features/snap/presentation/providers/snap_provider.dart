@@ -60,7 +60,10 @@ class SnapNotifier extends Notifier<SnapState> {
 
     final accessToken = await _getAccessToken();
     if (accessToken == null) {
-      state = const SnapError('無法取得 Google 授權，請重新登入後再試。');
+      state = const SnapError(
+        '無法取得 Google 授權，請重新登入後再試。\n'
+        '錯誤代號：LUMI-SNAP-AUTH-TOKEN-EMPTY',
+      );
       return;
     }
 
@@ -69,12 +72,14 @@ class SnapNotifier extends Notifier<SnapState> {
       try {
         await _uploadOne(files[i], i, accessToken);
       } on FirebaseFunctionsException catch (e) {
-        final detail = e.details?.toString();
-        final base = e.message ?? '上傳失敗，請再試一次。';
-        state = SnapError(detail != null ? '$base\n($detail)' : base);
+        state = SnapError(_mapFunctionsError(e));
         return;
       } catch (e) {
-        state = SnapError(e.toString());
+        state = SnapError(
+          '上傳過程發生未預期錯誤，請稍後再試。\n'
+          '錯誤代號：LUMI-SNAP-UNKNOWN\n'
+          '技術訊息：$e',
+        );
         return;
       }
     }
@@ -160,6 +165,39 @@ class SnapNotifier extends Notifier<SnapState> {
     } catch (_) {
       return null;
     }
+  }
+
+  String _mapFunctionsError(FirebaseFunctionsException e) {
+    final raw = '${e.message ?? ''} ${e.details ?? ''}'.toLowerCase();
+    final fnCode = e.code.toLowerCase();
+
+    if (raw.contains('batchcreate') &&
+        (raw.contains('album') ||
+            raw.contains('not found') ||
+            raw.contains('invalid argument'))) {
+      return '上傳相簿資料失效，請重試一次。\n'
+          '錯誤代號：LUMI-SNAP-ALBUM-STALE';
+    }
+
+    if (raw.contains('upload bytes failed') ||
+        raw.contains('/uploads') ||
+        raw.contains('permission denied')) {
+      return 'Google 相簿上傳失敗，請確認授權後重試。\n'
+          '錯誤代號：LUMI-SNAP-PHOTOS-UPLOAD';
+    }
+
+    if (fnCode == 'unauthenticated') {
+      return '登入狀態已失效，請重新登入後再試。\n'
+          '錯誤代號：LUMI-SNAP-FN-UNAUTH';
+    }
+
+    if (fnCode == 'internal') {
+      return '伺服器暫時忙碌，請稍後再試。\n'
+          '錯誤代號：LUMI-SNAP-FN-INTERNAL';
+    }
+
+    return '上傳失敗，請再試一次。\n'
+        '錯誤代號：LUMI-SNAP-FN-${fnCode.toUpperCase()}';
   }
 
   void reset() => state = const SnapIdle();

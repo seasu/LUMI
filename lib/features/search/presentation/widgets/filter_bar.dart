@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/constants/lumi_colors.dart';
-import '../../../../shared/constants/lumi_spacing.dart';
 import '../providers/search_provider.dart';
 
 // 分類與 Gemini 輸出對應

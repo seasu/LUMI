@@ -13,10 +13,8 @@ class WardrobeCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final thumbnailUrl = ref.watch(_thumbnailUrlProvider(item));
-    final colorText = item.colors.isNotEmpty ? item.colors.first : '—';
-    final subtitle = item.mediaItemId.length > 8
-        ? '${item.mediaItemId.substring(0, 8)} / ${item.colors.length}色'
-        : '${item.mediaItemId} / ${item.colors.length}色';
+    final title = _displayTitle(item);
+    final subtitle = _displaySubtitle(item);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -25,7 +23,7 @@ class WardrobeCard extends ConsumerWidget {
           child: Container(
             decoration: BoxDecoration(
               color: LumiColors.surface,
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(20),
             ),
             clipBehavior: Clip.antiAlias,
             child: Stack(
@@ -38,29 +36,68 @@ class WardrobeCard extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          item.category.isEmpty ? '未分類' : item.category,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: LumiColors.text,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          '$colorText · $subtitle',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 10,
-            color: LumiColors.subtext,
-          ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: LumiColors.text,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 9,
+                      color: LumiColors.subtext,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 4),
+            Padding(
+              padding: const EdgeInsets.only(top: 1),
+              child: Icon(
+                Icons.favorite_border,
+                size: 13,
+                color: LumiColors.subtext.withOpacity(0.65),
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
+}
+
+String _displayTitle(WardrobeItem item) {
+  if (item.materials.isNotEmpty) {
+    return item.materials.first;
+  }
+  if (item.category.isNotEmpty) {
+    return item.category;
+  }
+  return '未分類';
+}
+
+String _displaySubtitle(WardrobeItem item) {
+  final category = item.category.isEmpty ? '未分類' : item.category;
+  final code = item.mediaItemId.length > 6
+      ? item.mediaItemId.substring(0, 6).toUpperCase()
+      : item.mediaItemId.toUpperCase();
+  return '$category | $code';
 }
 
 // ── Thumbnail with stale-check ────────────────────────────────────────────────

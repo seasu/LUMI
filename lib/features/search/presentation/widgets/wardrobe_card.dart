@@ -14,6 +14,9 @@ class WardrobeCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final thumbnailUrl = ref.watch(_thumbnailUrlProvider(item));
     final colorText = item.colors.isNotEmpty ? item.colors.first : '—';
+    final subtitle = item.mediaItemId.length > 8
+        ? '${item.mediaItemId.substring(0, 8)} / ${item.colors.length}色'
+        : '${item.mediaItemId} / ${item.colors.length}色';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -34,20 +37,20 @@ class WardrobeCard extends ConsumerWidget {
             ),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         Text(
           item.category.isEmpty ? '未分類' : item.category,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.w600,
             color: LumiColors.text,
           ),
         ),
         const SizedBox(height: 2),
         Text(
-          colorText,
+          '$colorText · $subtitle',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(

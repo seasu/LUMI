@@ -1,10 +1,25 @@
 ---
-description: Lumi UI/UX — use design scales and tokens when editing Flutter UI
+description: Lumi UI/UX — read DESIGN + tokens first; use scales when editing Flutter UI
 globs:
   - lib/**/*.dart
 ---
 
 # Lumi UI implementation rules
+
+## Before you change any UI
+
+**Read first, then edit:**
+
+1. [DESIGN.md](DESIGN.md) — single source of truth for design language, typography, components, do/don’t.
+2. Token files (use these; do not invent new scales ad hoc):
+   - `lib/shared/constants/lumi_colors.dart` — `LumiColors`
+   - `lib/shared/constants/lumi_spacing.dart` — `LumiSpacing`
+   - `lib/shared/constants/lumi_radii.dart` — `LumiRadii`
+   - `lib/shared/constants/lumi_type_scale.dart` — `LumiTypeScale`
+
+If the task involves Figma, compare against DESIGN.md; if they conflict, **list differences and stop for confirmation** before implementing.
+
+---
 
 When changing or building Flutter UI under `lib/`:
 

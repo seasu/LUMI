@@ -42,6 +42,17 @@ For the Lumi wordmark only, use **Great Vibes** as the brand script font.
 *   **Title-SM (Noto Sans TC, 1rem):** The standard for item names. Bold weight for "Quiet Luxury" authority.
 *   **Label-MD (Noto Sans TC, 0.75rem):** Used for metadata like "Last worn 2 days ago." Noto Sans TC keeps Chinese and Latin mixed text readable at small sizes.
 
+### Flutter implementation tokens (code)
+
+Use these Dart constants instead of magic numbers so UI stays aligned across screens:
+
+| Token file | Purpose |
+|------------|---------|
+| `lib/shared/constants/lumi_spacing.dart` | `LumiSpacing` — 8px grid (xs … xl). |
+| `lib/shared/constants/lumi_radii.dart` | `LumiRadii` — corner radii (sm … pill). |
+| `lib/shared/constants/lumi_type_scale.dart` | `LumiTypeScale` — semantic `fontSize` steps. |
+| `lib/shared/constants/lumi_colors.dart` | `LumiColors` — brand palette only. |
+
 ---
 
 ## 4. Elevation & Depth: Tonal Layering

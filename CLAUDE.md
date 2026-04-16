@@ -258,6 +258,21 @@ GOOGLE_CLIENT_ID_ANDROID=xxx.apps.googleusercontent.com
 
 ---
 
+## UI/UX 刻度與 Cursor 規則（調整介面時必讀）
+
+建立或修改 Flutter 介面（`lib/**/*.dart`）時，除 `DESIGN.md` 外，請一併遵守：
+
+- **Cursor 規則**：`.cursor/rules/ui-scale.mdc`（spacing / radii / type / colors 與 DESIGN 優先順序）。
+- **程式刻度常數**（避免 magic number）：
+  - `lib/shared/constants/lumi_spacing.dart` — `LumiSpacing`
+  - `lib/shared/constants/lumi_radii.dart` — `LumiRadii`
+  - `lib/shared/constants/lumi_type_scale.dart` — `LumiTypeScale`
+  - `lib/shared/constants/lumi_colors.dart` — `LumiColors`
+
+若 Figma 與 `DESIGN.md` 衝突，先列差異並與產品確認後再實作。
+
+---
+
 ## 可用 Skills（AI 應主動判斷時機呼叫）
 
 | Skill | 呼叫時機 |

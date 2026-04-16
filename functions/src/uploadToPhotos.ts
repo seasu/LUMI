@@ -232,7 +232,6 @@ export const uploadToPhotos = onCall(
         }
       }
 
-      const msg = err instanceof Error ? err.message : String(err);
       throw new HttpsError("internal", `Upload failed: ${msg}`);
     }
   }

@@ -58,36 +58,31 @@ class _WardrobeHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, LumiSpacing.md, 16, LumiSpacing.sm),
+      padding: const EdgeInsets.fromLTRB(16, LumiSpacing.md, 16, LumiSpacing.sm),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Icon(Icons.menu, size: 20, color: LumiColors.text),
-          const SizedBox(width: LumiSpacing.sm),
           const Expanded(
             child: Text(
               '我的衣櫥',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: LumiColors.text),
+              style: TextStyle(fontSize: 46, fontWeight: FontWeight.w700, color: LumiColors.text, height: 1.0),
             ),
           ),
           GestureDetector(
             onTap: () => context.push('/snap'),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: LumiColors.primary,
-                borderRadius: BorderRadius.circular(9999),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
               child: const Row(
                 children: [
-                  Icon(Icons.add, size: 14, color: Colors.white),
+                  Icon(Icons.add, size: 18, color: LumiColors.primary),
                   SizedBox(width: 4),
                   Text(
                     '加入新品',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 36,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: LumiColors.primary,
+                      height: 1.0,
                     ),
                   ),
                 ],
@@ -108,8 +103,8 @@ class _SnapFab extends StatelessWidget {
     return GestureDetector(
       onTap: () => context.push('/check'),
       child: Container(
-        width: 56,
-        height: 56,
+        width: 58,
+        height: 58,
         decoration: const BoxDecoration(
           gradient: LumiColors.buttonGradient,
           shape: BoxShape.circle,
@@ -139,12 +134,12 @@ class _WardrobeGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(LumiSpacing.md, LumiSpacing.sm, LumiSpacing.md, 92),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: LumiSpacing.sm,
-        mainAxisSpacing: LumiSpacing.sm,
-        childAspectRatio: 0.66,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
+        childAspectRatio: 0.70,
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {
@@ -165,39 +160,37 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(LumiSpacing.xl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 衣架插圖（用 icon 模擬）
-            Icon(
-              Icons.dry_cleaning_outlined,
-              size: 72,
-              color: LumiColors.subtext.withOpacity(0.4),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      child: Column(
+        children: [
+          const Spacer(flex: 5),
+          Icon(
+            Icons.dry_cleaning_outlined,
+            size: 74,
+            color: LumiColors.subtext.withOpacity(0.35),
+          ),
+          const SizedBox(height: 22),
+          const Text(
+            '妳的衣櫥目前空空如也',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: LumiColors.text,
             ),
-            const SizedBox(height: LumiSpacing.md),
-            const Text(
-              '妳的衣櫥目前空空如也',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: LumiColors.text,
-              ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            '點擊右上角的「加入新品」按鈕，\n開始建立妳的數位衣櫥吧！',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: LumiColors.subtext,
+              height: 1.8,
             ),
-            const SizedBox(height: LumiSpacing.sm),
-            const Text(
-              '點擊右上角的「加入新品」按鈕，\n開始建立妳的數位衣櫥吧！',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: LumiColors.subtext,
-                height: 1.6,
-              ),
-            ),
-          ],
-        ),
+          ),
+          const Spacer(flex: 6),
+        ],
       ),
     );
   }
@@ -211,19 +204,19 @@ class _LoadingGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
-      padding: const EdgeInsets.all(LumiSpacing.md),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        crossAxisSpacing: LumiSpacing.sm,
-        mainAxisSpacing: LumiSpacing.sm,
-        childAspectRatio: 0.75,
+        crossAxisCount: 2,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
+        childAspectRatio: 0.70,
       ),
-      itemCount: 12,
+      itemCount: 8,
       itemBuilder: (_, __) => Container(
         decoration: BoxDecoration(
           color: LumiColors.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(18),
         ),
       ),
     );

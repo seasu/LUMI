@@ -39,9 +39,9 @@ class FilterBar extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _CategoryTabs(),
-        const SizedBox(height: 10),
-        _ColorDotRow(),
         const SizedBox(height: 14),
+        _ColorDotRow(),
+        const SizedBox(height: 20),
       ],
     );
   }
@@ -57,10 +57,10 @@ class _CategoryTabs extends ConsumerWidget {
     );
 
     return SizedBox(
-      height: 34,
+      height: 36,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: _categories.length,
         itemBuilder: (context, i) {
           final tab = _categories[i];
@@ -70,21 +70,24 @@ class _CategoryTabs extends ConsumerWidget {
                 .read(wardrobeFilterProvider.notifier)
                 .setCategory(isSelected ? null : tab.category),
             child: Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              margin: const EdgeInsets.only(right: 22),
+              padding: const EdgeInsets.only(bottom: 6),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? LumiColors.primary
-                    : LumiColors.surface,
-                borderRadius: BorderRadius.circular(9999),
+                border: Border(
+                  bottom: BorderSide(
+                    color: isSelected
+                        ? LumiColors.primary
+                        : Colors.transparent,
+                    width: 2.5,
+                  ),
+                ),
               ),
               child: Text(
                 tab.label,
                 style: TextStyle(
-                  fontSize: 14,
-                  fontWeight:
-                      isSelected ? FontWeight.w600 : FontWeight.w400,
-                  color: isSelected ? Colors.white : LumiColors.subtext,
+                  fontSize: 15,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? LumiColors.primary : LumiColors.subtext,
                 ),
               ),
             ),
@@ -105,10 +108,10 @@ class _ColorDotRow extends ConsumerWidget {
     );
 
     return SizedBox(
-      height: 30,
+      height: 36,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: _colorOptions.length,
         itemBuilder: (context, i) {
           final opt = _colorOptions[i];
@@ -125,17 +128,19 @@ class _ColorDotRow extends ConsumerWidget {
               }
             },
             child: Container(
-              width: 30,
-              height: 30,
-              margin: const EdgeInsets.only(right: 10),
+              width: 26,
+              height: 26,
+              margin: const EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
                 color: opt.color,
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isSelected
                       ? LumiColors.primary
-                      : Colors.transparent,
-                  width: isSelected ? 2.0 : 0.0,
+                      : opt.color.computeLuminance() > 0.9
+                          ? LumiColors.subtext.withOpacity(0.15)
+                          : Colors.transparent,
+                  width: isSelected ? 2.2 : 1.0,
                 ),
               ),
             ),

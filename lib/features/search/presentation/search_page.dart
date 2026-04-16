@@ -58,34 +58,34 @@ class _WardrobeHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, LumiSpacing.md, 16, LumiSpacing.sm),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Expanded(
             child: Text(
               '我的衣櫥',
-              style: TextStyle(fontSize: 46, fontWeight: FontWeight.w700, color: LumiColors.text, height: 1.0),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: LumiColors.text,
+              ),
             ),
           ),
-          GestureDetector(
-            onTap: () => context.push('/snap'),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-              child: const Row(
-                children: [
-                  Icon(Icons.add, size: 18, color: LumiColors.primary),
-                  SizedBox(width: 4),
-                  Text(
-                    '加入新品',
-                    style: TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.w600,
-                      color: LumiColors.primary,
-                      height: 1.0,
-                    ),
-                  ),
-                ],
+          TextButton.icon(
+            onPressed: () => context.push('/snap'),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            icon: const Icon(Icons.add, size: 18, color: LumiColors.primary),
+            label: const Text(
+              '加入新品',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: LumiColors.primary,
               ),
             ),
           ),
@@ -103,8 +103,8 @@ class _SnapFab extends StatelessWidget {
     return GestureDetector(
       onTap: () => context.push('/check'),
       child: Container(
-        width: 58,
-        height: 58,
+        width: 56,
+        height: 56,
         decoration: const BoxDecoration(
           gradient: LumiColors.buttonGradient,
           shape: BoxShape.circle,
@@ -114,7 +114,7 @@ class _SnapFab extends StatelessWidget {
             '似',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -137,9 +137,9 @@ class _WardrobeGrid extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
-        childAspectRatio: 0.70,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.74,
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {
@@ -161,35 +161,35 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 32, 16, 0),
       child: Column(
         children: [
-          const Spacer(flex: 5),
+          const Spacer(flex: 4),
           Icon(
             Icons.dry_cleaning_outlined,
-            size: 74,
+            size: 76,
             color: LumiColors.subtext.withOpacity(0.35),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 18),
           const Text(
             '妳的衣櫥目前空空如也',
             style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
               color: LumiColors.text,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           const Text(
             '點擊右上角的「加入新品」按鈕，\n開始建立妳的數位衣櫥吧！',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 13,
               color: LumiColors.subtext,
-              height: 1.8,
+              height: 1.7,
             ),
           ),
-          const Spacer(flex: 6),
+          const Spacer(flex: 5),
         ],
       ),
     );
@@ -208,16 +208,41 @@ class _LoadingGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
-        childAspectRatio: 0.70,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.74,
       ),
-      itemCount: 8,
-      itemBuilder: (_, __) => Container(
-        decoration: BoxDecoration(
-          color: LumiColors.surface,
-          borderRadius: BorderRadius.circular(18),
-        ),
+      itemCount: 6,
+      itemBuilder: (_, __) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: LumiColors.surface,
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: 72,
+            height: 8,
+            decoration: BoxDecoration(
+              color: LumiColors.subtext.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            width: 88,
+            height: 6,
+            decoration: BoxDecoration(
+              color: LumiColors.subtext.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+        ],
       ),
     );
   }

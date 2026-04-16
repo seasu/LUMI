@@ -133,8 +133,9 @@ class SnapNotifier extends Notifier<SnapState> {
   /// Gets the Google Photos access token from the existing GoogleSignIn session.
   ///
   /// Since [googleSignInProvider] already requests [photoslibrary.appendonly]
-  /// during initial login, we reuse that token here — no second popup needed.
-  /// This is safe on mobile browsers where mid-session popups are blocked.
+  /// during initial login, we first try to reuse that token silently.
+  /// On Web, the access token can still be missing after a restored session,
+  /// so we fall back to an explicit sign-in prompt to re-grant Photos scope.
   Future<String?> _getAccessToken() async {
     // Return cached token if still valid (with 5-minute safety buffer).
     if (_cachedPhotosToken != null &&
@@ -152,9 +153,22 @@ class SnapNotifier extends Notifier<SnapState> {
     // If no current session, try silent sign-in first.
     googleUser ??= await googleSignIn.signInSilently();
 
-    if (googleUser == null) return null;
-
     try {
+      if (googleUser != null) {
+        final auth = await googleUser.authentication;
+        final token = auth.accessToken;
+        if (token != null) {
+          _cachedPhotosToken = token;
+          _tokenExpiry = DateTime.now().add(const Duration(hours: 1));
+          return token;
+        }
+      }
+
+      // Some browsers restore the Google session without returning a usable
+      // Photos access token. Prompt once so the user can explicitly grant it.
+      googleUser = await googleSignIn.signIn();
+      if (googleUser == null) return null;
+
       final auth = await googleUser.authentication;
       final token = auth.accessToken;
       if (token != null) {

@@ -1,6 +1,11 @@
-const appBuildVersion = String.fromEnvironment(
-  'APP_BUILD_VERSION',
+const appSemver = String.fromEnvironment(
+  'APP_SEMVER',
   defaultValue: 'dev',
 );
 
-const appVersionLabel = 'v$appBuildVersion';
+const appBuildNumber = String.fromEnvironment(
+  'APP_BUILD_NUMBER',
+  defaultValue: '0',
+);
+
+const appVersionLabel = 'v $appSemver + $appBuildNumber';

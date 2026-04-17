@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../shared/constants/app_version.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_spacing.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
@@ -71,6 +72,10 @@ class _ProfileContent extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: LumiSpacing.lg),
+        const _InfoRow(label: '版本', value: appVersionLabel),
+        const SizedBox(height: LumiSpacing.xs),
+        _InfoRow(label: 'UID', value: profile.uid),
+        const SizedBox(height: LumiSpacing.lg),
         // ── Measurements section ───────────────────────────────────────────
         const Text(
           '個人身材數據',
@@ -99,6 +104,54 @@ class _ProfileContent extends ConsumerWidget {
         ),
         const SizedBox(height: LumiSpacing.lg),
       ],
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: LumiSpacing.md,
+        vertical: LumiSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: LumiColors.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: LumiColors.subtext,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: LumiSpacing.sm),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 13,
+                color: LumiColors.text,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

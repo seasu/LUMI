@@ -118,10 +118,14 @@ jobs:
 
       - name: Build Web
         run: |
+          APP_VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          APP_SEMVER=${APP_VERSION%%+*}
+          APP_BUILD=${APP_VERSION##*+}
           flutter build web --release \
             --pwa-strategy=none \
             --base-href "/LUMI/" \
-            --dart-define=APP_BUILD_VERSION=$(git rev-parse --short HEAD) \
+            --dart-define=APP_SEMVER="$APP_SEMVER" \
+            --dart-define=APP_BUILD_NUMBER="$APP_BUILD" \
             --dart-define=FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }} \
             --dart-define=FIREBASE_AUTH_DOMAIN=${{ secrets.FIREBASE_AUTH_DOMAIN }} \
             --dart-define=FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }} \

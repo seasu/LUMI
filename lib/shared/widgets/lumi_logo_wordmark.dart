@@ -75,7 +75,7 @@ class _LumiLogoWordmarkState extends State<LumiLogoWordmark>
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: widget.fontSize * 3.2,
+      width: widget.fontSize * 3.6,
       height: widget.fontSize * 1.45,
       child: Stack(
         alignment: Alignment.center,

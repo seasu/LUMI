@@ -1,37 +1,40 @@
 # CLAUDE.md — Lumi 專案 AI 工作手冊
 
-> 每次進入此 repo 的 AI，請先完整讀完這份文件。
-> 完整規格請見 [LUMI_PRD.md](./LUMI_PRD.md)。
+> **適用對象**：在本 repo 內協作的 AI 助理（含 **Cursor Agent**、Claude Code 等）。進入任務前請先讀完本文件。  
+> 完整產品規格見 [LUMI_PRD.md](./LUMI_PRD.md)。
 
 ---
 
 ## 開發方式
 
-**本專案透過 Claude Code 開發。** 人類負責描述需求，Claude Code 負責寫程式碼、執行指令、提交 commit。開發者不直接在 terminal 輸入指令。
+人類描述需求；**AI 助理**負責讀檔、改程式、在可執行環境下跑驗證指令、依流程提交與推送。**若工作區允許**，由 AI 透過終端機執行 `flutter` / `git` 等指令並非禁止事項。
 
-### 工作流程
+### 建議工作流程
 
 ```
 使用者描述需求
-  → Claude Code 讀取相關檔案
-  → Claude Code 撰寫/修改程式碼
-  → Claude Code 執行驗證指令（test / analyze）
-  → Claude Code commit & push 至指定分支
-  → GitHub Actions 接手建置與分發
+  → 讀取相關檔案（先讀後改）
+  → 撰寫／修改程式碼
+  → 執行驗證（flutter analyze、flutter test；依任務可加 functions build 等）
+  → commit 與 push 至約定分支
+  → GitHub Actions 建置、部署、CI
 ```
 
-### Claude Code 可執行的驗證指令
+### 可執行的驗證指令（依環境調整）
 
 ```bash
-flutter test                                          # 執行測試
-flutter analyze                                       # 靜態分析
-flutter pub get                                       # 更新依賴
-dart run build_runner build --delete-conflicting-outputs  # 產生 Riverpod 程式碼
-firebase emulators:start --only firestore,auth,functions  # 啟動本地模擬器
+flutter test                                              # 測試
+flutter analyze                                           # 靜態分析
+flutter pub get                                           # 依賴
+dart run build_runner build --delete-conflicting-outputs # 產生 Riverpod 等程式碼
+cd functions && npm run build                             # Cloud Functions TypeScript 編譯
+firebase emulators:start --only firestore,auth,functions  # 本機模擬器（已安裝 firebase-tools 時）
 ```
 
-> **禁止執行**：`flutter build ios`、`flutter build appbundle` 等正式版建置指令。
-> 所有 Release 建置必須透過 GitHub Actions 觸發。
+> **禁止**：`flutter build ios`、`flutter build appbundle` 等**正式發佈用**本機建置（專案規範由 CI 處理 Release）。  
+> **Flutter Web**：本機除錯需自行帶上與 Firebase／Google 相關的 `--dart-define`（對照 `lib/core/config/firebase_options.dart`、`.env.example`）；GitHub Pages 正式站由 Actions secrets 注入。
+
+---
 
 ## 專案一句話
 
@@ -41,22 +44,22 @@ Lumi 是一款 Flutter App，讓使用者用 Google Photos 管理衣櫥，並透
 
 ## 設計規範唯一來源（必讀）
 
-- 專案 UI/UX 實作唯一設計規範檔案為 `DESIGN.md`。
-- `DESIGN.md` 為 design source of truth，禁止再建立或引用其他平行版設計規範檔（例如 `DESIGN_GUIDELINES.md`）。
-- 若 Figma 與 `DESIGN.md` 不一致，必須先整理差異清單並與使用者確認後，才能開始實作。
-- 未經確認不得自行覆蓋 `DESIGN.md` 既有 token（顏色、字級、間距、圓角）或互動規則。
+- UI/UX 實作**唯一**設計規範檔為 **`DESIGN.md`**。
+- **禁止**再新增或引用平行版設計規範檔（例如已移除的 `DESIGN_GUIDELINES.md`）。
+- **Figma** 若與 `DESIGN.md` 不一致：先整理**差異清單**，與使用者確認後再實作。
+- 未經確認不得擅自覆寫 `DESIGN.md` 既有 token（顏色、字級、間距、圓角）或互動規則。
 
 ---
 
 ## 需求處理流程
 
-收到新需求時，依序執行：
+收到新需求時建議依序：
 
-1. **確認範圍**：對照 `LUMI_PRD.md`，確認需求是否在規格內。若超出範圍，先告知使用者再討論是否納入。
-2. **架構評估**：呼叫 `/arch`，確認 ADR 合規性與資料流設計。
-3. **開分支**：從 `develop` 建立 `feature/簡短描述` 分支再開始實作。
-4. **同步寫測試**：實作過程中參照 `/test`，每個功能同步產出 unit test + widget test。
-5. **完成後開 PR**：目標分支為 `develop`，格式見下方 PR 規範。
+1. **確認範圍**：對照 `LUMI_PRD.md`；超出規格先說明並討論。
+2. **架構與 ADR**：閱讀本文件「架構決策紀錄（ADR）」小節；必要時檢視 `functions/`、`lib/core` 資料流是否符合 ADR。
+3. **分支**：依團隊約定從 **`main`** 開分支（例如 `feature/簡述`、`fix/簡述`，或 Cursor Cloud 約定的 `cursor/<名稱>-<suffix>`）；**禁止**直接 push 至 `main`。
+4. **測試**：新邏輯／新 UI 在同一 PR 內附對應 **unit / widget test**（見下方測試規範）。
+5. **PR**：合併目標為 **`main`**（見 PR 規範）。
 
 ---
 
@@ -64,23 +67,16 @@ Lumi 是一款 Flutter App，讓使用者用 Google Photos 管理衣櫥，並透
 
 | 分支 | 用途 |
 |------|------|
-| `main` | 正式發布，受保護，只接受 PR merge，merge 後自動部署 GitHub Pages |
-| `feature/*` | 新功能開發 |
-| `fix/*` | Bug 修復 |
+| `main` | 預設分支；受保護；接受 PR merge；merge 後觸發 GitHub Pages 等部署流程 |
+| `feature/*`、`fix/*`、`cursor/*` 等 | 開發與修復用功能分支 |
 
-**所有 PR 一律 merge 至 `main`。**
-
-### Hotfix 流程
-
-1. 從 `main` 建立 `hotfix/簡短描述` 分支
-2. 修復後以 `fix:` 前綴 commit（自動觸發 Patch 版號更新）
-3. PR 直接 merge 至 `main`
+**Hotfix**：自 `main` 開 `hotfix/簡述` → `fix:` 開頭 commit → PR 回 `main`。
 
 ---
 
 ## Commit Message 規範
 
-本專案使用 Conventional Commits，GitHub Actions 依此自動更新版號。**格式錯誤會導致版號不更新。**
+使用 **Conventional Commits**；GitHub Actions 會依此自動調整版號。**格式錯誤可能導致版號不更新**。
 
 ```
 feat: 新增 Lumi-Check 購物模式入口
@@ -92,307 +88,184 @@ refactor: 拆分 WardrobeRepository 為獨立 Provider
 
 | 前綴 | 版號影響 |
 |------|---------|
-| `feat:` | Minor 版號 +1（1.0.0 → 1.1.0） |
-| `fix:` | Patch 版號 +1（1.0.0 → 1.0.1） |
-| 其他 | 不更新版號 |
+| `feat:` | Minor +1 |
+| `fix:` | Patch +1 |
+| 其他 | 通常不升版號 |
 
 ---
 
 ## PR 規範
 
-- **目標分支**：一律為 `main`
-- **標題格式**：同 Commit Message 規範（`feat:` / `fix:` 開頭）
-- **描述必填**：這個 PR 做了什麼（1–3 行）＋如何測試
-- **Merge 條件**：CI（flutter analyze + flutter test）全部通過
-- **禁止**：直接 push 至 `main` 或 `develop`，一律走 PR
+- **目標分支**：**`main`**
+- **標題**：與 Commit 規範一致（例如 `feat:`、`fix:` 開頭）
+- **描述**：做了什麼（精簡）＋如何驗證
+- **Merge 條件**：CI（如 `flutter analyze`、`flutter test`）通過
+- **禁止**：略過 PR 直接 push `main`
 
-### Push 完成後的自動化流程
-
-每次 push 後，依照以下順序執行：
-
-**情況 A：GitHub MCP 工具可用**
-1. 自動建立 PR（標題、描述依上方規範）
-2. 呼叫 `subscribe_pr_activity` 訂閱該 PR 的事件
-3. CI 失敗 → 自動分析錯誤、修正、重新 push，不需使用者介入
-4. CI 通過、review 無問題 → 通知使用者確認 merge
-
-**情況 B：GitHub MCP 工具不可用**
-輸出以下資訊供手動建立 PR：
-```
-分支：feature/xxx → develop
-標題：feat: xxx
-描述：（完整 PR 描述內容）
-```
+若環境提供 **PR／CI 管理工具**，於 push 後建立或更新對應 PR；否則在回覆中給出手動建 PR 的**分支名稱、標題、描述**。
 
 ---
 
 ## 測試規範
 
-每個新功能必須在**同一個 PR**內包含對應測試，不得事後補寫。
+新功能應在**同一 PR** 內包含測試，避免「先合併再補」。
 
-| 功能類型 | 必寫測試 |
-|---------|---------|
+| 類型 | 測試 |
+|------|------|
 | Repository / Service | Unit test |
 | Widget / Page | Widget test |
-| 完整使用者流程 | Integration test（M2 起） |
+| 完整使用者流程 | Integration test（里程碑需要時） |
 
-詳細測試模板與各里程碑驗收標準，參照 `/test` Skill。
+細節可對照專案內測試檔與里程碑驗收標準。
 
 ---
 
 ## 架構決策紀錄（ADR）
 
-這些是已確認的架構決策，不得在未討論的情況下推翻。
+未經討論不得推翻。
 
 ### ADR-001：Google Photos 只存圖，Metadata 存 Firestore
 
-**決策**：所有 AI 分析結果（顏色、材質、特徵向量）存於 Firestore，以 `mediaItemId` 作為關聯鍵。Google Photos 僅作為相片儲存媒介。
-
-**原因**：Google Photos API 的 `description` 欄位為唯讀（App 無法更新），且無法儲存特徵向量這類結構化資料。
+AI 分析結果（顏色、材質、embedding 等）存 **Firestore**，以 `mediaItemId` 關聯；Google Photos 僅存圖。
 
 ### ADR-002：AI 推論必須走 Firebase Cloud Functions
 
-**決策**：所有 Gemini API 呼叫必須透過 Firebase Cloud Functions，客戶端不持有 Vertex AI 憑證。
+Gemini 等呼叫經 **Cloud Functions**；客戶端不內嵌 Vertex AI 憑證。
 
-**原因**：Flutter 打包後 APK/IPA 可被反編譯，直接嵌入 API Key 會造成金鑰外洩。
+### ADR-003：Google Photos API 範圍
 
-### ADR-003：Google Photos API 範圍限制
+第三方 App 僅能可靠讀取**透過本 App 上傳**的媒體；入庫以 Lumi Snap／上傳流程為準。
 
-**決策**：Lumi 只能存取 App 自己上傳的相片（非使用者整個 Google Photos 相簿）。
+### ADR-004：Lumi-Check 比對
 
-**原因**：Google Photos Library API 自 2021 年起，第三方 App 只能讀取透過該 App 上傳的媒體。入庫必須透過 Lumi Snap 拍照，不支援匯入現有相片。
-
-### ADR-004：Lumi-Check 特徵向量比對（M4 前暴力比對）
-
-**決策**：M4 初版使用 Cloud Functions 全量 cosine similarity 計算。衣物超過 200 件後，評估遷移至 Vertex AI Vector Search。
+初版於 Functions 端做相似度；規模大可再評估 Vector Search。
 
 ---
 
-## Firestore Schema
+## Firestore Schema（摘要）
 
 ```
 users/{userId}/
   └── wardrobe/{mediaItemId}/
-        ├── mediaItemId: string       # Google Photos mediaItem ID
-        ├── category: string          # "上衣" | "褲子" | "外套" | "配件" | "鞋子"
-        ├── colors: string[]          # ["#3B5BDB", "#FFFFFF"]
-        ├── materials: string[]       # ["棉", "聚酯纖維"]
-        ├── embedding: float[]        # Gemini 產生的特徵向量，用於 Lumi-Check
-        ├── thumbnailUrl: string      # Google Photos baseUrl（60 分鐘有效，需動態刷新）
-        └── createdAt: timestamp
+        ├── mediaItemId, category, colors, materials, embedding,
+        ├── thumbnailUrl, createdAt, …
 ```
+
+詳細欄位以程式與規格為準。
 
 ---
 
 ## 安全性規範
 
-產生或修改程式碼時，必須遵守以下規則：
+1. **禁止**在 Flutter 端 hardcode API Key、Secret、Service Account JSON。
+2. Firestore 依 **Security Rules**；寫入規則應綁定 `request.auth.uid`。
+3. Cloud Functions 應驗證 **Firebase Auth**，拒絕未認證請求。
+4. Google OAuth **最小 scope**；實際請求 scope 見 `lib/core/providers/firebase_providers.dart`。
+5. **`thumbnailUrl`** 為短期有效時需依設計刷新，勿假設永久有效。
 
-1. **禁止在 Flutter 端 hardcode 任何 API Key、Secret 或 Service Account**。
-2. **所有 Firestore 操作須受 Security Rules 保護**，規則必須驗證 `request.auth.uid == userId`。
-3. **Cloud Functions 的所有端點須驗證 Firebase Auth ID Token**，拒絕未認證請求。
-4. **Google OAuth scope 最小化原則**：只申請實際需要的 scope，目前為 `photoslibrary.appendonly`（上傳）與 `photoslibrary.readonly`（讀取 Lumi 上傳的內容）。
-5. **`thumbnailUrl` 不可持久化至本機快取超過 55 分鐘**，需在過期前向 Google Photos API 刷新。
+細部 checklist 見 [SECURITY.md](./SECURITY.md)。
 
 ---
 
 ## UI/UX 快速參考
 
-> **設計參考檔案**（以 Stitch 製作的官方 mockup）：
-> - `design/lumi_welcome_screen.png` — 登入頁
-> - `design/lumi_wardrobe_dashboard.png` — 衣櫥主頁
-> - `design/lumi_check_shopping_mode.png` — Lumi-Check 購物模式
+（可選）**版面參考圖**（Stitch mockup，repo 內 `design/`）：
 
-**設計風格**：Clean iOS Style — 乾淨、系統感、以留白與層次取代裝飾。
+- `design/lumi_welcome_screen.png` — 登入頁
+- `design/lumi_wardrobe_dashboard.png` — 衣櫥主頁
+- `design/lumi_check_shopping_mode.png` — Lumi-Check 購物模式
 
-### 色彩常數
+實作仍以 **`DESIGN.md`** 與程式 token 為準；參考圖僅供構圖／層次對照，若與 `DESIGN.md` 不一致，以 **`DESIGN.md`** 為優先。
 
-```dart
-// 統一從 LumiColors 引用，不得 hardcode 顏色值
-static const base       = Color(0xFFF2F2F7); // iOS 系統背景灰，主背景
-static const surface    = Color(0xFFFFFFFF); // 純白，卡片表面
-static const accent     = Color(0xFF007AFF); // iOS 藍，導航 active、互動強調
-static const googleBlue = Color(0xFF4285F4); // Google 登入按鈕專用
-static const lumiCheck  = Color(0xFFE8735A); // 珊瑚橙，Lumi-Check 模式主色
-static const glow       = Color(0xFF5BB7FF); // 淡藍，AI 掃描動畫光圈
-static const text       = Color(0xFF1C1C1E); // iOS 主文字（近黑）
-static const subtext    = Color(0xFF8E8E93); // iOS 次要文字（中灰）
-static const warning    = Color(0xFFE8735A); // 重複警示徽章（同 lumiCheck）
-```
+設計語言與 token 以 **`DESIGN.md`** 為準；程式中請優先使用：
 
-### 導航結構
+- `lib/shared/constants/lumi_colors.dart` — `LumiColors`
+- `lib/shared/constants/lumi_spacing.dart` — `LumiSpacing`
+- `lib/shared/constants/lumi_radii.dart` — `LumiRadii`
+- `lib/shared/constants/lumi_type_scale.dart` — `LumiTypeScale`
 
-主應用（衣櫥模式）底部 5 tab：
-| Tab | Icon | 功能 |
-|-----|------|------|
-| Home | house | 衣櫥主頁（Lumi Wardrobe） |
-| Search | magnifying glass | 搜尋篩選 |
-| Add | + | Lumi Snap（上傳） |
-| Outfits | hanger | 穿搭組合（M5+） |
-| Profile | person | 個人設定 |
-
-Lumi-Check 購物模式切換為 4 tab：Wardrobe／Shopping（active）／OOTD／Profile
-
-### 元件規範
-
-**卡片**
-- 白色底 `surface`，圓角 `borderRadius: 12`，輕微陰影（`BoxShadow` opacity ≤ 0.08）
-- 無外框線，用卡片白 vs 頁面灰製造層次
-
-**分類 Tab Bar**
-- 水平可捲動，active 以底線 underline 標示（非 pill/填色背景）
-- active 文字 `text` 色，inactive `subtext` 色
-
-**顏色篩選器**
-- 圓形 chip，實心填色，All 以黑色圓形表示
-- active 加白色外框（2px border）
-
-**重複警示徽章（Duplicate Alert）**
-- 卡片右上角橘色 pill，`warning` 色，白色文字
-- 不使用全頁警告橫幅，僅作為徽章
-
-**AI 掃描動畫**（Lumi-Check）
-- 藍色脈衝光圈（`glow` 色），圓形擴散效果
-- 不使用 CircularProgressIndicator，不使用粉色光暈
-
-**Lumi-Check 頁面**
-- Header 背景：`lumiCheck` 珊瑚橙漸層
-- Ignore 按鈕：`lumiCheck` 色背景，eye-slash icon
-- Compare 按鈕：淡藍色背景（`glow` 色系），search icon
-
-**登入頁**
-- Google 登入按鈕：`googleBlue` 色，左側 Google G logo（白色圓形背景），pill 形狀
-- 不使用自訂色彩的登入按鈕
+調整介面時一併閱讀 **`.cursor/rules/ui-scale.mdc`**。
 
 ---
 
 ## 環境變數與 Secrets
 
-**開發環境**：在專案根目錄建立 `.env`（已加入 `.gitignore`），格式如下：
-
-```
-FIREBASE_PROJECT_ID=lumi-app-dev
-GOOGLE_CLIENT_ID_IOS=xxx.apps.googleusercontent.com
-GOOGLE_CLIENT_ID_ANDROID=xxx.apps.googleusercontent.com
-```
-
-**GitHub Actions Secrets**（由 repo 管理員設定，AI 不可修改）：
-
-| Secret 名稱 | 用途 |
-|------------|------|
-| `ANDROID_KEYSTORE_BASE64` | Android 簽署用 Keystore（Base64） |
-| `ANDROID_KEY_ALIAS` | Keystore alias |
-| `ANDROID_KEY_PASSWORD` | Key 密碼 |
-| `ANDROID_STORE_PASSWORD` | Store 密碼 |
-| `MATCH_PASSWORD` | Fastlane Match 憑證加密密碼 |
-| `MATCH_GIT_URL` | Fastlane Match 憑證私有 repo URL |
-| `FIREBASE_SERVICE_ACCOUNT` | Firebase App Distribution 服務帳戶 JSON |
+- **本機**：可自行維護 `.env`（未追蹤 git）作為數值參考；Flutter Web 仍以 **`--dart-define`** 注入為準。
+- **GitHub Actions**：`FIREBASE_*`、`GOOGLE_CLIENT_ID` 等由 repo **Secrets** 設定；AI **不得**假設能替使用者寫入 GitHub Secrets。
 
 ---
 
-## 里程碑現況
+## 里程碑現況（摘要）
 
-> 開發策略：Web 優先。M1–M4 在 Flutter Web 驗證 UX，M5 再轉換 Native。
-
-| 階段 | 平台 | 功能 | 狀態 |
-|------|------|------|------|
-| M1 | Web | 專案骨架、Google 登入、GitHub Pages 自動部署 | 完成 |
-| M2 | Web | Lumi Snap（拍照 + AI 分析 + 上傳） | 完成 |
-| M3 | Web | Lumi Search（衣物列表 + 篩選） | 完成 |
-| M4 | Web | Lumi-Check（查重比對） | 完成 |
-| M5 | Native | iOS + Android 轉換、平台 CI/CD | 待開始 |
-| M6 | Native | UI 精修、效能優化、Beta 發布 | 待開始 |
+Web 優先完成 M1–M4；Native（M5+）待後續階段。詳見 `LUMI_PRD.md`。
 
 ---
 
-## UI/UX 刻度與 Cursor 規則（調整介面時必讀）
+## Cursor／IDE 規則檔
 
-建立或修改 Flutter 介面（`lib/**/*.dart`）時，除 `DESIGN.md` 外，請一併遵守：
-
-- **Cursor 規則**：`.cursor/rules/ui-scale.mdc`（spacing / radii / type / colors 與 DESIGN 優先順序）。
-- **程式刻度常數**（避免 magic number）：
-  - `lib/shared/constants/lumi_spacing.dart` — `LumiSpacing`
-  - `lib/shared/constants/lumi_radii.dart` — `LumiRadii`
-  - `lib/shared/constants/lumi_type_scale.dart` — `LumiTypeScale`
-  - `lib/shared/constants/lumi_colors.dart` — `LumiColors`
-
-若 Figma 與 `DESIGN.md` 衝突，先列差異並與產品確認後再實作。
-
----
-
-## 可用 Skills（AI 應主動判斷時機呼叫）
-
-| Skill | 呼叫時機 |
-|-------|---------|
-| `/ui` | 建立或修改任何 Flutter 介面相關程式碼時（Widget、頁面佈局、導航、動畫、狀態呈現、互動設計），主動參照設計規範 |
-| `/style` | 撰寫任何 Dart 程式碼時，主動參照命名規範、目錄結構、Riverpod 模式 |
-| `/arch` | 實作新功能前，先評估架構可行性與 ADR 合規性 |
-| `/security` | 每次 commit 前，對本次改動執行安全掃描 |
-| `/google-photos` | 任何涉及 Google Photos API 的程式碼，主動參照 API 限制與正確用法 |
-| `/test` | 實作新功能時，同步撰寫對應測試；或需要查閱各里程碑驗收標準時 |
-| `/marketing` | 使用者要求撰寫 App Store 說明、版本更新說明、社群文案時 |
+與 UI、程式風格相關的約束見 **`.cursor/rules/*.mdc`**；與本文件衝突時以 **`DESIGN.md`** 與 **ADR** 為準。
 
 ---
 
 ## 語言規範
 
-**所有回覆必須使用繁體中文。** 包含說明、提問、錯誤訊息解讀、commit message 以外的所有文字溝通。
-程式碼、指令、變數名稱、commit message 本身維持英文。
+- 對使用者的說明、討論：**繁體中文**。
+- 程式碼、指令、變數名、**commit message**：英文。
 
 ---
 
 ## Session 恢復流程
 
-每次開啟新 session，在回應任何需求前，先依序執行：
+新對話開始處理任務前，若可執行 git，建議快速確認：
 
-1. `git status` — 確認有無未 commit 的變更
-2. `git log --oneline -5` — 讀取最近 5 筆 commit，了解目前進度
-3. `git branch --show-current` — 確認目前所在分支
-4. 若有未完成工作（uncommitted changes 或 WIP commit），主動告知使用者目前狀態，詢問是否繼續上次任務
+1. `git status`
+2. `git log --oneline -5`
+3. `git branch --show-current`
 
-完成後才進入使用者描述的新需求。
+若有未提交變更或明顯進行中任務，先向使用者簡述狀態再繼續。
 
 ---
 
 ## 長任務分段策略
 
-單一功能預估超過 3 個檔案修改，或需要多個邏輯步驟時，主動拆分：
-
-1. 開始前列出分段計畫，說明每段的範圍與 commit 節點
-2. 每完成一個有意義的段落即 commit，確保 session 中斷後進度不遺失
-3. 每段 commit message 加上進度標記，例如：
-   ```
-   feat(wardrobe): add Firestore repository layer [1/3]
-   feat(wardrobe): add Riverpod provider and state [2/3]
-   feat(wardrobe): add wardrobe list UI [3/3]
-   ```
-4. 每段完成後簡短回報進度，讓使用者知道目前到哪裡
+範圍大時拆段執行：每段有意義的進度即 **commit**（可用 `[1/3]` 這類標記），避免單一巨大 diff、利於中斷恢復。
 
 ---
 
 ## 卡住時的處理規則
 
-遇到 `flutter analyze` 或 `flutter test` 失敗：
+`flutter analyze` / `flutter test`（或 functions `npm run build`）失敗時：
 
-- **第 1 次失敗**：分析錯誤，自行修正，重新執行
-- **第 2 次失敗**：再嘗試一次，若仍失敗則停下
-- **第 3 次仍失敗**：停止嘗試，向使用者說明：
-  - 錯誤訊息是什麼
-  - 已嘗試過哪些修法
-  - 目前判斷問題可能出在哪裡
-  - 提供 2–3 個解決方向供選擇
-
-不得無限重試消耗 context，也不得在未解決的情況下繼續後續任務。
+- 先分析錯誤與修正，**有限次**重試（避免無限迴圈與消耗 context）。
+- 若多次仍失敗：條列錯誤摘要、已嘗試作法、可能原因與 2–3 個可行方向，交給使用者決策。
 
 ---
 
-## 給 Claude Code 的工作原則
+## 給 AI 助理的工作原則
 
-1. **先讀後改**：修改任何檔案前，先用 Read 工具讀取現有內容。
-2. **最小修改原則**：只改任務要求的部分，不順手重構無關程式碼。
-3. **驗證後再 commit**：每次程式碼修改後，先執行 `flutter analyze` 與 `flutter test` 確認無誤，再 commit。
-4. **安全第一**：發現任何違反上方安全規範的程式碼，立即標記並修正，不等使用者提出。
-5. **ADR 優先**：若新需求與 ADR 衝突，先向使用者提出討論，不自行推翻已確認的架構決策。
-6. **Commit 格式**：所有 commit 必須符合 Conventional Commits 規範（見上方），確保自動版號正常運作。
-7. **不建 Release**：禁止執行 `flutter build` 正式版建置，一律由 GitHub Actions 負責。
-8. **完成後必須回報**：每次執行完 `git commit` 或 `git push` 後，必須立即向使用者說明：(1) 完成了什麼功能或修正；(2) 修改了哪些檔案；(3) 下一步計畫。不得跳過此步驟直接進入下一個動作。
+1. **先讀後改**：改檔前先讀既有內容與呼叫點。
+2. **最小修改**：只做任務需要的變更，避免無關重構。
+3. **驗證再提交**：修改後盡量跑 `flutter analyze` 與 `flutter test`（及相關 build）；通過再 commit。
+4. **安全與 ADR**：違反安全或 ADR 時先指出或修正；需推翻 ADR 時必須與人類確認。
+5. **Conventional Commits**：維持版號與 CI 習慣一致。
+6. **不自己做 Release 建置**：正式 `flutter build` 發佈交由 CI／人類流程。
+7. **做完要回報**：commit / push 後簡述**做了什麼**、**動了哪些路徑**、**後續建議**。
+
+---
+
+## 舊版「Slash Skills」對照（本環境無指令時）
+
+舊文件中的 `/ui`、`/arch`、`/test` 等：**沒有**內建指令引擎時，改為實際行為：
+
+| 舊標記 | 改做什麼 |
+|--------|----------|
+| `/ui` | 讀 `DESIGN.md` + `LumiColors`/`LumiSpacing`/… + `.cursor/rules/ui-scale.mdc` |
+| `/style` | 對照既有 `lib/` 命名、Riverpod 用法與 `.cursor/rules` |
+| `/arch` | 對照本文件 ADR 與相關 `lib/`、`functions/` 資料流 |
+| `/security` | 對照本文件安全性與 `SECURITY.md` |
+| `/google-photos` | 對照 ADR、Photos API 與 `functions/` 實作 |
+| `/test` | 撰寫／更新測試並跑 `flutter test` |
+
+---
+
+本文件沿用檔名 **CLAUDE.md** 以利既有工具與連結；內容已通用化為 **Lumi repo 內所有 AI 助理**的共用規範。

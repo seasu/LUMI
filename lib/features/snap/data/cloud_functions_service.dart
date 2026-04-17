@@ -1,5 +1,17 @@
 import 'package:cloud_functions/cloud_functions.dart';
 
+/// Callable responses can omit keys or send null on Web (JS interop); never use `as String` blindly.
+String _requireString(Map<String, dynamic> data, String key) {
+  final v = data[key];
+  if (v == null) {
+    throw FormatException('Missing field "$key" in Cloud Function response');
+  }
+  if (v is String) return v;
+  throw FormatException(
+    'Field "$key" has unexpected type ${v.runtimeType}',
+  );
+}
+
 class CloudFunctionsService {
   CloudFunctionsService(this._functions);
 
@@ -15,9 +27,9 @@ class CloudFunctionsService {
       'mimeType': mimeType,
     });
 
-    final data = Map<String, dynamic>.from(result.data);
+    final data = _asStringKeyedMap(result.data);
     return AnalyzeClothingResult(
-      category: data['category'] as String,
+      category: _requireString(data, 'category'),
       colors: List<String>.from(data['colors'] as List),
       materials: List<String>.from(data['materials'] as List),
       embedding: List<double>.from(
@@ -40,10 +52,10 @@ class CloudFunctionsService {
       'accessToken': accessToken,
     });
 
-    final data = Map<String, dynamic>.from(result.data);
+    final data = _asStringKeyedMap(result.data);
     return UploadToPhotosResult(
-      mediaItemId: data['mediaItemId'] as String,
-      thumbnailUrl: data['thumbnailUrl'] as String,
+      mediaItemId: _requireString(data, 'mediaItemId'),
+      thumbnailUrl: _requireString(data, 'thumbnailUrl'),
     );
   }
 
@@ -57,14 +69,14 @@ class CloudFunctionsService {
       'mimeType': mimeType,
     });
 
-    final data = Map<String, dynamic>.from(result.data);
+    final data = _asStringKeyedMap(result.data);
     final rawMatches = data['topMatches'] as List? ?? [];
     final topMatches = rawMatches.map((e) {
-      final m = Map<String, dynamic>.from(e as Map);
+      final m = _asStringKeyedMap(e);
       return MatchedClothingItem(
         similarity: (m['similarity'] as num).toDouble(),
-        mediaItemId: m['mediaItemId'] as String,
-        thumbnailUrl: m['thumbnailUrl'] as String,
+        mediaItemId: _requireString(m, 'mediaItemId'),
+        thumbnailUrl: _requireString(m, 'thumbnailUrl'),
         category: m['category'] as String? ?? '',
         colors: List<String>.from(m['colors'] as List? ?? []),
       );
@@ -118,4 +130,16 @@ class CompareClothingResult {
   const CompareClothingResult({required this.topMatches});
 
   final List<MatchedClothingItem> topMatches;
+}
+
+Map<String, dynamic> _asStringKeyedMap(Object? raw) {
+  if (raw == null) {
+    throw const FormatException('Cloud Function returned null payload');
+  }
+  if (raw is! Map) {
+    throw FormatException(
+      'Cloud Function returned ${raw.runtimeType}, expected Map',
+    );
+  }
+  return Map<String, dynamic>.from(raw as Map);
 }

@@ -106,7 +106,7 @@ class _SnapFab extends StatelessWidget {
         width: 56,
         height: 56,
         decoration: const BoxDecoration(
-          gradient: LumiColors.buttonGradient,
+          gradient: LumiColors.brandGradient,
           shape: BoxShape.circle,
         ),
         child: const Center(

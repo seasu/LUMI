@@ -35,22 +35,29 @@ Lumi 將使用者的衣櫥視為一座高端編輯策展空間。美學驅動力
 ```dart
 // lib/shared/constants/lumi_colors.dart
 class LumiColors {
-  static const base         = Color(0xFFFAF4EE); // 暖奶油米，所有頁面主背景
-  static const baseAlt      = Color(0xFFFAF9F8); // Gallery Bone，柔和背景層次
-  static const surface      = Color(0xFFFFFFFF); // 純白，卡片 / Modal / Sheet 表面
-  static const primary      = Color(0xFFF08630); // 暖橘，主要 CTA / 強調色
-  static const primaryLight = Color(0xFFF5A855); // 橘漸層-淺端
-  static const primaryDark  = Color(0xFFE06820); // 橘漸層-深端
+  // Surfaces
+  static const base         = Color(0xFFFAF9F8); // Gallery Bone，所有頁面主背景
+  static const baseAlt      = Color(0xFFF5F4F2); // 微暖灰，背景漸層用
+  static const surface      = Color(0xFFFFFFFF); // 純白，卡片 / Modal / Sheet
+
+  // Brand
+  static const primary      = Color(0xFFFF8C00); // primary_container，品牌主色
+  static const primaryLight = Color(0xFFFD9E78); // secondary_container，品牌漸層淺端
+  static const primaryFixed = Color(0xFFFFDCC3); // 底部導航 active icon 光暈
+
+  // Button "Liquid Gold"
+  static const buttonStart  = Color(0xFF904D00); // 按鈕漸層起點
+  static const buttonEnd    = Color(0xFF934A2A); // 按鈕漸層終點
+
+  // Semantic
   static const glow         = Color(0xFFF5A870); // 暖橙光暈，AI 動畫
-  static const text         = Color(0xFF1C1007); // 深暖棕，主要文字
-  static const subtext      = Color(0xFF7A6858); // 暖灰棕，次要文字
+  static const text         = Color(0xFF1A1C1C); // on_surface，主要文字
+  static const subtext      = Color(0xFF564334); // on_surface_variant，次要文字
   static const warning      = Color(0xFFE05528); // 深橘紅，高相似度警示
 
-  static const buttonGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [primaryLight, primaryDark],
-  );
+  // Gradients
+  static const buttonGradient = LinearGradient(...); // Liquid Gold
+  static const brandGradient  = LinearGradient(...); // Golden Hour
 }
 ```
 

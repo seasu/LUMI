@@ -74,6 +74,13 @@ class SnapNotifier extends Notifier<SnapState> {
       } on FirebaseFunctionsException catch (e) {
         state = SnapError(_mapFunctionsError(e));
         return;
+      } on FormatException catch (e) {
+        state = SnapError(
+          '上傳結果格式異常，請再試一次；若重複發生請聯絡開發者。\n'
+          '錯誤代號：LUMI-SNAP-BAD-RESPONSE\n'
+          '技術訊息：$e',
+        );
+        return;
       } catch (e) {
         state = SnapError(
           '上傳過程發生未預期錯誤，請稍後再試。\n'

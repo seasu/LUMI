@@ -75,8 +75,8 @@ class _LumiLogoWordmarkState extends State<LumiLogoWordmark>
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: widget.fontSize * 3.2,
-      height: widget.fontSize * 1.45,
+      width: widget.fontSize * 3.65,
+      height: widget.fontSize * 1.5,
       child: Stack(
         alignment: Alignment.center,
         clipBehavior: Clip.none,
@@ -92,8 +92,8 @@ class _LumiLogoWordmarkState extends State<LumiLogoWordmark>
           ),
           // i 上方閃爍橘光（依字體大小動態定位）
           Positioned(
-            top: widget.fontSize * 0.16,
-            right: widget.fontSize * 0.34,
+            top: widget.fontSize * 0.22,
+            right: widget.fontSize * 0.42,
             child: AnimatedBuilder(
               animation: _sparkleController,
               builder: (_, __) {

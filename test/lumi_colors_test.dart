@@ -5,7 +5,7 @@ import 'package:lumi/shared/constants/lumi_colors.dart';
 void main() {
   group('LumiColors', () {
     test('base color is warm cream', () {
-      expect(LumiColors.base, const Color(0xFFFAF9F8));
+      expect(LumiColors.base, const Color(0xFFFAF4EE));
     });
 
     test('surface color is correct', () {

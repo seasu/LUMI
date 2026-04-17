@@ -160,11 +160,10 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 32, 16, 0),
+    return SizedBox.expand(
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Spacer(flex: 4),
           Icon(
             Icons.dry_cleaning_outlined,
             size: 76,
@@ -173,6 +172,7 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 18),
           const Text(
             '妳的衣櫥目前空空如也',
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w800,
@@ -189,7 +189,6 @@ class _EmptyState extends StatelessWidget {
               height: 1.7,
             ),
           ),
-          const Spacer(flex: 5),
         ],
       ),
     );

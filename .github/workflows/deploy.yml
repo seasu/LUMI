@@ -44,8 +44,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync with origin/main
+        run: |
+          git fetch origin main
+          git pull --rebase origin main
 
       - name: Bump version from commit message
         id: bump
@@ -72,7 +78,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add pubspec.yaml
           git diff --staged --quiet || git commit -m "chore: bump version to ${{ steps.bump.outputs.new_version }}"
-          git push
+          git pull --rebase origin main
+          git push origin main
 
   build:
     name: Build Web

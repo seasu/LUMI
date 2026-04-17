@@ -72,7 +72,7 @@ class _ProfileContent extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: LumiSpacing.lg),
-        _InfoRow(label: '版本', value: appVersionLabel),
+        const _InfoRow(label: '版本', value: appVersionLabel),
         const SizedBox(height: LumiSpacing.xs),
         _InfoRow(label: 'UID', value: profile.uid),
         const SizedBox(height: LumiSpacing.lg),

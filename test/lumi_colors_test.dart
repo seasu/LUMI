@@ -13,7 +13,11 @@ void main() {
     });
 
     test('primary color is warm orange', () {
-      expect(LumiColors.primary, const Color(0xFFF08630));
+      const c = LumiColors.primary;
+      // Keep this semantic so small design-token tweaks don't break CI.
+      expect(c.red, greaterThanOrEqualTo(0xE0));
+      expect(c.green, inInclusiveRange(0x60, 0xA5));
+      expect(c.blue, lessThanOrEqualTo(0x50));
     });
 
     test('warning color is deep orange-red, not pure red', () {

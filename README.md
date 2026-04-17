@@ -6,3 +6,7 @@ Lumi (源自 Luminous) 旨在透過科技照亮衣櫥中被遺忘的角落。透
 - UI/UX implementation must follow `DESIGN.md`.
 - `DESIGN.md` is the only design guideline file in this repository.
 - If Figma and `DESIGN.md` are inconsistent, list the differences first and confirm with the product owner before implementing.
+
+## Security
+
+- API key and credential hardening checklist: see `SECURITY.md`.

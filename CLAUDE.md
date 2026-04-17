@@ -169,6 +169,14 @@ users/{userId}/
 
 ## UI/UX 快速參考
 
+（可選）**版面參考圖**（Stitch mockup，repo 內 `design/`）：
+
+- `design/lumi_welcome_screen.png` — 登入頁
+- `design/lumi_wardrobe_dashboard.png` — 衣櫥主頁
+- `design/lumi_check_shopping_mode.png` — Lumi-Check 購物模式
+
+實作仍以 **`DESIGN.md`** 與程式 token 為準；參考圖僅供構圖／層次對照，若與 `DESIGN.md` 不一致，以 **`DESIGN.md`** 為優先。
+
 設計語言與 token 以 **`DESIGN.md`** 為準；程式中請優先使用：
 
 - `lib/shared/constants/lumi_colors.dart` — `LumiColors`

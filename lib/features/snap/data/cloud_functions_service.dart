@@ -17,11 +17,11 @@ class CloudFunctionsService {
 
     final data = Map<String, dynamic>.from(result.data);
     return AnalyzeClothingResult(
-      category: data['category'] as String,
-      colors: List<String>.from(data['colors'] as List),
-      materials: List<String>.from(data['materials'] as List),
+      category: data['category'] as String? ?? '',
+      colors: List<String>.from(data['colors'] as List? ?? []),
+      materials: List<String>.from(data['materials'] as List? ?? []),
       embedding: List<double>.from(
-        (data['embedding'] as List).map((e) => (e as num).toDouble()),
+        (data['embedding'] as List? ?? []).map((e) => (e as num).toDouble()),
       ),
     );
   }
@@ -41,9 +41,19 @@ class CloudFunctionsService {
     });
 
     final data = Map<String, dynamic>.from(result.data);
+    final mediaItemId = data['mediaItemId'] as String?;
+    final thumbnailUrl = data['thumbnailUrl'] as String?;
+
+    if (mediaItemId == null || mediaItemId.isEmpty) {
+      throw Exception(
+        'Cloud Function 未回傳 mediaItemId，'
+        'response keys: ${data.keys.toList()}',
+      );
+    }
+
     return UploadToPhotosResult(
-      mediaItemId: data['mediaItemId'] as String,
-      thumbnailUrl: data['thumbnailUrl'] as String,
+      mediaItemId: mediaItemId,
+      thumbnailUrl: thumbnailUrl ?? '',
     );
   }
 
@@ -62,9 +72,9 @@ class CloudFunctionsService {
     final topMatches = rawMatches.map((e) {
       final m = Map<String, dynamic>.from(e as Map);
       return MatchedClothingItem(
-        similarity: (m['similarity'] as num).toDouble(),
-        mediaItemId: m['mediaItemId'] as String,
-        thumbnailUrl: m['thumbnailUrl'] as String,
+        similarity: (m['similarity'] as num?)?.toDouble() ?? 0.0,
+        mediaItemId: m['mediaItemId'] as String? ?? '',
+        thumbnailUrl: m['thumbnailUrl'] as String? ?? '',
         category: m['category'] as String? ?? '',
         colors: List<String>.from(m['colors'] as List? ?? []),
       );

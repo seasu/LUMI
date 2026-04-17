@@ -141,5 +141,5 @@ Map<String, dynamic> _asStringKeyedMap(Object? raw) {
       'Cloud Function returned ${raw.runtimeType}, expected Map',
     );
   }
-  return Map<String, dynamic>.from(raw as Map);
+  return Map<String, dynamic>.from(raw);
 }

@@ -54,18 +54,18 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
       backgroundColor: LumiColors.base,
       body: Stack(
         children: [
-          Center(
+          const Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Padding(
+                Padding(
                   padding:
                       EdgeInsets.symmetric(horizontal: LumiSpacing.lg),
                   child: LumiLogoWordmark(fontSize: 56),
                 ),
-                const SizedBox(height: 56),
+                SizedBox(height: 56),
                 // 說明文字
-                const Text(
+                Text(
                   'Lumi 正在為妳點亮衣櫥...',
                   style: TextStyle(
                     fontSize: 15,

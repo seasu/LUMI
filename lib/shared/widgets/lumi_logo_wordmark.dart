@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../constants/lumi_colors.dart';
-
 /// Lumi wordmark as a single SVG (script + sparkle) for consistent lockup
 /// across Welcome and Loading. Update [assets/branding/lumi_wordmark.svg] from
 /// Figma/Illustrator for a perfect match; [fontSize] controls overall height.

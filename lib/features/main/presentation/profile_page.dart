@@ -477,14 +477,14 @@ class _EditMeasurementDialogState extends State<_EditMeasurementDialog> {
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
+                              strokeWidth: 2, color: LumiColors.onPrimary),
                         )
                       : const Text(
                           '儲存',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                            color: LumiColors.onPrimary,
                           ),
                         ),
                 ),

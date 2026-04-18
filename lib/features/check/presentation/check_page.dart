@@ -527,7 +527,7 @@ class _SimilarCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: LumiColors.onPrimary,
                   height: 1.2,
                 ),
               ),
@@ -707,7 +707,7 @@ class _PrimaryButton extends StatelessWidget {
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: LumiColors.onPrimary,
             ),
           ),
         ),

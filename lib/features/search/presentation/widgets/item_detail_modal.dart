@@ -6,7 +6,7 @@ import '../../../wardrobe/data/wardrobe_item.dart';
 void showItemDetailModal(BuildContext context, WardrobeItem item) {
   showDialog(
     context: context,
-    barrierColor: Colors.black.withOpacity(0.5),
+    barrierColor: LumiColors.overlayBarrier,
     builder: (_) => _ItemDetailModal(item: item),
   );
 }

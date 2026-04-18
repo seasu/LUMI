@@ -24,5 +24,9 @@ void main() {
       expect(LumiColors.warning, isNot(const Color(0xFFFF0000)));
       expect(LumiColors.warning.red, greaterThan(LumiColors.warning.blue));
     });
+
+    test('onPrimary matches CTA / on-seed surfaces', () {
+      expect(LumiColors.onPrimary, const Color(0xFFFFFFFF));
+    });
   });
 }

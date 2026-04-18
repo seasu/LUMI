@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'core/router/app_router.dart';
-import 'shared/constants/lumi_colors.dart';
+import 'shared/theme/lumi_theme.dart';
 
 class LumiApp extends ConsumerWidget {
   const LumiApp({super.key});
@@ -15,15 +14,7 @@ class LumiApp extends ConsumerWidget {
       title: 'Lumi',
       debugShowCheckedModeBanner: false,
       routerConfig: router,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: LumiColors.primary,
-          surface: LumiColors.base,
-        ),
-        scaffoldBackgroundColor: LumiColors.base,
-        textTheme: GoogleFonts.notoSansTcTextTheme(),
-        useMaterial3: true,
-      ),
+      theme: buildLumiTheme(),
     );
   }
 }

@@ -30,14 +30,6 @@ class MainShell extends StatelessWidget {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
         onTap: (i) => context.go(_tabs[i].path),
-        backgroundColor: LumiColors.surface.withOpacity(0.92),
-        selectedItemColor: LumiColors.text,
-        unselectedItemColor: LumiColors.subtext,
-        selectedLabelStyle: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-        ),
-        unselectedLabelStyle: const TextStyle(fontSize: 11),
         type: BottomNavigationBarType.fixed,
         elevation: 0,
         enableFeedback: false,

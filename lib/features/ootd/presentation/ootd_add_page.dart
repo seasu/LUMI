@@ -95,19 +95,20 @@ class _PickingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black87,
+      backgroundColor: LumiColors.overlayDark,
       body: SafeArea(
         child: Stack(
           children: [
             const Center(
-              child: CircularProgressIndicator(color: Colors.white),
+              child: CircularProgressIndicator(color: LumiColors.onPrimary),
             ),
             Positioned(
               top: LumiSpacing.md,
               left: LumiSpacing.xs,
               child: IconButton(
                 onPressed: onClose,
-                icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                icon: const Icon(Icons.close,
+                    color: LumiColors.onPrimary, size: 28),
               ),
             ),
           ],
@@ -293,7 +294,7 @@ class _ResultView extends StatelessWidget {
         '${now.year}年${now.month.toString().padLeft(2, '0')}月${now.day.toString().padLeft(2, '0')}日';
 
     return Scaffold(
-      backgroundColor: Colors.black87,
+      backgroundColor: LumiColors.overlayDark,
       body: SafeArea(
         child: Column(
           children: [
@@ -326,9 +327,11 @@ class _ResultView extends StatelessWidget {
                               fontSize: 18,
                               fontWeight: FontWeight.w300,
                               fontStyle: FontStyle.italic,
-                              color: Colors.white,
+                              color: LumiColors.onPrimary,
                               shadows: [
-                                Shadow(color: Colors.black45, blurRadius: 6),
+                                Shadow(
+                                    color: LumiColors.text.withOpacity(0.45),
+                                    blurRadius: 6),
                               ],
                             ),
                           ),
@@ -336,9 +339,11 @@ class _ResultView extends StatelessWidget {
                             dateStr,
                             style: const TextStyle(
                               fontSize: 10,
-                              color: Colors.white70,
+                              color: LumiColors.onPrimary.withOpacity(0.72),
                               shadows: [
-                                Shadow(color: Colors.black45, blurRadius: 4),
+                                Shadow(
+                                    color: LumiColors.text.withOpacity(0.45),
+                                    blurRadius: 4),
                               ],
                             ),
                           ),
@@ -352,7 +357,9 @@ class _ResultView extends StatelessWidget {
             const SizedBox(height: LumiSpacing.lg),
             const Text(
               '分享一段話吧...',
-              style: TextStyle(fontSize: 16, color: Colors.white70),
+              style: TextStyle(
+                  fontSize: 16,
+                  color: LumiColors.onPrimary.withOpacity(0.72)),
             ),
             const Spacer(),
             Padding(
@@ -367,7 +374,9 @@ class _ResultView extends StatelessWidget {
               onPressed: onBack,
               child: const Text(
                 '回到我的穿搭',
-                style: TextStyle(fontSize: 15, color: Colors.white60),
+                style: TextStyle(
+                    fontSize: 15,
+                    color: LumiColors.onPrimary.withOpacity(0.56)),
               ),
             ),
             const SizedBox(height: LumiSpacing.lg),
@@ -442,7 +451,7 @@ class _PrimaryButton extends StatelessWidget {
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: LumiColors.onPrimary,
             ),
           ),
         ),

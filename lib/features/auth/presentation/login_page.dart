@@ -132,7 +132,7 @@ class _GoogleSignInButton extends StatelessWidget {
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white,
+                  color: LumiColors.onPrimary,
                 ),
               )
             else ...[
@@ -143,7 +143,7 @@ class _GoogleSignInButton extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  color: LumiColors.onPrimary,
                 ),
               ),
             ],
@@ -163,7 +163,7 @@ class _GoogleIcon extends StatelessWidget {
       width: 24,
       height: 24,
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: LumiColors.surface,
         shape: BoxShape.circle,
       ),
       child: const Center(

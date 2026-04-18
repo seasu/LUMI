@@ -128,7 +128,7 @@ class _LumiLogoWordmarkState extends State<LumiLogoWordmark>
                             shape: BoxShape.circle,
                             gradient: RadialGradient(
                               colors: [
-                                Colors.white.withOpacity(0.95),
+                                LumiColors.surface.withOpacity(0.95),
                                 LumiColors.glow.withOpacity(0.92),
                                 LumiColors.primaryLight
                                     .withOpacity(0.65 + g * 0.25),

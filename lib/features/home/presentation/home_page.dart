@@ -64,8 +64,8 @@ class HomePage extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/snap'),
-        backgroundColor: LumiColors.text,
-        foregroundColor: LumiColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         label: const Text('Lumi Snap'),
         icon: const Icon(Icons.camera_alt_outlined),
       ),

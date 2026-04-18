@@ -176,7 +176,8 @@ class _PendingOverlay extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (isQuota)
-            const Icon(Icons.lock_outline, color: Colors.white, size: 24)
+            Icon(Icons.lock_outline,
+                color: LumiColors.onPrimary, size: 24)
           else
             Container(
               width: 20,
@@ -190,7 +191,7 @@ class _PendingOverlay extends StatelessWidget {
           Text(
             isQuota ? '配額已用完' : 'AI 分析中',
             style: const TextStyle(
-              color: Colors.white,
+              color: LumiColors.onPrimary,
               fontSize: 10,
               fontWeight: FontWeight.w500,
             ),

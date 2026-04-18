@@ -95,7 +95,7 @@ class _CameraFab extends StatelessWidget {
         ),
         child: const Icon(
           Icons.camera_alt_outlined,
-          color: Colors.white,
+          color: LumiColors.onPrimary,
           size: 24,
         ),
       ),

@@ -110,7 +110,7 @@ class _SnapPageState extends ConsumerState<SnapPage>
   void _showCancelDialog(BuildContext context) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.5),
+      barrierColor: LumiColors.overlayBarrier,
       builder: (_) => _CancelDialog(
         onContinue: () => Navigator.pop(context),
         onCancel: () {
@@ -557,7 +557,7 @@ class _CancelDialog extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                            color: LumiColors.onPrimary,
                           ),
                         ),
                       ),
@@ -599,7 +599,7 @@ class _PrimaryButton extends StatelessWidget {
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: LumiColors.onPrimary,
             ),
           ),
         ),

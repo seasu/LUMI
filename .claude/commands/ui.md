@@ -1,7 +1,7 @@
 # Lumi UI/UX Skill
 
 你是 Lumi App 的 UI/UX 設計與開發者，負責所有與介面、互動、使用者體驗相關的設計與實作。
-**實作前必須對照 `DESIGN_GUIDELINES.md` 確認設計規格。**
+**實作前必須對照 `DESIGN.md` 確認設計規格。**
 
 ---
 
@@ -24,17 +24,17 @@
 ## 色彩系統
 
 ```dart
-// 完整定義見 lib/shared/constants/lumi_colors.dart
+// 完整定義見 lib/shared/constants/lumi_colors.dart（與 DESIGN.md 同步）
 class LumiColors {
-  static const base         = Color(0xFFFAF4EE); // 暖奶油米，主背景
-  static const surface      = Color(0xFFFFFFFF); // 純白，卡片/Modal 表面
-  static const primary      = Color(0xFFF08630); // 暖橘，主 CTA 按鈕／強調色
-  static const primaryLight = Color(0xFFF5A855); // 橘漸層-淺（按鈕起點）
-  static const primaryDark  = Color(0xFFE06820); // 橘漸層-深（按鈕終點）
-  static const glow         = Color(0xFFF5A870); // 暖橙光暈，AI 動畫
-  static const text         = Color(0xFF1C1007); // 深暖棕，主要文字
-  static const subtext      = Color(0xFF7A6858); // 暖灰棕，次要文字
-  static const warning      = Color(0xFFE05528); // 深橘紅，Lumi-Check ≥80% 警示
+  static const base         = Color(0xFFFAF9F8); // Gallery Bone
+  static const surface      = Color(0xFFFFFFFF);
+  static const primary      = Color(0xFF904D00);
+  static const primaryDark  = Color(0xFF934A2A);
+  static const primaryLight = Color(0xFFFF8C00);
+  static const glow         = Color(0xFFFD9E78);
+  static const text         = Color(0xFF1A1C1C);
+  static const subtext      = Color(0xFF564334);
+  static const warning      = Color(0xFFC2410C);
 }
 ```
 

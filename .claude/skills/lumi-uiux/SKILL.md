@@ -33,23 +33,24 @@ Lumi 將使用者的衣櫥視為一座高端編輯策展空間。美學驅動力
 所有顏色必須引用 `LumiColors` 常數，禁止 hardcode 色值。
 
 ```dart
-// lib/shared/constants/lumi_colors.dart
+// lib/shared/constants/lumi_colors.dart — hex 與 DESIGN.md §2 / §5 對齊
 class LumiColors {
-  static const base         = Color(0xFFFAF4EE); // 暖奶油米，所有頁面主背景
-  static const baseAlt      = Color(0xFFFAF9F8); // Gallery Bone，柔和背景層次
-  static const surface      = Color(0xFFFFFFFF); // 純白，卡片 / Modal / Sheet 表面
-  static const primary      = Color(0xFFF08630); // 暖橘，主要 CTA / 強調色
-  static const primaryLight = Color(0xFFF5A855); // 橘漸層-淺端
-  static const primaryDark  = Color(0xFFE06820); // 橘漸層-深端
-  static const glow         = Color(0xFFF5A870); // 暖橙光暈，AI 動畫
-  static const text         = Color(0xFF1C1007); // 深暖棕，主要文字
-  static const subtext      = Color(0xFF7A6858); // 暖灰棕，次要文字
-  static const warning      = Color(0xFFE05528); // 深橘紅，高相似度警示
+  static const base         = Color(0xFFFAF9F8); // Gallery Bone，scaffold 主背景
+  static const baseAlt      = Color(0xFFF5F3F1); // 介於 bone 與白之間的層次
+  static const surface      = Color(0xFFFFFFFF); // 卡片 / Modal / Sheet
+  static const primary      = Color(0xFF904D00); // Liquid Gold 深端錨點，CTA 漸層起
+  static const primaryDark  = Color(0xFF934A2A); // CTA 漸層終、鏽棕
+  static const primaryLight = Color(0xFFFF8C00); // primary_container，高光
+  static const glow         = Color(0xFFFD9E78); // secondary_container，柔光 / AI orb
+  static const primaryFixed = Color(0xFFFFDCC3); // 導航 active 光暈等
+  static const text         = Color(0xFF1A1C1C); // on_surface
+  static const subtext      = Color(0xFF564334); // on_surface_variant
+  static const warning      = Color(0xFFC2410C); // 暖橘紅警示（非純紅）
 
   static const buttonGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [primaryLight, primaryDark],
+    colors: [primary, primaryDark],
   );
 }
 ```

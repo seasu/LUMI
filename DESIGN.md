@@ -51,7 +51,8 @@ Use these Dart constants instead of magic numbers so UI stays aligned across scr
 | `lib/shared/constants/lumi_spacing.dart` | `LumiSpacing` — 8px grid (xs … xl). |
 | `lib/shared/constants/lumi_radii.dart` | `LumiRadii` — corner radii (sm … pill). |
 | `lib/shared/constants/lumi_type_scale.dart` | `LumiTypeScale` — semantic `fontSize` steps. |
-| `lib/shared/constants/lumi_colors.dart` | `LumiColors` — brand palette only. |
+| `lib/shared/constants/lumi_colors.dart` | `LumiColors` — brand palette only (hex lives here; do not duplicate in widgets). |
+| `lib/shared/theme/lumi_theme.dart` | `buildLumiTheme()` — `ThemeData` / `ColorScheme` wired to `LumiColors`; widgets should prefer `Theme.of(context).colorScheme`. |
 
 ---
 

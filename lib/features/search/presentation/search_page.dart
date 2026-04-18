@@ -113,7 +113,7 @@ class _SnapFab extends StatelessWidget {
           child: Text(
             '似',
             style: TextStyle(
-              color: Colors.white,
+              color: LumiColors.onPrimary,
               fontSize: 16,
               fontWeight: FontWeight.w700,
             ),

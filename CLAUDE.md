@@ -1,6 +1,7 @@
-# CLAUDE.md — Lumi 專案 AI 工作手冊
+# CLAUDE.md — Lumi 專案 AI 工作手冊（**唯一完整 AI 規範**）
 
 > **適用對象**：在本 repo 內協作的 AI 助理（含 **Cursor Agent**、Claude Code 等）。進入任務前請先讀完本文件。  
+> **Cursor**：`.cursor/rules/ui-scale.mdc` 只做路標；**本檔為唯一詳述來源**。  
 > 完整產品規格見 [LUMI_PRD.md](./LUMI_PRD.md)。
 
 ---
@@ -184,7 +185,35 @@ users/{userId}/
 - `lib/shared/constants/lumi_radii.dart` — `LumiRadii`
 - `lib/shared/constants/lumi_type_scale.dart` — `LumiTypeScale`
 
-調整介面時一併閱讀 **`.cursor/rules/ui-scale.mdc`**。
+### Flutter UI 刻度（修改 `lib/**/*.dart` 時）
+
+1. **Spacing** — 使用 `LumiSpacing`；以 8px 為主；頁面水平留白常見 `md`／`lg`，非對稱邊距可照 `DESIGN.md`。
+2. **Radius** — 使用 `LumiRadii`，避免到處 `BorderRadius.circular(…)` 魔數（除非與既有元件一致）。
+3. **字級** — 使用 `LumiTypeScale`；全 App 內文透過 Theme 使用 **Noto Sans TC**；草寫字標僅限 logo widget。
+4. **驗證** — 實質修改 UI 後執行 `flutter analyze`；行為變更時加跑相關測試。
+
+色票與 Theme 的硬性規則見下一節。
+
+---
+
+## 色票與 Theme（AI 必守 — 禁止在畫面上 hardcode 顏色）
+
+目標：**全 App 視覺與 `DESIGN.md`、`LumiColors`、`ThemeData` 一致**，避免在各 Widget 散落 `Colors.white`、`Color(0x…)`。
+
+### 規則
+
+1. **數值來源**：品牌色只看 **`DESIGN.md`** → 實作對應 **`lib/shared/constants/lumi_colors.dart`**（`LumiColors`）。調色時**優先改 `LumiColors`**，不要在新畫面再寫一組 hex。
+2. **Theme 為中心**：全域語意（主色、背景、標題／內文、錯誤）必須經 **`lib/shared/theme/lumi_theme.dart`** 的 **`buildLumiTheme()`**；`MaterialApp` 已套用，**在有 `context` 的 Widget 優先使用**：
+   - `Theme.of(context).colorScheme.primary` / `onPrimary` / `surface` / `onSurface` / `onSurfaceVariant` / `error` / …
+   - `Theme.of(context).textTheme`（字型階層已由 Noto Sans TC 設定）
+3. **禁止**在 `lib/**/*.dart`（一般 UI）使用：
+   - `Colors.white`、`Colors.black`、`Colors.grey`、`Colors.blue` 等 Material 調色板當**畫面色**
+   - 任意 **`Color(0xFFxxxxxx)`**（**例外**：僅限 **`lumi_colors.dart`**、**`lumi_theme.dart`**；以及 **衣物顏色篩選用的色票資料**，見 `filter_bar.dart`）
+4. **常用對照**：主色／漸層按鈕上的文字與 loading → **`colorScheme.onPrimary`** 或 **`LumiColors.onPrimary`**（與 theme 同步）；對話筐遮罩 → **`LumiColors.overlayBarrier`**；全暗拍攝頁底色 → **`LumiColors.overlayDark`**。
+5. **`Material` 透明度**：請用 **`LumiColors.xxx.withOpacity(...)`** 或 **`colorScheme` 已有角色**，不要用硬編碼 rgba。
+6. **例外**：`Colors.transparent`、`debug` 用途、**篩選器色票**（代表實際衣物顏色）可維持獨立常數區塊；若新增類似「資料用色票」請集中註明為 **data swatch**，不要與品牌 UI 混淆。
+
+AI 修改任何 Flutter UI 時，應預設遵守以上條款；若有合理例外，在同一 PR **註解說明原因**。
 
 ---
 
@@ -203,7 +232,7 @@ Web 優先完成 M1–M4；Native（M5+）待後續階段。詳見 `LUMI_PRD.md`
 
 ## Cursor／IDE 規則檔
 
-與 UI、程式風格相關的約束見 **`.cursor/rules/*.mdc`**；與本文件衝突時以 **`DESIGN.md`** 與 **ADR** 為準。
+**`.cursor/rules/ui-scale.mdc`** 僅提醒編輯 `lib/**/*.dart` 時要先讀 **本檔（CLAUDE.md）**，不重複貼規則全文。若任何 `.mdc` 與本檔或 **`DESIGN.md`**、**ADR** 衝突，以 **`DESIGN.md`**、**ADR**、**本檔** 為準。
 
 ---
 
@@ -247,9 +276,10 @@ Web 優先完成 M1–M4；Native（M5+）待後續階段。詳見 `LUMI_PRD.md`
 2. **最小修改**：只做任務需要的變更，避免無關重構。
 3. **驗證再提交**：修改後盡量跑 `flutter analyze` 與 `flutter test`（及相關 build）；通過再 commit。
 4. **安全與 ADR**：違反安全或 ADR 時先指出或修正；需推翻 ADR 時必須與人類確認。
-5. **Conventional Commits**：維持版號與 CI 習慣一致。
-6. **不自己做 Release 建置**：正式 `flutter build` 發佈交由 CI／人類流程。
-7. **做完要回報**：commit / push 後簡述**做了什麼**、**動了哪些路徑**、**後續建議**。
+5. **色與 Theme**：遵守上方「色票與 Theme」；**禁止**在一般 UI 程式碼 hardcode `Colors.*` 或 `Color(0x…)`（見該節例外列表）。
+6. **Conventional Commits**：維持版號與 CI 習慣一致。
+7. **不自己做 Release 建置**：正式 `flutter build` 發佈交由 CI／人類流程。
+8. **做完要回報**：commit / push 後簡述**做了什麼**、**動了哪些路徑**、**後續建議**。
 
 ---
 
@@ -259,8 +289,8 @@ Web 優先完成 M1–M4；Native（M5+）待後續階段。詳見 `LUMI_PRD.md`
 
 | 舊標記 | 改做什麼 |
 |--------|----------|
-| `/ui` | 讀 `DESIGN.md` + `LumiColors`/`LumiSpacing`/… + `.cursor/rules/ui-scale.mdc` |
-| `/style` | 對照既有 `lib/` 命名、Riverpod 用法與 `.cursor/rules` |
+| `/ui` | 讀 **`CLAUDE.md`**（含 DESIGN、token、色票 Theme）與 `DESIGN.md` |
+| `/style` | 對照既有 `lib/` 命名、Riverpod 用法與 **`CLAUDE.md`** |
 | `/arch` | 對照本文件 ADR 與相關 `lib/`、`functions/` 資料流 |
 | `/security` | 對照本文件安全性與 `SECURITY.md` |
 | `/google-photos` | 對照 ADR、Photos API 與 `functions/` 實作 |

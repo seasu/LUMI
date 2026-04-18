@@ -149,10 +149,14 @@ async function createMediaItem(
         simpleMediaItem: { uploadToken, fileName: filename },
       },
     ],
-  })) as {
+  })  ) as {
     newMediaItemResults: {
       status: { message: string };
-      mediaItem?: { id: string; baseUrl: string };
+      mediaItem?: {
+        id: string;
+        baseUrl?: string;
+        productUrl?: string;
+      };
     }[];
   };
 
@@ -163,9 +167,18 @@ async function createMediaItem(
     );
   }
 
+  const { id, baseUrl, productUrl } = result.mediaItem;
+  // HEIC / processing: baseUrl may be absent briefly; productUrl is a fallback for display.
+  const thumbnailUrl = baseUrl ?? productUrl;
+  if (!thumbnailUrl) {
+    throw new Error(
+      `createMediaItem missing preview URL for ${id} (try JPEG/PNG from photo library)`
+    );
+  }
+
   return {
-    mediaItemId: result.mediaItem.id,
-    thumbnailUrl: result.mediaItem.baseUrl,
+    mediaItemId: id,
+    thumbnailUrl,
   };
 }
 

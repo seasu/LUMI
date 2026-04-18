@@ -97,8 +97,9 @@ class SnapNotifier extends Notifier<SnapState> {
   Future<void> _uploadOne(XFile file, int index, String accessToken) async {
     final bytes = await file.readAsBytes();
     final imageBase64 = base64Encode(bytes);
-    final mimeType = file.mimeType ?? 'image/jpeg';
-    final filename = 'lumi_${DateTime.now().millisecondsSinceEpoch}_$index.jpg';
+    final mimeType = _effectiveMimeType(file);
+    final filename =
+        'lumi_${DateTime.now().millisecondsSinceEpoch}_$index${_extForMime(mimeType)}';
 
     final service = ref.read(cloudFunctionsServiceProvider);
     final upload = await service.uploadToPhotos(
@@ -213,6 +214,10 @@ class SnapNotifier extends Notifier<SnapState> {
     }
 
     if (fnCode == 'internal') {
+      if (raw.contains('missing preview url')) {
+        return 'Google 相簿尚未產生縮圖連結（常見於 HEIC）。請改用「相機」 JPEG 或在相簿將照片轉成 JPEG 後再上傳。\n'
+            '錯誤代號：LUMI-SNAP-NO-PREVIEW-URL';
+      }
       return '伺服器暫時忙碌，請稍後再試。\n'
           '錯誤代號：LUMI-SNAP-FN-INTERNAL';
     }
@@ -222,4 +227,54 @@ class SnapNotifier extends Notifier<SnapState> {
   }
 
   void reset() => state = const SnapIdle();
+}
+
+/// Web/iOS may omit [XFile.mimeType]; match bytes & path so HEIC is not mislabeled as JPEG.
+String _effectiveMimeType(XFile file) {
+  final fromPicker = file.mimeType;
+  if (fromPicker != null &&
+      fromPicker.isNotEmpty &&
+      fromPicker != 'application/octet-stream') {
+    return fromPicker;
+  }
+  final ext = _fileExtension(file.path).toLowerCase();
+  switch (ext) {
+    case '.heic':
+    case '.heif':
+      return 'image/heic';
+    case '.png':
+      return 'image/png';
+    case '.webp':
+      return 'image/webp';
+    case '.gif':
+      return 'image/gif';
+    case '.jpg':
+    case '.jpeg':
+      return 'image/jpeg';
+    default:
+      return 'image/jpeg';
+  }
+}
+
+/// Best-effort extension from picker path/name (handles `IMG_1234.HEIC`).
+String _fileExtension(String filepath) {
+  final i = filepath.lastIndexOf('.');
+  if (i < 0 || i >= filepath.length - 1) return '';
+  return filepath.substring(i);
+}
+
+String _extForMime(String mime) {
+  switch (mime) {
+    case 'image/heic':
+    case 'image/heif':
+      return '.heic';
+    case 'image/png':
+      return '.png';
+    case 'image/webp':
+      return '.webp';
+    case 'image/gif':
+      return '.gif';
+    default:
+      return '.jpg';
+  }
 }

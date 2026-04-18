@@ -176,7 +176,7 @@ class _PendingOverlay extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (isQuota)
-            Icon(Icons.lock_outline,
+            const Icon(Icons.lock_outline,
                 color: LumiColors.onPrimary, size: 24)
           else
             Container(

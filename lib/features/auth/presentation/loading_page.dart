@@ -76,10 +76,10 @@ class _LoadingPageState extends ConsumerState<LoadingPage>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Padding(
+                const Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: LumiSpacing.lg),
-                  child: const LumiLogoWordmark(fontSize: 56),
+                      EdgeInsets.symmetric(horizontal: LumiSpacing.lg),
+                  child: LumiLogoWordmark(fontSize: 56),
                 ),
                 const SizedBox(height: 48),
                 // 暖橘光暈 Orb

@@ -73,10 +73,7 @@ ThemeData buildLumiTheme() {
       contentTextStyle: baseText.bodyMedium?.copyWith(color: scheme.onError),
       behavior: SnackBarBehavior.floating,
     ),
-    dialogTheme: DialogThemeData(
-      backgroundColor: scheme.surface,
-      surfaceTintColor: Colors.transparent,
-    ),
+    dialogBackgroundColor: scheme.surface,
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: scheme.surface,
       surfaceTintColor: Colors.transparent,

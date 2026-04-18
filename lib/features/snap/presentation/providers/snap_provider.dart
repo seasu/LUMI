@@ -4,7 +4,9 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../../core/providers/firebase_providers.dart';
+import '../../../../core/providers/firebase_providers.dart'
+    show cloudFunctionsServiceProvider, firebaseAuthProvider,
+        googleSignInProvider, kGooglePhotosAppendOnlyScope;
 import '../../../wardrobe/data/wardrobe_item.dart';
 import '../../../wardrobe/data/wardrobe_repository.dart';
 import '../../data/cloud_functions_service.dart';
@@ -154,36 +156,43 @@ class SnapNotifier extends Notifier<SnapState> {
     }
 
     final googleSignIn = ref.read(googleSignInProvider);
+    final photosScope = kGooglePhotosAppendOnlyScope;
 
-    // Use the existing Google Sign-In session (no popup on mobile).
-    GoogleSignInAccount? googleUser = googleSignIn.currentUser;
+    /// On Web / iOS GIS, [GoogleSignInAuthentication.accessToken] is often null
+    /// until [GoogleSignIn.requestScopes] is completed for incremental auth.
+    Future<String?> readToken(GoogleSignInAccount? account) async {
+      if (account == null) return null;
+      var auth = await account.authentication;
+      var token = auth.accessToken;
+      if (token != null) return token;
 
-    // If no current session, try silent sign-in first.
-    googleUser ??= await googleSignIn.signInSilently();
+      final granted = await googleSignIn.requestScopes([photosScope]);
+      if (!granted) return null;
+
+      auth = await account.authentication;
+      return auth.accessToken;
+    }
 
     try {
-      if (googleUser != null) {
-        final auth = await googleUser.authentication;
-        final token = auth.accessToken;
-        if (token != null) {
-          _cachedPhotosToken = token;
-          _tokenExpiry = DateTime.now().add(const Duration(hours: 1));
-          return token;
-        }
-      }
+      GoogleSignInAccount? googleUser =
+          googleSignIn.currentUser ?? await googleSignIn.signInSilently();
 
-      // Some browsers restore the Google session without returning a usable
-      // Photos access token. Prompt once so the user can explicitly grant it.
-      googleUser = await googleSignIn.signIn();
-      if (googleUser == null) return null;
-
-      final auth = await googleUser.authentication;
-      final token = auth.accessToken;
+      var token = await readToken(googleUser);
       if (token != null) {
         _cachedPhotosToken = token;
         _tokenExpiry = DateTime.now().add(const Duration(hours: 1));
+        return token;
       }
-      return token;
+
+      googleUser = await googleSignIn.signIn();
+      token = await readToken(googleUser);
+      if (token != null) {
+        _cachedPhotosToken = token;
+        _tokenExpiry = DateTime.now().add(const Duration(hours: 1));
+        return token;
+      }
+
+      return null;
     } catch (_) {
       return null;
     }

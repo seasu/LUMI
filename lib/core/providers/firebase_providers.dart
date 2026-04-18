@@ -4,6 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+/// Google Photos Library API — upload/create only (matches login + Snap upload).
+const kGooglePhotosAppendOnlyScope =
+    'https://www.googleapis.com/auth/photoslibrary.appendonly';
+
 final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
   return FirebaseAuth.instance;
 });
@@ -22,9 +26,7 @@ final googleSignInProvider = Provider<GoogleSignIn>((ref) {
     clientId: const String.fromEnvironment('GOOGLE_CLIENT_ID'),
     scopes: [
       'email',
-      // appendonly: create albums + upload media items.
-      // No readonly needed — we never list the full library.
-      'https://www.googleapis.com/auth/photoslibrary.appendonly',
+      kGooglePhotosAppendOnlyScope,
     ],
   );
 });

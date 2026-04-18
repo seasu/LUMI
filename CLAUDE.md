@@ -1,6 +1,7 @@
-# CLAUDE.md — Lumi 專案 AI 工作手冊
+# CLAUDE.md — Lumi 專案 AI 工作手冊（**唯一完整 AI 規範**）
 
 > **適用對象**：在本 repo 內協作的 AI 助理（含 **Cursor Agent**、Claude Code 等）。進入任務前請先讀完本文件。  
+> **Cursor**：`.cursor/rules/ui-scale.mdc` 只做路標；**本檔為唯一詳述來源**。  
 > 完整產品規格見 [LUMI_PRD.md](./LUMI_PRD.md)。
 
 ---
@@ -184,7 +185,14 @@ users/{userId}/
 - `lib/shared/constants/lumi_radii.dart` — `LumiRadii`
 - `lib/shared/constants/lumi_type_scale.dart` — `LumiTypeScale`
 
-調整介面時一併閱讀 **`.cursor/rules/ui-scale.mdc`**。
+### Flutter UI 刻度（修改 `lib/**/*.dart` 時）
+
+1. **Spacing** — 使用 `LumiSpacing`；以 8px 為主；頁面水平留白常見 `md`／`lg`，非對稱邊距可照 `DESIGN.md`。
+2. **Radius** — 使用 `LumiRadii`，避免到處 `BorderRadius.circular(…)` 魔數（除非與既有元件一致）。
+3. **字級** — 使用 `LumiTypeScale`；全 App 內文透過 Theme 使用 **Noto Sans TC**；草寫字標僅限 logo widget。
+4. **驗證** — 實質修改 UI 後執行 `flutter analyze`；行為變更時加跑相關測試。
+
+色票與 Theme 的硬性規則見下一節。
 
 ---
 
@@ -224,7 +232,7 @@ Web 優先完成 M1–M4；Native（M5+）待後續階段。詳見 `LUMI_PRD.md`
 
 ## Cursor／IDE 規則檔
 
-與 UI、程式風格相關的約束見 **`.cursor/rules/*.mdc`**；與本文件衝突時以 **`DESIGN.md`** 與 **ADR** 為準。
+**`.cursor/rules/ui-scale.mdc`** 僅提醒編輯 `lib/**/*.dart` 時要先讀 **本檔（CLAUDE.md）**，不重複貼規則全文。若任何 `.mdc` 與本檔或 **`DESIGN.md`**、**ADR** 衝突，以 **`DESIGN.md`**、**ADR**、**本檔** 為準。
 
 ---
 
@@ -281,8 +289,8 @@ Web 優先完成 M1–M4；Native（M5+）待後續階段。詳見 `LUMI_PRD.md`
 
 | 舊標記 | 改做什麼 |
 |--------|----------|
-| `/ui` | 讀 `DESIGN.md` + `LumiColors`/`LumiSpacing`/… + `.cursor/rules/ui-scale.mdc` |
-| `/style` | 對照既有 `lib/` 命名、Riverpod 用法與 `.cursor/rules` |
+| `/ui` | 讀 **`CLAUDE.md`**（含 DESIGN、token、色票 Theme）與 `DESIGN.md` |
+| `/style` | 對照既有 `lib/` 命名、Riverpod 用法與 **`CLAUDE.md`** |
 | `/arch` | 對照本文件 ADR 與相關 `lib/`、`functions/` 資料流 |
 | `/security` | 對照本文件安全性與 `SECURITY.md` |
 | `/google-photos` | 對照 ADR、Photos API 與 `functions/` 實作 |

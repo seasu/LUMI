@@ -26,7 +26,13 @@ When changing or building Flutter UI under `lib/`:
 1. **Spacing** — Use `LumiSpacing` (`lib/shared/constants/lumi_spacing.dart`). Prefer multiples of 8px; page horizontal padding commonly `md` (16) or asymmetric `lg` / `md` per DESIGN.md.
 2. **Radius** — Use `LumiRadii` (`lib/shared/constants/lumi_radii.dart`). Do not scatter `BorderRadius.circular(22)` etc. unless matching a documented exception.
 3. **Type sizes** — Use `LumiTypeScale` (`lib/shared/constants/lumi_type_scale.dart`) for `fontSize`. Global font family is Noto Sans TC via theme; do not hardcode script fonts except the Lumi wordmark widget.
-4. **Color** — Use `LumiColors` only; no raw `Color(0xFF...)` in widgets for brand UI.
+4. **Color — token + Theme (mandatory)**  
+   - Palette numbers live only in **`lib/shared/constants/lumi_colors.dart`** per [DESIGN.md](DESIGN.md).  
+   - Semantic roles live in **`lib/shared/theme/lumi_theme.dart`** (`buildLumiTheme()` → `ThemeData`, `ColorScheme`).  
+   - With `context`, prefer **`Theme.of(context).colorScheme`** / **`textTheme`** (`primary`, `onPrimary`, `surface`, `onSurface`, `onSurfaceVariant`, `error`, …).  
+   - **Do not** use **`Colors.white` / `Colors.black` / `Colors.grey`** etc. as UI colors in `lib/` widgets.  
+   - **Do not** scatter **`Color(0xFF...)`** in widgets — only in `lumi_colors.dart`, `lumi_theme.dart`, or documented **data swatches** (e.g. wardrobe color chips in `filter_bar.dart`). Use **`Colors.transparent`** where needed for Material API.  
+   - For overlays / dark fullscreen chrome use **`LumiColors.overlayBarrier`**, **`LumiColors.overlayDark`** from `lumi_colors.dart`; CTA-on-gradient text uses **`onPrimary`** (`LumiColors.onPrimary` or `colorScheme.onPrimary`).
 5. **Source of truth** — Follow [DESIGN.md](DESIGN.md) for philosophy, components, and do/don’t. If Figma conflicts with DESIGN.md, list differences and wait for product confirmation before implementing.
 
 After substantive UI edits, run `flutter analyze` (and tests if behavior changed).

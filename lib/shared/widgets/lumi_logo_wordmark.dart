@@ -1,15 +1,14 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants/lumi_colors.dart';
 
 /// Shared Lumi wordmark to keep Welcome/Loading branding consistent.
 ///
-/// The logo has a fixed *design* size derived from [fontSize]. It is wrapped in
-/// [FittedBox] so when the parent is narrower than that envelope, the whole
-/// wordmark (text + sparkle) scales down together — nudging the sparkle cannot
-/// push the "L" past the layout edge.
+/// The intrinsic design envelope is derived from [fontSize]. Wrapped in
+/// [FittedBox] so when the parent is narrower, the wordmark scales down as a
+/// unit. **Screen-edge breathing room should be applied by the parent**
+/// (`Padding` / `SafeArea` / symmetrical horizontal insets — see `LumiSpacing`),
+/// not inside this widget.
 class LumiLogoWordmark extends StatefulWidget {
   const LumiLogoWordmark({
     super.key,
@@ -27,9 +26,6 @@ class _LumiLogoWordmarkState extends State<LumiLogoWordmark>
   /// Logical envelope for glyph + sparkle (keep sparkle math in sync with these).
   static const double _widthFactor = 4.1;
   static const double _heightFactor = 1.58;
-
-  /// Extra horizontal inset so the fitted logo stays off parent edges (avoids L clipping).
-  static const double _horizontalGuardFactor = 0.14;
 
   late final AnimationController _sparkleController;
   late final Animation<double> _sparkleSizeAnimation;
@@ -89,7 +85,6 @@ class _LumiLogoWordmarkState extends State<LumiLogoWordmark>
     final fs = widget.fontSize;
     final boxW = fs * _widthFactor;
     final boxH = fs * _heightFactor;
-    final guard = fs * _horizontalGuardFactor;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -97,63 +92,58 @@ class _LumiLogoWordmarkState extends State<LumiLogoWordmark>
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
 
-        final innerW = math.max(0.0, layoutW - 2 * guard);
-
-        return Padding(
-          padding: EdgeInsets.symmetric(horizontal: guard),
-          child: SizedBox(
-            width: innerW,
-            child: FittedBox(
-              fit: BoxFit.contain,
-              alignment: Alignment.center,
-              child: SizedBox(
-                width: boxW,
-                height: boxH,
-                child: Stack(
-                  alignment: Alignment.center,
-                  clipBehavior: Clip.none,
-                  children: [
-                    Text(
-                      'Lumi',
-                      style: GoogleFonts.dancingScript(
-                        fontSize: fs,
-                        fontWeight: FontWeight.w600,
-                        color: LumiColors.text,
-                        height: 1.0,
-                      ),
+        return SizedBox(
+          width: layoutW,
+          child: FittedBox(
+            fit: BoxFit.contain,
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: boxW,
+              height: boxH,
+              child: Stack(
+                alignment: Alignment.center,
+                clipBehavior: Clip.none,
+                children: [
+                  Text(
+                    'Lumi',
+                    style: GoogleFonts.dancingScript(
+                      fontSize: fs,
+                      fontWeight: FontWeight.w600,
+                      color: LumiColors.text,
+                      height: 1.0,
                     ),
-                    Positioned(
-                      top: fs * 0.30,
-                      right: fs * 0.52,
-                      child: AnimatedBuilder(
-                        animation: _sparkleController,
-                        builder: (_, __) {
-                          final t = _sparkleSizeAnimation.value;
-                          final g = _sparkleGlowAnimation.value;
-                          return Container(
-                            width: 18 + (t * 8),
-                            height: 18 + (t * 8),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  Colors.white.withOpacity(0.95),
-                                  LumiColors.glow.withOpacity(0.92),
-                                  LumiColors.primaryLight
-                                      .withOpacity(0.65 + g * 0.25),
-                                  LumiColors.primary
-                                      .withOpacity(0.22 + g * 0.2),
-                                  Colors.transparent,
-                                ],
-                                stops: const [0.0, 0.22, 0.5, 0.72, 1.0],
-                              ),
+                  ),
+                  Positioned(
+                    top: fs * 0.30,
+                    right: fs * 0.52,
+                    child: AnimatedBuilder(
+                      animation: _sparkleController,
+                      builder: (_, __) {
+                        final t = _sparkleSizeAnimation.value;
+                        final g = _sparkleGlowAnimation.value;
+                        return Container(
+                          width: 18 + (t * 8),
+                          height: 18 + (t * 8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                Colors.white.withOpacity(0.95),
+                                LumiColors.glow.withOpacity(0.92),
+                                LumiColors.primaryLight
+                                    .withOpacity(0.65 + g * 0.25),
+                                LumiColors.primary
+                                    .withOpacity(0.22 + g * 0.2),
+                                Colors.transparent,
+                              ],
+                              stops: const [0.0, 0.22, 0.5, 0.72, 1.0],
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      },
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),

@@ -31,6 +31,14 @@ class WardrobeRepository {
             (snap) => snap.docs.map(WardrobeItem.fromFirestore).toList(),
           );
 
+  /// One-shot read from the Firestore server so local cache and listeners catch up.
+  /// Use after pull-to-refresh when the UI feels stale.
+  Future<void> prefetchWardrobeFromServer(String userId) async {
+    await _col(userId)
+        .orderBy('createdAt', descending: true)
+        .get(const GetOptions(source: Source.server));
+  }
+
   /// Fetches a fresh thumbnailUrl from Google Photos and updates Firestore.
   /// Should be called when [WardrobeItem.isThumbnailStale] is true.
   Future<String> refreshThumbnailUrl({

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/constants/lumi_colors.dart';
+import '../../domain/wardrobe_filter.dart';
 import '../providers/search_provider.dart';
 
 // 分類與 Gemini 輸出對應
 const _categories = <_CategoryTab>[
   _CategoryTab('全部', null),
+  _CategoryTab('未分類', WardrobeFilter.uncategorizedOnly),
   _CategoryTab('連身裙', '連身裙'),
   _CategoryTab('上衣', '上衣'),
   _CategoryTab('下身', '下身'),
@@ -64,7 +66,7 @@ class _CategoryTabs extends ConsumerWidget {
         itemCount: _categories.length,
         itemBuilder: (context, i) {
           final tab = _categories[i];
-          final isSelected = selected == tab.category;
+          final isSelected = _categoryTabMatches(selected, tab);
           return GestureDetector(
             onTap: () => ref
                 .read(wardrobeFilterProvider.notifier)
@@ -162,7 +164,16 @@ String _colorToHex(Color color) {
 class _CategoryTab {
   const _CategoryTab(this.label, this.category);
   final String label;
+  /// `null` = 全部；[WardrobeFilter.uncategorizedOnly] = 僅空分類；其餘為 Gemini 分類名。
   final String? category;
+}
+
+bool _categoryTabMatches(String? selected, _CategoryTab tab) {
+  if (tab.category == null) return selected == null;
+  if (tab.category!.isEmpty) {
+    return selected != null && selected.isEmpty;
+  }
+  return selected == tab.category;
 }
 
 class _ColorOption {

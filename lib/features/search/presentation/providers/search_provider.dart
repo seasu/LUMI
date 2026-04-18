@@ -81,9 +81,13 @@ List<WardrobeItem> _applyFilter(
       if (!inCategory && !inMaterials) return false;
     }
 
-    // Category
-    if (filter.category != null && item.category != filter.category) {
-      return false;
+    // Category: null = no filter; '' = only empty category (未分類 / 待分析)
+    if (filter.category != null) {
+      if (filter.category!.isEmpty) {
+        if (item.category.isNotEmpty) return false;
+      } else if (item.category != filter.category) {
+        return false;
+      }
     }
 
     // Colors: item must contain ALL selected colors

@@ -6,6 +6,10 @@ class WardrobeFilter {
     this.materials = const [],
   });
 
+  /// Filter to items with **empty** `WardrobeItem.category` (未分類 / 分析中佇列).
+  /// Distinct from [category] `null` which means **no** category filter (顯示全部).
+  static const String uncategorizedOnly = '';
+
   final String keyword;
   final String? category;
   final List<String> colors;

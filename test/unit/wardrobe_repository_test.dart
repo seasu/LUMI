@@ -67,6 +67,13 @@ void main() {
       expect(result.colors, equals(['#FFFFFF', '#3B5BDB']));
     });
 
+    test('prefetchWardrobeFromServer completes after data exists', () async {
+      await repo.addItem(userId, makeItem());
+      await expectLater(repo.prefetchWardrobeFromServer(userId), completes);
+      final item = await repo.getItem(userId, 'item-001');
+      expect(item, isNotNull);
+    });
+
     test('watchWardrobe emits items in descending createdAt order', () async {
       final older = makeItem(
         mediaItemId: 'item-old',

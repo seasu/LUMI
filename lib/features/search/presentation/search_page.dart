@@ -3,17 +3,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_spacing.dart';
-import '../../../features/wardrobe/data/wardrobe_item.dart';
+import '../../wardrobe/data/wardrobe_item.dart';
+import '../../wardrobe/data/wardrobe_repository.dart';
 import 'providers/search_provider.dart';
 import 'widgets/filter_bar.dart';
 import 'widgets/wardrobe_card.dart';
 import 'widgets/item_detail_modal.dart';
 
-class SearchPage extends ConsumerWidget {
+class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SearchPage> createState() => _SearchPageState();
+}
+
+class _SearchPageState extends ConsumerState<SearchPage> {
+  Future<void> _onRefresh() async {
+    final uid = ref.read(currentUserProvider)?.uid;
+    if (uid == null) return;
+
+    await ref.read(wardrobeRepositoryProvider).prefetchWardrobeFromServer(uid);
+    // Force stream resubscribe so UI pulls latest snapshot after server read updates cache.
+    ref.invalidate(wardrobeStreamProvider);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final filtered = ref.watch(filteredWardrobeProvider);
 
     return Scaffold(
@@ -27,12 +42,43 @@ class SearchPage extends ConsumerWidget {
                 const _WardrobeHeader(),
                 const FilterBar(),
                 Expanded(
-                  child: filtered.when(
-                    data: (items) => items.isEmpty
-                        ? const _EmptyState()
-                        : _WardrobeGrid(items: items),
-                    loading: () => const _LoadingGrid(),
-                    error: (e, _) => _ErrorState(message: e.toString()),
+                  child: RefreshIndicator(
+                    color: LumiColors.primary,
+                    onRefresh: _onRefresh,
+                    child: filtered.when(
+                      data: (items) {
+                        if (items.isEmpty) {
+                          return const CustomScrollView(
+                            physics: AlwaysScrollableScrollPhysics(),
+                            slivers: [
+                              SliverFillRemaining(
+                                hasScrollBody: false,
+                                child: _EmptyState(),
+                              ),
+                            ],
+                          );
+                        }
+                        return _WardrobeGrid(items: items);
+                      },
+                      loading: () => const CustomScrollView(
+                        physics: AlwaysScrollableScrollPhysics(),
+                        slivers: [
+                          SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: _LoadingGrid(),
+                          ),
+                        ],
+                      ),
+                      error: (e, _) => CustomScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        slivers: [
+                          SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: _ErrorState(message: e.toString()),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ],

@@ -83,6 +83,7 @@ class WardrobeCard extends ConsumerWidget {
 }
 
 String _displayTitle(WardrobeItem item) {
+  if (item.isPending) return '分析中';
   if (item.materials.isNotEmpty) {
     return item.materials.first;
   }
@@ -93,6 +94,9 @@ String _displayTitle(WardrobeItem item) {
 }
 
 String _displaySubtitle(WardrobeItem item) {
+  if (item.isPending) {
+    return '未分類 · AI 分類處理中';
+  }
   final category = item.category.isEmpty ? '未分類' : item.category;
   final code = item.mediaItemId.length > 6
       ? item.mediaItemId.substring(0, 6).toUpperCase()

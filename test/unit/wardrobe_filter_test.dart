@@ -49,8 +49,12 @@ List<WardrobeItem> _apply(List<WardrobeItem> items, WardrobeFilter filter) {
           item.materials.any((m) => m.toLowerCase().contains(kw));
       if (!inCategory && !inMaterials) return false;
     }
-    if (filter.category != null && item.category != filter.category) {
-      return false;
+    if (filter.category != null) {
+      if (filter.category!.isEmpty) {
+        if (item.category.isNotEmpty) return false;
+      } else if (item.category != filter.category) {
+        return false;
+      }
     }
     if (filter.colors.isNotEmpty) {
       if (!filter.colors.every((fc) => item.colors.contains(fc))) return false;
@@ -84,12 +88,27 @@ void main() {
       colors: ['#3B5BDB'],
       materials: ['羊毛'],
     ),
+    _item(
+      id: '4',
+      category: '',
+      colors: [],
+      materials: [],
+    ),
   ];
 
   group('WardrobeFilter – client-side filter', () {
     test('empty filter returns all items', () {
       final result = _apply(items, const WardrobeFilter());
-      expect(result, hasLength(3));
+      expect(result, hasLength(4));
+    });
+
+    test('uncategorizedOnly shows only empty category', () {
+      final result = _apply(
+        items,
+        const WardrobeFilter(category: WardrobeFilter.uncategorizedOnly),
+      );
+      expect(result, hasLength(1));
+      expect(result.first.mediaItemId, equals('4'));
     });
 
     test('category filter returns only matching items', () {
@@ -168,6 +187,13 @@ void main() {
     test('setCategory updates category', () {
       container.read(wardrobeFilterProvider.notifier).setCategory('上衣');
       expect(container.read(wardrobeFilterProvider).category, equals('上衣'));
+    });
+
+    test('setCategory empty string means uncategorized queue', () {
+      container
+          .read(wardrobeFilterProvider.notifier)
+          .setCategory(WardrobeFilter.uncategorizedOnly);
+      expect(container.read(wardrobeFilterProvider).category, equals(''));
     });
 
     test('toggleColor adds and removes color', () {

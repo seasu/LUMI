@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_spacing.dart';
+import '../../search/domain/wardrobe_filter.dart';
+import '../../search/presentation/providers/search_provider.dart';
 import '../domain/snap_state.dart';
 import 'providers/snap_provider.dart';
 
@@ -20,6 +23,7 @@ class _SnapPageState extends ConsumerState<SnapPage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _glowController;
   late final Animation<double> _glowAnimation;
+  Timer? _autoReturnFromDoneTimer;
 
   @override
   void initState() {
@@ -36,14 +40,36 @@ class _SnapPageState extends ConsumerState<SnapPage>
 
   @override
   void dispose() {
+    _autoReturnFromDoneTimer?.cancel();
     _glowController.dispose();
     super.dispose();
+  }
+
+  void _popToWardrobeUncategorized() {
+    ref.read(snapProvider.notifier).reset();
+    ref.read(wardrobeFilterProvider.notifier).setCategory(
+          WardrobeFilter.uncategorizedOnly,
+        );
+    context.pop();
   }
 
   @override
   Widget build(BuildContext context) {
     final snapState = ref.watch(snapProvider);
     final isUploading = snapState is SnapUploading;
+
+    ref.listen<SnapState>(snapProvider, (previous, next) {
+      _autoReturnFromDoneTimer?.cancel();
+      _autoReturnFromDoneTimer = null;
+      if (next is SnapDone) {
+        _autoReturnFromDoneTimer =
+            Timer(const Duration(milliseconds: 2200), () {
+          if (!mounted) return;
+          if (ref.read(snapProvider) is! SnapDone) return;
+          _popToWardrobeUncategorized();
+        });
+      }
+    });
 
     return Scaffold(
       backgroundColor: LumiColors.base,
@@ -88,8 +114,8 @@ class _SnapPageState extends ConsumerState<SnapPage>
           SnapDone(:final count) => _DoneView(
               count: count,
               onBack: () {
-                ref.read(snapProvider.notifier).reset();
-                context.pop();
+                _autoReturnFromDoneTimer?.cancel();
+                _popToWardrobeUncategorized();
               },
             ),
           SnapError(:final message) => _ErrorView(
@@ -430,12 +456,12 @@ class _DoneView extends StatelessWidget {
           ),
           const SizedBox(height: LumiSpacing.sm),
           const Text(
-            'AI 正在背景為妳進行智慧分類，妳可以先逛逛衣櫥。',
+            'AI 正在為未分類項目標註類別；即將帶妳前往「未分類」查看。',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 13, color: LumiColors.subtext, height: 1.5),
           ),
           const Spacer(flex: 3),
-          _PrimaryButton(label: '回到衣櫥', onTap: onBack),
+          _PrimaryButton(label: '立即回到衣櫥', onTap: onBack),
           const SizedBox(height: LumiSpacing.xl),
         ],
       ),

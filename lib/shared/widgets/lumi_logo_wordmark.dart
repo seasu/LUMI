@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-/// Lumi wordmark as a single SVG (script + sparkle) for consistent lockup
-/// across Welcome and Loading. Update [assets/branding/lumi_wordmark.svg] from
-/// Figma/Illustrator for a perfect match; [fontSize] controls overall height.
+/// Lumi wordmark as a single SVG for consistent lockup across Welcome and
+/// Loading. Update [assets/branding/lumi_wordmark.svg] from Figma/Illustrator
+/// for a perfect match; [fontSize] controls overall height.
 class LumiLogoWordmark extends StatelessWidget {
   const LumiLogoWordmark({
     super.key,
@@ -12,8 +12,8 @@ class LumiLogoWordmark extends StatelessWidget {
 
   final double fontSize;
 
-  /// viewBox 260×72 in [lumi_wordmark.svg]
-  static const double _viewBoxW = 260;
+  /// viewBox matches [lumi_wordmark.svg] (includes left inset so "L" is not clipped).
+  static const double _viewBoxW = 278;
   static const double _viewBoxH = 72;
 
   @override

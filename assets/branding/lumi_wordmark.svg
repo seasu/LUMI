@@ -1,19 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Lumi wordmark lockup: script word + sparkle over "i". Replace paths with Figma export if needed. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 72" fill="none">
-  <defs>
-    <radialGradient id="lumiSparkGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#FFF9F2" stop-opacity="0.98"/>
-      <stop offset="38%" stop-color="#FD9E78" stop-opacity="0.92"/>
-      <stop offset="72%" stop-color="#FF8C00" stop-opacity="0.55"/>
-      <stop offset="100%" stop-color="#904D00" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <!-- Sparkle above dot of "i" (aligned for Dancing Scriptstyle Lumi) -->
-  <circle cx="208" cy="18" r="11" fill="url(#lumiSparkGlow)"/>
-  <circle cx="208" cy="18" r="2.6" fill="#FFFFFF" opacity="0.92"/>
-  <circle cx="208" cy="18" r="1.2" fill="#FF8C00" opacity="0.9"/>
-  <!-- Wordmark: outlined paths  swap with design export for pixel-perfect match -->
+<!-- Lumi wordmark: script paths + i tittle (no sparkle). Left padding in viewBox avoids clipping. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-14 0 278 72" fill="none">
   <g fill="#1A1C1C">
     <!-- L -->
     <path transform="translate(2 6) scale(0.52)" d="M22 22 C28 18 32 20 31 26 C28 42 25 55 24 70 C35 70 45 68 56 64 C58 63 60 64 60 67 C60 70 57 72 54 73 C42 78 31 80 22 80 C18 80 16 78 17 73 C18 59 22 41 26 27 C27 24 25 24 22 26 Z"/>
@@ -21,7 +8,9 @@
     <path d="M54 52 C54 38 60 32 72 32 C84 32 90 40 90 52 L90 54 L82 54 L82 52 C82 44 78 40 72 40 C66 40 62 44 62 52 C62 58 66 62 74 62 C78 62 82 60 86 56 L90 62 C85 66 79 68 72 68 C60 68 54 62 54 52Z"/>
     <!-- m -->
     <path d="M96 34 L104 34 L104 54 C104 62 108 66 116 66 C122 66 126 62 126 54 L126 34 L134 34 L134 54 C134 62 138 66 146 66 C154 66 158 60 158 50 L158 34 L166 34 L166 68 L158 68 L158 64 C154 67 149 69 142 69 C134 69 128 65 125 58 C122 65 116 69 108 69 C98 69 96 62 96 54 Z"/>
-    <!-- i (stem only  sparkle replaces tittle) -->
+    <!-- i stem -->
     <path d="M178 34 L186 34 L186 68 L178 68 Z"/>
+    <!-- i dot -->
+    <circle cx="182" cy="29" r="3.2"/>
   </g>
 </svg>

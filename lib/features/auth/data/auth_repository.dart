@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../../../core/auth/google_photos_oauth.dart';
 import '../../../core/providers/firebase_providers.dart';
 import '../../user/data/user_repository.dart';
 
@@ -26,6 +27,9 @@ class AuthRepository {
     final userCredential = await _auth.signInWithCredential(credential);
     // Upsert Firestore profile — creates on first login, refreshes name/email later.
     await _userRepository.ensureProfile(userCredential.user!);
+    // Prompt for Google Photos (append-only) in the same session as first Google login
+    // so users are not asked again at Snap upload when possible.
+    await ensureGooglePhotosAccessToken(_googleSignIn, googleUser);
     return userCredential;
   }
 

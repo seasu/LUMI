@@ -4,6 +4,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/auth/google_photos_oauth.dart';
 import '../../../../core/providers/firebase_providers.dart'
     show cloudFunctionsProvider, cloudFunctionsServiceProvider,
         firebaseAuthProvider, googleSignInProvider,
@@ -163,8 +164,11 @@ class SnapNotifier extends Notifier<SnapState> {
       GoogleSignInAccount? googleUser =
           googleSignIn.currentUser ?? await googleSignIn.signInSilently();
 
-      var token =
-          await _photosAccessTokenForAccount(googleSignIn, googleUser, photosScope);
+      var token = await ensureGooglePhotosAccessToken(
+        googleSignIn,
+        googleUser,
+        scope: photosScope,
+      );
       if (token != null) {
         _cachedPhotosToken = token;
         _tokenExpiry = DateTime.now().add(const Duration(hours: 1));
@@ -172,8 +176,11 @@ class SnapNotifier extends Notifier<SnapState> {
       }
 
       googleUser = await googleSignIn.signIn();
-      token = await _photosAccessTokenForAccount(
-          googleSignIn, googleUser, photosScope);
+      token = await ensureGooglePhotosAccessToken(
+        googleSignIn,
+        googleUser,
+        scope: photosScope,
+      );
       if (token != null) {
         _cachedPhotosToken = token;
         _tokenExpiry = DateTime.now().add(const Duration(hours: 1));
@@ -224,45 +231,6 @@ class SnapNotifier extends Notifier<SnapState> {
   }
 
   void reset() => state = const SnapIdle();
-}
-
-/// Resolves an OAuth access token for Google Photos on Web/Safari where
-/// [GoogleSignInAuthentication.accessToken] stays null until scopes are granted,
-/// and sometimes only [GoogleSignInAccount.authHeaders] exposes the Bearer token.
-Future<String?> _photosAccessTokenForAccount(
-  GoogleSignIn googleSignIn,
-  GoogleSignInAccount? account,
-  String photosScope,
-) async {
-  if (account == null) return null;
-
-  Future<String?> extract(GoogleSignInAuthentication auth) async {
-    final direct = auth.accessToken;
-    if (direct != null && direct.isNotEmpty) return direct;
-    try {
-      final headers = await account.authHeaders;
-      final bearer = headers['Authorization'] ?? headers['authorization'];
-      if (bearer != null && bearer.startsWith('Bearer ')) {
-        return bearer.substring(7).trim();
-      }
-    } catch (_) {}
-    return null;
-  }
-
-  Future<String?> readAfterAuth() async {
-    final auth = await account.authentication;
-    return extract(auth);
-  }
-
-  var token = await readAfterAuth();
-  if (token != null) return token;
-
-  final granted = await googleSignIn.requestScopes([photosScope]);
-  if (!granted) return null;
-
-  await account.clearAuthCache();
-  token = await readAfterAuth();
-  return token;
 }
 
 /// Web/iOS may omit [XFile.mimeType]; match bytes & path so HEIC is not mislabeled as JPEG.

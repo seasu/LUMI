@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/constants/app_version.dart';
 import '../../../shared/constants/lumi_colors.dart';
+import '../../../shared/constants/lumi_spacing.dart';
 import '../../../shared/widgets/lumi_logo_wordmark.dart';
 import '../../user/data/user_repository.dart';
 import 'providers/auth_provider.dart';
@@ -75,7 +76,11 @@ class _LoadingPageState extends ConsumerState<LoadingPage>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const LumiLogoWordmark(fontSize: 56),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: LumiSpacing.lg),
+                  child: const LumiLogoWordmark(fontSize: 56),
+                ),
                 const SizedBox(height: 48),
                 // 暖橘光暈 Orb
                 AnimatedBuilder(

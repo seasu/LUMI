@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/constants/app_version.dart';
 import '../../../shared/constants/lumi_colors.dart';
+import '../../../shared/constants/lumi_spacing.dart';
 import '../../../shared/widgets/lumi_logo_wordmark.dart';
 import 'providers/auth_provider.dart';
 
@@ -46,7 +47,7 @@ class LoginPage extends ConsumerWidget {
           // 內容層
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.only(left: 24, right: 16),
+              padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [

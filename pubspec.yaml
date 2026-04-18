@@ -21,6 +21,7 @@ dependencies:
   share_plus: ^10.0.2
   http: ^1.2.0
   google_fonts: ^6.2.1
+  flutter_svg: ^2.0.10+1
 
 dev_dependencies:
   flutter_test:
@@ -33,3 +34,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/branding/

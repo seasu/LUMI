@@ -15,22 +15,10 @@ class LoadingPage extends ConsumerStatefulWidget {
   ConsumerState<LoadingPage> createState() => _LoadingPageState();
 }
 
-class _LoadingPageState extends ConsumerState<LoadingPage>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _glowAnimation;
-
+class _LoadingPageState extends ConsumerState<LoadingPage> {
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..repeat(reverse: true);
-    _glowAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    );
     _navigate();
   }
 
@@ -61,52 +49,23 @@ class _LoadingPageState extends ConsumerState<LoadingPage>
   }
 
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: LumiColors.base,
       body: Stack(
         children: [
-          Center(
+          const Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Padding(
+                Padding(
                   padding:
                       EdgeInsets.symmetric(horizontal: LumiSpacing.lg),
                   child: LumiLogoWordmark(fontSize: 56),
                 ),
-                const SizedBox(height: 48),
-                // 暖橘光暈 Orb
-                AnimatedBuilder(
-                  animation: _glowAnimation,
-                  builder: (_, __) {
-                    final opacity = 0.35 + _glowAnimation.value * 0.65;
-                    return Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            LumiColors.glow.withOpacity(opacity),
-                            LumiColors.primaryLight.withOpacity(opacity * 0.5),
-                            Colors.transparent,
-                          ],
-                          stops: const [0.0, 0.5, 1.0],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 40),
+                SizedBox(height: 56),
                 // 說明文字
-                const Text(
+                Text(
                   'Lumi 正在為妳點亮衣櫥...',
                   style: TextStyle(
                     fontSize: 15,

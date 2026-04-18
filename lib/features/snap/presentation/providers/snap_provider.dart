@@ -6,8 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/auth/google_photos_oauth.dart';
 import '../../../../core/providers/firebase_providers.dart'
-    show cloudFunctionsProvider, cloudFunctionsServiceProvider,
-        firebaseAuthProvider, googleSignInProvider,
+    show cloudFunctionsProvider, firebaseAuthProvider, googleSignInProvider,
         kGooglePhotosAppendOnlyScope;
 import '../../../wardrobe/data/wardrobe_item.dart';
 import '../../../wardrobe/data/wardrobe_repository.dart';
@@ -158,7 +157,7 @@ class SnapNotifier extends Notifier<SnapState> {
     }
 
     final googleSignIn = ref.read(googleSignInProvider);
-    final photosScope = kGooglePhotosAppendOnlyScope;
+    const photosScope = kGooglePhotosAppendOnlyScope;
 
     try {
       GoogleSignInAccount? googleUser =

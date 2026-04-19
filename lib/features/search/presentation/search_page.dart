@@ -46,10 +46,12 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     } catch (e) {
       if (showSnackBar && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(formatFirebaseCallableError(e))),
+          SnackBar(
+            content: Text(formatWardrobeSyncErrorForUser(e)),
+            maxLines: 8,
+          ),
         );
       }
-      rethrow;
     } finally {
       if (mounted && showHeaderSpinner) setState(() => _syncBusy = false);
     }

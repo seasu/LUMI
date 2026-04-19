@@ -4,7 +4,7 @@
  * CI: GitHub Actions Repository Variables (same names as env vars below).
  *
  * Env vars (all optional — defaults shown):
- *   GEMINI_DEFAULT_VISION_MODEL       default: gemini-2.0-flash
+ *   GEMINI_DEFAULT_VISION_MODEL       default: gemini-2.5-flash
  *   GEMINI_DEFAULT_EMBEDDING_MODEL    default: text-embedding-004
  *   GEMINI_DEPRECATED_VISION_MODELS   comma-separated
  *   GEMINI_DEPRECATED_EMBEDDING_MODELS comma-separated (optional)
@@ -19,20 +19,20 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const outPath = join(__dirname, "..", "src", "geminiDefaults.generated.ts");
 
 const defaultVision =
-  process.env.GEMINI_DEFAULT_VISION_MODEL?.trim() || "gemini-2.0-flash";
+  process.env.GEMINI_DEFAULT_VISION_MODEL?.trim() || "gemini-2.5-flash";
 const defaultEmbedding =
   process.env.GEMINI_DEFAULT_EMBEDDING_MODEL?.trim() || "text-embedding-004";
 
 const deprecatedVisionRaw =
   process.env.GEMINI_DEPRECATED_VISION_MODELS?.trim() ||
-  "gemini-1.5-flash,gemini-1.5-flash-8b,gemini-1.5-pro";
+  "gemini-1.5-flash,gemini-1.5-flash-8b,gemini-1.5-pro,gemini-2.0-flash";
 
 const deprecatedEmbeddingRaw =
   process.env.GEMINI_DEPRECATED_EMBEDDING_MODELS?.trim() || "";
 
 const fallbackVisionRaw =
   process.env.GEMINI_VISION_FALLBACK_CHAIN?.trim() ||
-  "gemini-2.0-flash,gemini-flash-latest,gemini-2.5-flash";
+  "gemini-2.5-flash,gemini-flash-latest";
 
 const fallbackEmbeddingRaw =
   process.env.GEMINI_EMBEDDING_FALLBACK_CHAIN?.trim() ||

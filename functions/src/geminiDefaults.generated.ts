@@ -3,10 +3,10 @@
 // CI: GitHub Variables → same env names, then npm run build.
 
 export const geminiGeneratedDefaults = {
-  defaultVisionModel: "gemini-2.0-flash",
+  defaultVisionModel: "gemini-2.5-flash",
   defaultEmbeddingModel: "text-embedding-004",
-  deprecatedVisionModelIds: ["gemini-1.5-flash","gemini-1.5-flash-8b","gemini-1.5-pro"],
+  deprecatedVisionModelIds: ["gemini-1.5-flash","gemini-1.5-flash-8b","gemini-1.5-pro","gemini-2.0-flash"],
   deprecatedEmbeddingModelIds: [],
-  visionFallbackChain: ["gemini-2.0-flash","gemini-flash-latest","gemini-2.5-flash"],
+  visionFallbackChain: ["gemini-2.5-flash","gemini-flash-latest"],
   embeddingFallbackChain: ["text-embedding-004","text-embedding-001"],
 } as const;

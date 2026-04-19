@@ -15,11 +15,11 @@ Deploy workflow 在 build 前會跑 codegen。可設定：
 
 | GitHub Variable | 說明 |
 |-----------------|------|
-| `GEMINI_DEFAULT_VISION_MODEL` | 預設視覺模型（腳本內建預設：`gemini-2.0-flash`） |
+| `GEMINI_DEFAULT_VISION_MODEL` | 預設視覺模型（腳本內建預設：`gemini-2.5-flash`） |
 | `GEMINI_DEFAULT_EMBEDDING_MODEL` | 預設 embedding（腳本內建預設：`text-embedding-004`） |
 | `GEMINI_DEPRECATED_VISION_MODELS` | **逗號分隔**，覆寫為這些 id 時改回預設視覺模型 |
 | `GEMINI_DEPRECATED_EMBEDDING_MODELS` | **逗號分隔**，embedding 棄用 id（可留空） |
-| `GEMINI_VISION_FALLBACK_CHAIN` | **逗號分隔**，vision 404 時備援順序 |
+| `GEMINI_VISION_FALLBACK_CHAIN` | **逗號分隔**，vision 404 時備援順序（預設不含已淘汰的 `gemini-2.0-flash`） |
 | `GEMINI_EMBEDDING_FALLBACK_CHAIN` | **逗號分隔**，embedding 404 時備援順序（腳本內建含 `text-embedding-004,text-embedding-001`） |
 
 ---

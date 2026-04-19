@@ -45,11 +45,17 @@ class AuthRepository {
     return userCredential;
   }
 
+  /// Firebase first, then Google; `GoogleSignIn.signOut` is given a timeout on Web
+  /// it can otherwise hang and block returning to the login screen.
   Future<void> signOut() async {
-    await Future.wait([
-      _auth.signOut(),
-      _googleSignIn.signOut(),
-    ]);
+    await _auth.signOut();
+    try {
+      await _googleSignIn
+          .signOut()
+          .timeout(const Duration(seconds: 10));
+    } catch (_) {
+      // Best-effort: user is already signed out of Firebase; continue
+    }
   }
 
   User? get currentUser => _auth.currentUser;

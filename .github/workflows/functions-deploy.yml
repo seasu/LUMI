@@ -56,6 +56,20 @@ jobs:
       # --force on deploy: CLI applies Artifact Registry cleanup policy for build artifacts;
       # without it, deploy can exit 1 after functions succeeded.
 
+      # Optional Repository variables GEMINI_VISION_MODEL / GEMINI_EMBEDDING_MODEL →
+      # functions/.env.lumi-309ff so Firebase CLI deploy persists them at runtime (see functions/ENV.md).
+      - name: Write Gemini model env for Firebase deploy
+        working-directory: functions
+        run: |
+          rm -f .env.lumi-309ff
+          touch .env.lumi-309ff
+          if [ -n "${{ vars.GEMINI_VISION_MODEL }}" ]; then
+            printf '%s\n' 'GEMINI_VISION_MODEL=${{ vars.GEMINI_VISION_MODEL }}' >> .env.lumi-309ff
+          fi
+          if [ -n "${{ vars.GEMINI_EMBEDDING_MODEL }}" ]; then
+            printf '%s\n' 'GEMINI_EMBEDDING_MODEL=${{ vars.GEMINI_EMBEDDING_MODEL }}' >> .env.lumi-309ff
+          fi
+
       - name: Deploy Cloud Functions (with trigger migration fallback)
         working-directory: functions
         run: |

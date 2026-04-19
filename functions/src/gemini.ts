@@ -8,9 +8,22 @@ export interface GeminiAnalysis {
   description: string;
 }
 
-/** Gemini API model IDs — bump when Google deprecates names (404 on `models/...`). */
-const GEMINI_VISION_MODEL = "gemini-2.5-flash";
-const GEMINI_EMBEDDING_MODEL = "text-embedding-004";
+/**
+ * Model IDs — override without code changes:
+ * - GitHub Actions: set repo Variables `GEMINI_VISION_MODEL` / `GEMINI_EMBEDDING_MODEL`
+ *   (workflow exports them before `firebase deploy`).
+ * - Firebase / local: `functions/.env.<PROJECT_ID>` e.g. `.env.lumi-309ff`
+ * - Shell: `export GEMINI_VISION_MODEL=gemini-2.5-flash` before deploy
+ */
+function geminiVisionModelId(): string {
+  const v = process.env.GEMINI_VISION_MODEL?.trim();
+  return v && v.length > 0 ? v : "gemini-2.5-flash";
+}
+
+function geminiEmbeddingModelId(): string {
+  const v = process.env.GEMINI_EMBEDDING_MODEL?.trim();
+  return v && v.length > 0 ? v : "text-embedding-004";
+}
 
 export async function analyzeImage(
   apiKey: string,
@@ -22,7 +35,9 @@ export async function analyzeImage(
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const visionModel = genAI.getGenerativeModel({ model: GEMINI_VISION_MODEL });
+  const visionModel = genAI.getGenerativeModel({
+    model: geminiVisionModelId(),
+  });
 
   let visionResult;
   try {
@@ -72,7 +87,7 @@ export async function generateEmbedding(
 ): Promise<number[]> {
   const genAI = new GoogleGenerativeAI(apiKey);
   const embeddingModel = genAI.getGenerativeModel({
-    model: GEMINI_EMBEDDING_MODEL,
+    model: geminiEmbeddingModelId(),
   });
 
   const input = [

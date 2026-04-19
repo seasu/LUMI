@@ -7,7 +7,9 @@
 | `GEMINI_VISION_MODEL` | `generateContent` 圖像分析用模型 | `gemini-2.0-flash` |
 | `GEMINI_EMBEDDING_MODEL` | 文字 embedding 用模型 | `text-embedding-004` |
 
-若主要模型對你的 API Key 回傳 **404**，後端會自動依序嘗試：`GEMINI_VISION_MODEL` → `gemini-2.0-flash` → `gemini-2.5-flash` → `gemini-1.5-flash`（不重複）。
+若主要模型對你的 API Key 回傳 **404**，後端會自動依序嘗試（不重複）：`GEMINI_VISION_MODEL`（已正規化）→ `gemini-2.0-flash` → `gemini-flash-latest` → `gemini-2.5-flash`。
+
+> **已下線的模型**（如 `gemini-1.5-flash`）在 API 上會回 404。若你曾在 GitHub Variable 或 `.env` 裡寫入舊名稱，部署後程式會**自動改以** `gemini-2.0-flash` 作為主模型；建議手動把變數改成目前 [文件](https://ai.google.dev/gemini-api/docs/models) 列出的 `generateContent` 模型 id。
 
 ## 方式一：GitHub Actions 部署（`functions-deploy` workflow）
 

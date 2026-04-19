@@ -17,16 +17,29 @@ export interface GeminiAnalysis {
 const DEFAULT_VISION_MODEL = "gemini-2.0-flash";
 const DEFAULT_EMBEDDING_MODEL = "text-embedding-004";
 
+/**
+ * Models removed from the Gemini API for `generateContent` (404 forever).
+ * If env still uses one of these, we substitute [DEFAULT_VISION_MODEL].
+ */
+const DEPRECATED_VISION_MODEL_IDS = new Set([
+  "gemini-1.5-flash",
+  "gemini-1.5-flash-8b",
+  "gemini-1.5-pro",
+]);
+
 /** Ordered fallbacks when the primary vision model returns 404 (API key / tier differences). */
 const VISION_FALLBACK_CHAIN = [
   DEFAULT_VISION_MODEL,
+  "gemini-flash-latest",
   "gemini-2.5-flash",
-  "gemini-1.5-flash",
 ] as const;
 
 function geminiVisionModelId(): string {
-  const v = process.env.GEMINI_VISION_MODEL?.trim();
-  return v && v.length > 0 ? v : DEFAULT_VISION_MODEL;
+  const raw = process.env.GEMINI_VISION_MODEL?.trim();
+  if (!raw || raw.length === 0) return DEFAULT_VISION_MODEL;
+  const lower = raw.toLowerCase();
+  if (DEPRECATED_VISION_MODEL_IDS.has(lower)) return DEFAULT_VISION_MODEL;
+  return raw;
 }
 
 function geminiEmbeddingModelId(): string {

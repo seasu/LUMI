@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../providers/firebase_providers.dart'
@@ -6,12 +5,14 @@ import '../providers/firebase_providers.dart'
 
 /// Ensures an OAuth **access token** with the requested Google Photos scopes.
 ///
-/// **Append-only only** (`scopes` default): reuse existing token when possible;
-/// prompt with [GoogleSignIn.requestScopes] only when needed.
+/// **Append-only** (`scopes` default): reuse token when possible; otherwise
+/// [GoogleSignIn.requestScopes].
 ///
-/// **Includes [kGooglePhotosReadonlyScope]** (album sync): tries to reuse tokens
-/// first — on Web uses [GoogleSignIn.canAccessScopes] (scopes only) to skip redundant consent
-/// dialogs after the user has already approved once.
+/// **Includes [kGooglePhotosReadonlyScope]** (list albums / wardrobe sync):
+/// Always calls [GoogleSignIn.requestScopes] then [GoogleSignInAccount.clearAuthCache]
+/// before reading the token. On Web, [GoogleSignIn.canAccessScopes] could report true
+/// while the Bearer token still lacked `photoslibrary.readonly` for `GET /albums`
+/// (403). If scopes were already granted, [requestScopes] returns without a dialog.
 ///
 /// Returns `null` if the user denies incremental scope or no token can be resolved.
 Future<String?> ensureGooglePhotosAccessToken(
@@ -46,29 +47,6 @@ Future<String?> ensureGooglePhotosAccessToken(
 
   // ── Album list / sync: append + readonly ─────────────────────────────────────
   if (needsAlbumListScope) {
-    // Web: if already authorized, reuse token — avoids a consent popup every time.
-    if (kIsWeb) {
-      try {
-        final already = await googleSignIn.canAccessScopes(scopeList);
-        if (already) {
-          final t = await readAfterAuth();
-          if (t != null) return t;
-          await account.clearAuthCache();
-          final t2 = await readAfterAuth();
-          if (t2 != null) return t2;
-        }
-      } catch (_) {
-        // Older clients / stubs: fall through
-      }
-    } else {
-      // Mobile: scopes are usually granted at sign-in — try reuse before prompting.
-      var t = await readAfterAuth();
-      if (t != null) return t;
-      await account.clearAuthCache();
-      t = await readAfterAuth();
-      if (t != null) return t;
-    }
-
     final granted = await googleSignIn.requestScopes(scopeList);
     if (!granted) return null;
 

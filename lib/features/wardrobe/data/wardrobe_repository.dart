@@ -59,7 +59,14 @@ class WardrobeRepository {
     }
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
-    final freshUrl = data['baseUrl'] as String;
+    final baseUrl = data['baseUrl'] as String?;
+    final productUrl = data['productUrl'] as String?;
+    final freshUrl = baseUrl ?? productUrl;
+    if (freshUrl == null || freshUrl.isEmpty) {
+      throw Exception(
+        'Photos API: no baseUrl or productUrl for media item',
+      );
+    }
     final now = DateTime.now();
 
     await _col(userId).doc(mediaItemId).update({

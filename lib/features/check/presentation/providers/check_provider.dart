@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../../features/snap/presentation/providers/snap_provider.dart';
+import '../../../../features/snap/data/cloud_functions_service.dart';
 import '../../domain/check_state.dart';
 
 final checkProvider =

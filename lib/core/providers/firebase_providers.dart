@@ -4,9 +4,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-/// Google Photos Library API — upload/create only (matches login + Snap upload).
+/// Google Photos Library API — upload/create (Lumi Snap).
 const kGooglePhotosAppendOnlyScope =
     'https://www.googleapis.com/auth/photoslibrary.appendonly';
+
+/// Google Photos Library API — list albums / media (wardrobe sync from cloud).
+const kGooglePhotosReadonlyScope =
+    'https://www.googleapis.com/auth/photoslibrary.readonly';
 
 final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
   return FirebaseAuth.instance;
@@ -27,6 +31,7 @@ final googleSignInProvider = Provider<GoogleSignIn>((ref) {
     scopes: [
       'email',
       kGooglePhotosAppendOnlyScope,
+      kGooglePhotosReadonlyScope,
     ],
   );
 });

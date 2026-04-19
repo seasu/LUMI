@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_spacing.dart';
-import '../../../../core/providers/firebase_providers.dart'
-    show cloudFunctionsProvider;
 import '../../snap/data/cloud_functions_service.dart';
 import '../../wardrobe/data/wardrobe_item.dart';
 import '../../wardrobe/data/wardrobe_repository.dart';
@@ -12,6 +10,7 @@ import 'providers/search_provider.dart';
 import 'widgets/filter_bar.dart';
 import 'widgets/wardrobe_card.dart';
 import 'widgets/item_detail_modal.dart';
+import 'wardrobe_google_sync.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
@@ -21,9 +20,50 @@ class SearchPage extends ConsumerStatefulWidget {
 }
 
 class _SearchPageState extends ConsumerState<SearchPage> {
+  bool _syncBusy = false;
+
+  /// Syncs `Lumi_Wardrobe` album → Firestore, then refreshes list.
+  Future<void> _runAlbumSync({
+    required bool showSnackBar,
+    bool showHeaderSpinner = true,
+  }) async {
+    if (_syncBusy) return;
+    if (showHeaderSpinner) setState(() => _syncBusy = true);
+    try {
+      final r = await syncWardrobeAlbumFromGooglePhotos(ref);
+      ref.invalidate(wardrobeStreamProvider);
+      if (showSnackBar && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              r.created > 0
+                  ? '已從 Google 相簿同步：新增 ${r.created} 件（相簿共 ${r.totalInAlbum} 張）'
+                  : '已與 Google 相簿比對：無需新增（相簿 ${r.totalInAlbum} 張，衣櫥已有對應紀錄）',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (showSnackBar && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e')),
+        );
+      }
+      rethrow;
+    } finally {
+      if (mounted && showHeaderSpinner) setState(() => _syncBusy = false);
+    }
+  }
+
   Future<void> _onRefresh() async {
     final uid = ref.read(currentUserProvider)?.uid;
     if (uid == null) return;
+
+    try {
+      await _runAlbumSync(showSnackBar: false, showHeaderSpinner: false);
+    } catch (_) {
+      // Pull-to-refresh：同步失敗時不中斷本地資料重新載入。
+    }
 
     await ref.read(wardrobeRepositoryProvider).prefetchWardrobeFromServer(uid);
     // Force stream resubscribe so UI pulls latest snapshot after server read updates cache.
@@ -34,7 +74,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     final snapshot = ref.read(wardrobeStreamProvider);
     final items = snapshot.valueOrNull;
     if (items != null && items.isNotEmpty) {
-      final cf = CloudFunctionsService(ref.read(cloudFunctionsProvider));
+      final cf = ref.read(cloudFunctionsServiceProvider);
       var retried = 0;
       const maxRetriesPerPull = 20;
       for (final item in items) {
@@ -65,7 +105,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _WardrobeHeader(),
+                _WardrobeHeader(
+                  syncBusy: _syncBusy,
+                  onSyncPressed: () => _runAlbumSync(showSnackBar: true),
+                ),
                 const FilterBar(),
                 Expanded(
                   child: RefreshIndicator(
@@ -125,7 +168,13 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 // ── Header ─────────────────────────────────────────────────────────────────────
 
 class _WardrobeHeader extends ConsumerWidget {
-  const _WardrobeHeader();
+  const _WardrobeHeader({
+    required this.syncBusy,
+    required this.onSyncPressed,
+  });
+
+  final bool syncBusy;
+  final VoidCallback onSyncPressed;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -143,6 +192,20 @@ class _WardrobeHeader extends ConsumerWidget {
                 color: LumiColors.text,
               ),
             ),
+          ),
+          IconButton(
+            tooltip: '與 Google 相簿同步',
+            onPressed: syncBusy ? null : onSyncPressed,
+            icon: syncBusy
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: LumiColors.primary,
+                    ),
+                  )
+                : const Icon(Icons.sync, color: LumiColors.primary, size: 22),
           ),
           TextButton.icon(
             onPressed: () => context.push('/snap'),

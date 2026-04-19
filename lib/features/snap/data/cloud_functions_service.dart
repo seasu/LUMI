@@ -1,4 +1,7 @@
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/providers/firebase_providers.dart' show cloudFunctionsProvider;
 
 /// Callable responses can omit keys or send null on Web (JS interop); never use `as String` blindly.
 String _requireString(Map<String, dynamic> data, String key) {
@@ -11,6 +14,11 @@ String _requireString(Map<String, dynamic> data, String key) {
     'Field "$key" has unexpected type ${v.runtimeType}',
   );
 }
+
+/// Shared [CloudFunctionsService] for Snap, Check, and wardrobe sync.
+final cloudFunctionsServiceProvider = Provider<CloudFunctionsService>((ref) {
+  return CloudFunctionsService(ref.watch(cloudFunctionsProvider));
+});
 
 class CloudFunctionsService {
   CloudFunctionsService(this._functions);
@@ -94,6 +102,25 @@ class CloudFunctionsService {
       'mediaItemId': mediaItemId,
     });
   }
+
+  /// Import missing `users/{uid}/wardrobe/{mediaItemId}` docs from Google Photos
+  /// `Lumi_Wardrobe` album (requires `photoslibrary.readonly` token).
+  Future<SyncWardrobeFromPhotosResult> syncWardrobeFromPhotos({
+    required String accessToken,
+  }) async {
+    final callable = _functions.httpsCallable('syncWardrobeFromPhotos');
+    final result = await callable.call<Map<dynamic, dynamic>>({
+      'accessToken': accessToken,
+    });
+    final data = _asStringKeyedMap(result.data);
+    return SyncWardrobeFromPhotosResult(
+      albumId: _requireString(data, 'albumId'),
+      created: (data['created'] as num?)?.toInt() ?? 0,
+      skipped: (data['skipped'] as num?)?.toInt() ?? 0,
+      skippedNoPreview: (data['skippedNoPreview'] as num?)?.toInt() ?? 0,
+      totalInAlbum: (data['totalInAlbum'] as num?)?.toInt() ?? 0,
+    );
+  }
 }
 
 class AnalyzeClothingResult {
@@ -140,6 +167,22 @@ class CompareClothingResult {
   const CompareClothingResult({required this.topMatches});
 
   final List<MatchedClothingItem> topMatches;
+}
+
+class SyncWardrobeFromPhotosResult {
+  const SyncWardrobeFromPhotosResult({
+    required this.albumId,
+    required this.created,
+    required this.skipped,
+    required this.skippedNoPreview,
+    required this.totalInAlbum,
+  });
+
+  final String albumId;
+  final int created;
+  final int skipped;
+  final int skippedNoPreview;
+  final int totalInAlbum;
 }
 
 Map<String, dynamic> _asStringKeyedMap(Object? raw) {

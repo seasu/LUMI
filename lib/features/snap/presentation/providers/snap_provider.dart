@@ -15,10 +15,6 @@ import '../../domain/snap_state.dart';
 
 const _maxPhotos = 10;
 
-final cloudFunctionsServiceProvider = Provider<CloudFunctionsService>((ref) {
-  return CloudFunctionsService(ref.watch(cloudFunctionsProvider));
-});
-
 final snapProvider = NotifierProvider<SnapNotifier, SnapState>(SnapNotifier.new);
 
 class SnapNotifier extends Notifier<SnapState> {
@@ -157,7 +153,6 @@ class SnapNotifier extends Notifier<SnapState> {
     }
 
     final googleSignIn = ref.read(googleSignInProvider);
-    const photosScope = kGooglePhotosAppendOnlyScope;
 
     try {
       GoogleSignInAccount? googleUser =
@@ -166,7 +161,7 @@ class SnapNotifier extends Notifier<SnapState> {
       var token = await ensureGooglePhotosAccessToken(
         googleSignIn,
         googleUser,
-        scope: photosScope,
+        scopes: const [kGooglePhotosAppendOnlyScope],
       );
       if (token != null) {
         _cachedPhotosToken = token;
@@ -178,7 +173,7 @@ class SnapNotifier extends Notifier<SnapState> {
       token = await ensureGooglePhotosAccessToken(
         googleSignIn,
         googleUser,
-        scope: photosScope,
+        scopes: const [kGooglePhotosAppendOnlyScope],
       );
       if (token != null) {
         _cachedPhotosToken = token;

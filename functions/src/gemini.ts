@@ -9,20 +9,54 @@ export interface GeminiAnalysis {
 }
 
 /**
- * Model IDs — override without code changes:
- * - GitHub Actions: set repo Variables `GEMINI_VISION_MODEL` / `GEMINI_EMBEDDING_MODEL`
- *   (workflow exports them before `firebase deploy`).
- * - Firebase / local: `functions/.env.<PROJECT_ID>` e.g. `.env.lumi-309ff`
- * - Shell: `export GEMINI_VISION_MODEL=gemini-2.5-flash` before deploy
+ * Model IDs — override via `GEMINI_VISION_MODEL` / `GEMINI_EMBEDDING_MODEL`
+ * (GitHub Actions vars → `.env.<project>` or `.env`).
+ * Defaults target models that resolve for most Gemini API keys; if API returns 404,
+ * vision falls through a short compatibility list automatically.
  */
+const DEFAULT_VISION_MODEL = "gemini-2.0-flash";
+const DEFAULT_EMBEDDING_MODEL = "text-embedding-004";
+
+/** Ordered fallbacks when the primary vision model returns 404 (API key / tier differences). */
+const VISION_FALLBACK_CHAIN = [
+  DEFAULT_VISION_MODEL,
+  "gemini-2.5-flash",
+  "gemini-1.5-flash",
+] as const;
+
 function geminiVisionModelId(): string {
   const v = process.env.GEMINI_VISION_MODEL?.trim();
-  return v && v.length > 0 ? v : "gemini-2.5-flash";
+  return v && v.length > 0 ? v : DEFAULT_VISION_MODEL;
 }
 
 function geminiEmbeddingModelId(): string {
   const v = process.env.GEMINI_EMBEDDING_MODEL?.trim();
-  return v && v.length > 0 ? v : "text-embedding-004";
+  return v && v.length > 0 ? v : DEFAULT_EMBEDDING_MODEL;
+}
+
+function isLikelyModelNotFoundMessage(msg: string): boolean {
+  const m = msg.toLowerCase();
+  return (
+    /\b404\b/.test(msg) ||
+    m.includes("not found") ||
+    m.includes("not_supported") ||
+    m.includes("was not found")
+  );
+}
+
+/** Unique ordered list: env primary first, then built-in compatibility chain (no duplicates). */
+function visionModelCandidates(): string[] {
+  const primary = geminiVisionModelId();
+  const ordered = [primary, ...VISION_FALLBACK_CHAIN];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const id of ordered) {
+    const t = id.trim();
+    if (!t || seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+  }
+  return out;
 }
 
 export async function analyzeImage(
@@ -35,34 +69,53 @@ export async function analyzeImage(
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const visionModel = genAI.getGenerativeModel({
-    model: geminiVisionModelId(),
-  });
-
-  let visionResult;
-  try {
-    visionResult = await visionModel.generateContent({
-      contents: [
+  const contents = [
+    {
+      role: "user" as const,
+      parts: [
+        { inlineData: { data: imageBase64, mimeType } },
         {
-          role: "user",
-          parts: [
-            { inlineData: { data: imageBase64, mimeType } },
-            {
-              text: `Analyze this clothing item. Return ONLY a valid JSON object with no markdown:
+          text: `Analyze this clothing item. Return ONLY a valid JSON object with no markdown:
 {
   "category": one of ["上衣","褲子","外套","配件","鞋子"],
   "colors": array of 1-3 dominant hex color codes (e.g. ["#3B5BDB","#FFFFFF"]),
   "materials": array of material names in Chinese (e.g. ["棉","聚酯纖維"]),
   "description": brief English description of the clothing item (used for similarity matching)
 }`,
-            },
-          ],
         },
       ],
-    });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    throw new HttpsError("internal", `Gemini vision API error: ${msg}`);
+    },
+  ];
+
+  const candidates = visionModelCandidates();
+  let visionResult;
+  let lastErr = "";
+
+  for (let i = 0; i < candidates.length; i++) {
+    const modelId = candidates[i];
+    try {
+      const visionModel = genAI.getGenerativeModel({ model: modelId });
+      visionResult = await visionModel.generateContent({ contents });
+      break;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      lastErr = msg;
+      const canRetry =
+        i < candidates.length - 1 && isLikelyModelNotFoundMessage(msg);
+      if (!canRetry) {
+        throw new HttpsError(
+          "internal",
+          `Gemini vision API error (model: ${modelId}): ${msg}`
+        );
+      }
+    }
+  }
+
+  if (!visionResult) {
+    throw new HttpsError(
+      "internal",
+      `Gemini vision API error (tried ${candidates.join(", ")}): ${lastErr}`
+    );
   }
 
   const rawText = visionResult.response.text().trim();

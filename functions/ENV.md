@@ -4,8 +4,10 @@
 
 | 變數 | 說明 | 未設定時的預設 |
 |------|------|----------------|
-| `GEMINI_VISION_MODEL` | `generateContent` 圖像分析用模型 | `gemini-2.5-flash` |
+| `GEMINI_VISION_MODEL` | `generateContent` 圖像分析用模型 | `gemini-2.0-flash` |
 | `GEMINI_EMBEDDING_MODEL` | 文字 embedding 用模型 | `text-embedding-004` |
+
+若主要模型對你的 API Key 回傳 **404**，後端會自動依序嘗試：`GEMINI_VISION_MODEL` → `gemini-2.0-flash` → `gemini-2.5-flash` → `gemini-1.5-flash`（不重複）。
 
 ## 方式一：GitHub Actions 部署（`functions-deploy` workflow）
 
@@ -23,7 +25,7 @@
 在 **`functions/`** 目錄放置 **`.env.<PROJECT_ID>`**（例如 `.env.lumi-309ff`），內容例如：
 
 ```
-GEMINI_VISION_MODEL=gemini-2.5-flash
+GEMINI_VISION_MODEL=gemini-2.0-flash
 GEMINI_EMBEDDING_MODEL=text-embedding-004
 ```
 

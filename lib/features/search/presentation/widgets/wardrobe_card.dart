@@ -84,6 +84,9 @@ class WardrobeCard extends ConsumerWidget {
 
 String _displayTitle(WardrobeItem item) {
   if (item.isPending) return '分析中';
+  if (item.analyzeError != null && item.analyzeError!.isNotEmpty) {
+    return _analyzeErrorTitle(item.analyzeError!);
+  }
   if (item.materials.isNotEmpty) {
     return item.materials.first;
   }
@@ -96,6 +99,16 @@ String _displayTitle(WardrobeItem item) {
 String _displaySubtitle(WardrobeItem item) {
   if (item.isPending) {
     return '未分類 · AI 分類處理中';
+  }
+  final err = item.analyzeError;
+  if (err != null && err.isNotEmpty && !item.isQuotaExceeded) {
+    if (err.startsWith('analysis_failed:')) {
+      return '請稍後重試或聯絡支援';
+    }
+    if (err.startsWith('download_failed:')) {
+      return '縮圖連結可能已過期';
+    }
+    return '請至 Firebase 後台查看紀錄';
   }
   final category = item.category.isEmpty ? '未分類' : item.category;
   final code = item.mediaItemId.length > 6
@@ -173,6 +186,16 @@ class _PendingOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isQuota = item.isQuotaExceeded;
+    final err = item.analyzeError;
+
+    final String title;
+    if (isQuota) {
+      title = '配額已用完';
+    } else if (err != null && err.isNotEmpty) {
+      title = _analyzeErrorTitle(err);
+    } else {
+      title = 'AI 分析中';
+    }
 
     return Container(
       color: LumiColors.text.withOpacity(0.35),
@@ -182,6 +205,9 @@ class _PendingOverlay extends StatelessWidget {
           if (isQuota)
             const Icon(Icons.lock_outline,
                 color: LumiColors.onPrimary, size: 24)
+          else if (err != null && err.isNotEmpty)
+            const Icon(Icons.error_outline,
+                color: LumiColors.onPrimary, size: 22)
           else
             Container(
               width: 20,
@@ -192,16 +218,39 @@ class _PendingOverlay extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 6),
-          Text(
-            isQuota ? '配額已用完' : 'AI 分析中',
-            style: const TextStyle(
-              color: LumiColors.onPrimary,
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              title,
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: LumiColors.onPrimary,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                height: 1.25,
+              ),
             ),
           ),
         ],
       ),
     );
   }
+}
+
+/// Maps [analyzeWardrobeItem] error codes to short UI copy (full value stays in Firestore).
+String _analyzeErrorTitle(String analyzeError) {
+  if (analyzeError == 'missing_url') return '缺少預覽連結';
+  if (analyzeError == 'quota_exceeded') return '配額已用完';
+  if (analyzeError.startsWith('download_failed:')) {
+    return '無法載入相片';
+  }
+  if (analyzeError.startsWith('analysis_failed:')) {
+    return 'AI 分析失敗';
+  }
+  if (analyzeError.startsWith('trigger_failed:')) {
+    return '分析管線錯誤';
+  }
+  return '分析未完成';
 }

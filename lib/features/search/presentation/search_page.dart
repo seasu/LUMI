@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_spacing.dart';
+import '../../../../core/providers/firebase_providers.dart'
+    show cloudFunctionsProvider;
+import '../../snap/data/cloud_functions_service.dart';
 import '../../wardrobe/data/wardrobe_item.dart';
 import '../../wardrobe/data/wardrobe_repository.dart';
 import 'providers/search_provider.dart';
@@ -25,6 +28,29 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     await ref.read(wardrobeRepositoryProvider).prefetchWardrobeFromServer(uid);
     // Force stream resubscribe so UI pulls latest snapshot after server read updates cache.
     ref.invalidate(wardrobeStreamProvider);
+
+    // If items stay [analyzed]=false with no error, the Firestore trigger may have
+    // never run (e.g. created before deploy). Nudge analysis via callable per pending item.
+    final snapshot = ref.read(wardrobeStreamProvider);
+    final items = snapshot.valueOrNull;
+    if (items != null && items.isNotEmpty) {
+      final cf = CloudFunctionsService(ref.read(cloudFunctionsProvider));
+      var retried = 0;
+      const maxRetriesPerPull = 20;
+      for (final item in items) {
+        if (!item.isPending) continue;
+        if (retried >= maxRetriesPerPull) break;
+        retried++;
+        try {
+          await cf.retryAnalyzeWardrobeItem(mediaItemId: item.mediaItemId);
+        } catch (_) {
+          // Errors land in Firestore analyzeError; ignore network noise here.
+        }
+      }
+      if (retried > 0) {
+        ref.invalidate(wardrobeStreamProvider);
+      }
+    }
   }
 
   @override

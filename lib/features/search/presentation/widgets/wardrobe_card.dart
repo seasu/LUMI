@@ -7,6 +7,7 @@ import '../../../../core/providers/firebase_providers.dart';
 import '../../../../shared/constants/lumi_colors.dart';
 import '../../../wardrobe/data/wardrobe_item.dart';
 import '../../../wardrobe/data/wardrobe_repository.dart';
+import '../../../wardrobe/utils/wardrobe_thumbnail_url.dart';
 
 class WardrobeCard extends ConsumerWidget {
   const WardrobeCard({super.key, required this.item});
@@ -127,7 +128,9 @@ String _displaySubtitle(WardrobeItem item) {
 final _thumbnailUrlProvider =
     Provider.family<String, WardrobeItem>((ref, item) {
   final empty = item.thumbnailUrl.trim().isEmpty;
-  if (item.isThumbnailStale || empty) {
+  final badWebLink =
+      !empty && wardrobeThumbnailNeedsApiRefresh(item.thumbnailUrl);
+  if (item.isThumbnailStale || empty || badWebLink) {
     _refreshInBackground(ref, item);
   }
   return item.thumbnailUrl;

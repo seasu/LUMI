@@ -1,3 +1,7 @@
+// Conditional web implementation for `web_console_log.dart`; `dart:html` is only
+// compiled on web — see https://dart.dev/tools/linter-rules/avoid_web_libraries_in_flutter
+// ignore_for_file: avoid_web_libraries_in_flutter
+
 import 'dart:convert';
 import 'dart:html' as html;
 

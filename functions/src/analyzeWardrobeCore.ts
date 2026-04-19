@@ -1,5 +1,6 @@
 import * as admin from "firebase-admin";
 import { analyzeImage, generateEmbedding } from "./gemini";
+import { downloadImageForGemini } from "./imageDownload";
 
 const DEFAULT_FREE_QUOTA = 100;
 
@@ -36,18 +37,13 @@ export async function analyzeWardrobeItemCore(
       return;
     }
 
-    const imageUrl = `${thumbnailUrl}=w2048-h2048`;
     let imageBase64: string;
     let mimeType: string;
 
     try {
-      const response = await fetch(imageUrl);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status} ${response.statusText}`);
-      }
-      const buffer = await response.arrayBuffer();
-      imageBase64 = Buffer.from(buffer).toString("base64");
-      mimeType = response.headers.get("content-type") ?? "image/jpeg";
+      const downloaded = await downloadImageForGemini(thumbnailUrl);
+      imageBase64 = downloaded.base64;
+      mimeType = downloaded.mimeType;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       await wardrobeRef.update({ analyzeError: `download_failed:${msg}` });

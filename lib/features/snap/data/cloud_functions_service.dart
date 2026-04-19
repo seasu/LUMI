@@ -213,3 +213,38 @@ String formatFirebaseCallableError(Object error) {
   }
   return error.toString();
 }
+
+/// Shorter, user-oriented copy for wardrobe → Google Photos sync failures.
+String formatWardrobeSyncErrorForUser(Object error) {
+  if (error is StateError) {
+    return error.message;
+  }
+  if (error is FormatException) {
+    return '與雲端同步時回傳格式異常。請更新 App 或稍後再試；若持續發生請聯絡開發者。';
+  }
+  if (error is FirebaseFunctionsException) {
+    final code = error.code;
+    final raw = formatFirebaseCallableError(error);
+    final lower = raw.toLowerCase();
+    switch (code) {
+      case 'unauthenticated':
+        return '登入已失效，請重新登入後再按同步。';
+      case 'permission-denied':
+        if (lower.contains('readonly') || lower.contains('photos')) {
+          return 'Google 相簿讀取權限不足。請登出後再登入，並允許 Lumi 存取 Google 相簿。';
+        }
+        return '沒有權限執行同步。$raw';
+      case 'not-found':
+        if (lower.contains('lumi_wardrobe') || lower.contains('album')) {
+          return '在 Google 相簿找不到名為 Lumi_Wardrobe 的相簿。請確認相簿仍存在，或由 App 上傳新品建立相簿後再試。';
+        }
+        return '找不到資料：$raw';
+      case 'failed-precondition':
+      case 'internal':
+        return '同步失敗：$raw';
+      default:
+        return '同步失敗（$code）：$raw';
+    }
+  }
+  return error.toString();
+}

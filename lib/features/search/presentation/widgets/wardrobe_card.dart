@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+
+import '../../../../core/auth/google_photos_oauth.dart';
+import '../../../../core/providers/firebase_providers.dart';
 import '../../../../shared/constants/lumi_colors.dart';
 import '../../../wardrobe/data/wardrobe_item.dart';
 import '../../../wardrobe/data/wardrobe_repository.dart';
-import '../../../../core/providers/firebase_providers.dart';
 
 class WardrobeCard extends ConsumerWidget {
   const WardrobeCard({super.key, required this.item});
@@ -123,7 +126,8 @@ String _displaySubtitle(WardrobeItem item) {
 
 final _thumbnailUrlProvider =
     Provider.family<String, WardrobeItem>((ref, item) {
-  if (item.isThumbnailStale) {
+  final empty = item.thumbnailUrl.trim().isEmpty;
+  if (item.isThumbnailStale || empty) {
     _refreshInBackground(ref, item);
   }
   return item.thumbnailUrl;
@@ -136,18 +140,37 @@ void _refreshInBackground(Ref ref, WardrobeItem item) {
   Future(() async {
     try {
       final googleSignIn = ref.read(googleSignInProvider);
-      final gUser =
+      GoogleSignInAccount? gUser =
           googleSignIn.currentUser ?? await googleSignIn.signInSilently();
-      final accessToken = (await gUser?.authentication)?.accessToken;
-      if (accessToken == null) return;
+
+      var token = await ensureGooglePhotosAccessToken(
+        googleSignIn,
+        gUser,
+        scopes: const [
+          kGooglePhotosAppendOnlyScope,
+          kGooglePhotosReadonlyScope,
+        ],
+      );
+      if (token == null) {
+        gUser ??= await googleSignIn.signIn();
+        token = await ensureGooglePhotosAccessToken(
+          googleSignIn,
+          gUser,
+          scopes: const [
+            kGooglePhotosAppendOnlyScope,
+            kGooglePhotosReadonlyScope,
+          ],
+        );
+      }
+      if (token == null) return;
 
       await ref.read(wardrobeRepositoryProvider).refreshThumbnailUrl(
             userId: user.uid,
             mediaItemId: item.mediaItemId,
-            accessToken: accessToken,
+            accessToken: token,
           );
     } catch (_) {
-      // Silent fail — stale URL still works until ~60 min
+      // Silent fail — user may fix auth or pull-to-refresh later
     }
   });
 }
@@ -159,6 +182,14 @@ class _ThumbnailImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (url.trim().isEmpty) {
+      return const ColoredBox(
+        color: LumiColors.base,
+        child: Center(
+          child: Icon(Icons.checkroom_outlined, color: LumiColors.subtext, size: 32),
+        ),
+      );
+    }
     return Image.network(
       url,
       fit: BoxFit.cover,

@@ -6,3 +6,4 @@ export { analyzeClothing } from "./analyzeClothing";
 export { uploadToPhotos } from "./uploadToPhotos";
 export { compareClothing } from "./compareClothing";
 export { analyzeWardrobeItemOnCreate } from "./analyzeWardrobeItem";
+export { retryAnalyzeWardrobeItem } from "./retryAnalyzeWardrobe";

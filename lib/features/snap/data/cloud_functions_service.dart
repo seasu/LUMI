@@ -84,6 +84,16 @@ class CloudFunctionsService {
 
     return CompareClothingResult(topMatches: topMatches);
   }
+
+  /// Re-run Gemini wardrobe analysis when Firestore trigger did not complete.
+  Future<void> retryAnalyzeWardrobeItem({
+    required String mediaItemId,
+  }) async {
+    final callable = _functions.httpsCallable('retryAnalyzeWardrobeItem');
+    await callable.call<Map<dynamic, dynamic>>({
+      'mediaItemId': mediaItemId,
+    });
+  }
 }
 
 class AnalyzeClothingResult {

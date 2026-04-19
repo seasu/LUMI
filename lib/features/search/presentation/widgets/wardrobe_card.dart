@@ -247,5 +247,8 @@ String _analyzeErrorTitle(String analyzeError) {
   if (analyzeError.startsWith('analysis_failed:')) {
     return 'AI 分析失敗';
   }
+  if (analyzeError.startsWith('trigger_failed:')) {
+    return '分析管線錯誤';
+  }
   return '分析未完成';
 }

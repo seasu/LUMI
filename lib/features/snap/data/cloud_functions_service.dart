@@ -196,3 +196,20 @@ Map<String, dynamic> _asStringKeyedMap(Object? raw) {
   }
   return Map<String, dynamic>.from(raw);
 }
+
+/// Snackbar-safe copy for callable failures (includes `details` when SDK sends it).
+String formatFirebaseCallableError(Object error) {
+  if (error is FirebaseFunctionsException) {
+    final parts = <String>[];
+    final m = error.message?.trim();
+    if (m != null && m.isNotEmpty) parts.add(m);
+    final d = error.details;
+    if (d != null) {
+      final ds = d.toString().trim();
+      if (ds.isNotEmpty && ds != m) parts.add(ds);
+    }
+    if (parts.isEmpty) parts.add(error.code);
+    return parts.join('\n');
+  }
+  return error.toString();
+}

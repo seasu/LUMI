@@ -32,6 +32,8 @@ cd functions && npm run build                             # Cloud Functions Type
 firebase emulators:start --only firestore,auth,functions  # 本機模擬器（已安裝 firebase-tools 時）
 ```
 
+**Cloud Functions — Gemini 模型名稱**（非金鑰）：可透過環境變數 `GEMINI_VISION_MODEL` / `GEMINI_EMBEDDING_MODEL` 調整，見 **`functions/ENV.md`**（GitHub Repository variables 或 `functions/.env.<PROJECT_ID>`）。
+
 > **禁止**：`flutter build ios`、`flutter build appbundle` 等**正式發佈用**本機建置（專案規範由 CI 處理 Release）。  
 > **Flutter Web**：本機除錯需自行帶上與 Firebase／Google 相關的 `--dart-define`（對照 `lib/core/config/firebase_options.dart`、`.env.example`）；GitHub Pages 正式站由 Actions secrets 注入。
 

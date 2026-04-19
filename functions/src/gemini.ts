@@ -8,6 +8,23 @@ export interface GeminiAnalysis {
   description: string;
 }
 
+/**
+ * Model IDs — override without code changes:
+ * - GitHub Actions: set repo Variables `GEMINI_VISION_MODEL` / `GEMINI_EMBEDDING_MODEL`
+ *   (workflow exports them before `firebase deploy`).
+ * - Firebase / local: `functions/.env.<PROJECT_ID>` e.g. `.env.lumi-309ff`
+ * - Shell: `export GEMINI_VISION_MODEL=gemini-2.5-flash` before deploy
+ */
+function geminiVisionModelId(): string {
+  const v = process.env.GEMINI_VISION_MODEL?.trim();
+  return v && v.length > 0 ? v : "gemini-2.5-flash";
+}
+
+function geminiEmbeddingModelId(): string {
+  const v = process.env.GEMINI_EMBEDDING_MODEL?.trim();
+  return v && v.length > 0 ? v : "text-embedding-004";
+}
+
 export async function analyzeImage(
   apiKey: string,
   imageBase64: string,
@@ -18,7 +35,9 @@ export async function analyzeImage(
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const visionModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const visionModel = genAI.getGenerativeModel({
+    model: geminiVisionModelId(),
+  });
 
   let visionResult;
   try {
@@ -68,7 +87,7 @@ export async function generateEmbedding(
 ): Promise<number[]> {
   const genAI = new GoogleGenerativeAI(apiKey);
   const embeddingModel = genAI.getGenerativeModel({
-    model: "text-embedding-004",
+    model: geminiEmbeddingModelId(),
   });
 
   const input = [

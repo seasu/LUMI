@@ -137,109 +137,135 @@ export const syncWardrobeFromPhotos = onCall(
       );
     }
 
-    const userId = request.auth.uid;
-    const db = admin.firestore();
-    const userRef = db.collection("users").doc(userId);
+    try {
+      const userId = request.auth.uid;
+      const db = admin.firestore();
+      const userRef = db.collection("users").doc(userId);
 
-    const userSnap = await userRef.get();
-    let resolvedAlbumId =
-      (userSnap.data()?.lumiWardrobeAlbumId as string | undefined) ?? null;
+      const userSnap = await userRef.get();
+      let resolvedAlbumId =
+        (userSnap.data()?.lumiWardrobeAlbumId as string | undefined) ?? null;
 
-    if (resolvedAlbumId) {
-      try {
-        await photosPostJson("/mediaItems:search", accessToken, {
-          albumId: resolvedAlbumId,
-          pageSize: 1,
-        });
-      } catch {
-        resolvedAlbumId = null;
+      if (resolvedAlbumId) {
+        try {
+          await photosPostJson("/mediaItems:search", accessToken, {
+            albumId: resolvedAlbumId,
+            pageSize: 1,
+          });
+        } catch {
+          resolvedAlbumId = null;
+        }
       }
-    }
 
-    if (!resolvedAlbumId) {
-      const found = await findLumiAlbumId(accessToken);
-      if (!found) {
+      if (!resolvedAlbumId) {
+        const found = await findLumiAlbumId(accessToken);
+        if (!found) {
+          throw new HttpsError(
+            "not-found",
+            `No album titled "${ALBUM_TITLE}" was found in Google Photos.`
+          );
+        }
+        resolvedAlbumId = found;
+        try {
+          await userRef.set({ lumiWardrobeAlbumId: found }, { merge: true });
+        } catch {
+          // best-effort cache
+        }
+      }
+
+      const mediaList = await listAllMediaInAlbum(
+        accessToken,
+        resolvedAlbumId
+      );
+
+      const existingSnap = await userRef.collection("wardrobe").get();
+      const existingIds = new Set(existingSnap.docs.map((d) => d.id));
+
+      let created = 0;
+      let skipped = 0;
+      let skippedNoPreview = 0;
+
+      const batchSize = 400;
+      let batch = db.batch();
+      let ops = 0;
+
+      const flush = async () => {
+        if (ops === 0) return;
+        await batch.commit();
+        batch = db.batch();
+        ops = 0;
+      };
+
+      for (const m of mediaList) {
+        const mediaItemId = m.id;
+        if (existingIds.has(mediaItemId)) {
+          skipped++;
+          continue;
+        }
+
+        const thumbnailUrl = m.baseUrl ?? "";
+        if (!thumbnailUrl) {
+          skippedNoPreview++;
+          continue;
+        }
+
+        const wardRef = userRef.collection("wardrobe").doc(mediaItemId);
+        const createdAt = parseCreationTime(m.mediaMetadata?.creationTime);
+        const now = admin.firestore.Timestamp.now();
+
+        batch.set(wardRef, {
+          mediaItemId,
+          category: "",
+          colors: [],
+          materials: [],
+          embedding: [],
+          thumbnailUrl,
+          createdAt,
+          thumbnailRefreshedAt: now,
+          analyzed: false,
+        });
+        ops++;
+        created++;
+        existingIds.add(mediaItemId);
+
+        if (ops >= batchSize) {
+          await flush();
+        }
+      }
+
+      await flush();
+
+      return {
+        albumId: resolvedAlbumId,
+        created,
+        skipped,
+        skippedNoPreview,
+        totalInAlbum: mediaList.length,
+      };
+    } catch (err) {
+      if (err instanceof HttpsError) throw err;
+
+      const raw = err instanceof Error ? err.message : String(err);
+      const msg = raw.length > 900 ? `${raw.slice(0, 897)}…` : raw;
+
+      // Callable surfaces generic "INTERNAL" if we throw plain Error — map HTTP hints.
+      if (/\b403\b/.test(msg) || /PERMISSION_DENIED/i.test(msg)) {
         throw new HttpsError(
-          "not-found",
-          `No album titled "${ALBUM_TITLE}" was found in Google Photos.`
+          "permission-denied",
+          `Google Photos denied access (often missing photoslibrary.readonly). Sign out/in and accept Photos permissions. Details: ${msg}`
         );
       }
-      resolvedAlbumId = found;
-      try {
-        await userRef.set({ lumiWardrobeAlbumId: found }, { merge: true });
-      } catch {
-        // best-effort cache
+      if (/\b401\b/.test(msg) || /UNAUTHENTICATED/i.test(msg)) {
+        throw new HttpsError(
+          "unauthenticated",
+          `Google access token expired or invalid. Sign in again. Details: ${msg}`
+        );
       }
+
+      throw new HttpsError(
+        "failed-precondition",
+        `syncWardrobeFromPhotos failed: ${msg}`
+      );
     }
-
-    const mediaList = await listAllMediaInAlbum(
-      accessToken,
-      resolvedAlbumId
-    );
-
-    const existingSnap = await userRef.collection("wardrobe").get();
-    const existingIds = new Set(existingSnap.docs.map((d) => d.id));
-
-    let created = 0;
-    let skipped = 0;
-    let skippedNoPreview = 0;
-
-    const batchSize = 400;
-    let batch = db.batch();
-    let ops = 0;
-
-    const flush = async () => {
-      if (ops === 0) return;
-      await batch.commit();
-      batch = db.batch();
-      ops = 0;
-    };
-
-    for (const m of mediaList) {
-      const mediaItemId = m.id;
-      if (existingIds.has(mediaItemId)) {
-        skipped++;
-        continue;
-      }
-
-      const thumbnailUrl = m.baseUrl ?? "";
-      if (!thumbnailUrl) {
-        skippedNoPreview++;
-        continue;
-      }
-
-      const wardRef = userRef.collection("wardrobe").doc(mediaItemId);
-      const createdAt = parseCreationTime(m.mediaMetadata?.creationTime);
-      const now = admin.firestore.Timestamp.now();
-
-      batch.set(wardRef, {
-        mediaItemId,
-        category: "",
-        colors: [],
-        materials: [],
-        embedding: [],
-        thumbnailUrl,
-        createdAt,
-        thumbnailRefreshedAt: now,
-        analyzed: false,
-      });
-      ops++;
-      created++;
-      existingIds.add(mediaItemId);
-
-      if (ops >= batchSize) {
-        await flush();
-      }
-    }
-
-    await flush();
-
-    return {
-      albumId: resolvedAlbumId,
-      created,
-      skipped,
-      skippedNoPreview,
-      totalInAlbum: mediaList.length,
-    };
   }
 );

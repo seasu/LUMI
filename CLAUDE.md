@@ -163,7 +163,8 @@ users/{userId}/
 | 做法 | 說明 |
 |------|------|
 | **長期保存** | **`mediaItemId`**（以及必要時 album id）— 官方明確允許長期存放，用來呼叫 `mediaItems.get` / `batchGet` **重新取得**最新 `MediaItem`。 |
-| **不要當永久真相** | **`baseUrl`** — 官方約 **60 分鐘**過期（Library API）；Best practices 亦寫不宜依賴長期快取 **`baseUrl`**。若要在 Firestore 存 **`thumbnailUrl`**（快取）：視為 **短期**，並在過期前用 **`mediaItemId` + OAuth** 呼叫 API 刷新（見 `wardrobe_repository.refreshThumbnailUrl`、`thumbnailRefreshedAt`）。 |
+| **Flutter Web 刷新** | 不可在瀏覽器直接 `GET photoslibrary.googleapis.com`（REST 不支援 CORS，Network 常出現 **403** 而與 scope 無關）。必須由 **Cloud Function** `refreshWardrobeThumbnail` 代理 `mediaItems.get` 並寫回 Firestore；本機測試可讓 `WardrobeRepository` 不注入 `cloudFunctions` 改走 `http` 直連。 |
+| **不要當永久真相** | **`baseUrl`** — 官方約 **60 分鐘**過期（Library API）；Best practices 亦寫不宜依賴長期快取 **`baseUrl`**。若要在 Firestore 存 **`thumbnailUrl`**（快取）：視為 **短期**，並在過期前用 **`mediaItemId` + OAuth** 刷新（`wardrobe_repository.refreshThumbnailUrl` ＋ `thumbnailRefreshedAt`；生產 App 走 **可呼叫** 代理，見上列「Flutter Web 刷新」）。 |
 | **顯示縮圖／下載像素** | 使用 API 回傳的 **`baseUrl`**，並依 [Base URLs — Image](https://developers.google.com/photos/library/guides/access-media-items#base-urls) **加上維度等參數**（例如 `=w2048-h2048`）；CDN 主機通常為 **`lh3.googleusercontent.com`** 這類形態。 |
 | **禁止當 Flutter 圖檔來源** | **`productUrl`** 以及 **`https://photos.google.com/...`** 這類 **相簿／相片網頁連結** — 官方：`productUrl` 是「在 Google 相簿 UI 裡開給使用者看的連結」，**不是**開發者用來抓 raw bytes 的網址；網頁 URL 回傳 **HTML**，`Image.network` 無法解成圖。 |
 

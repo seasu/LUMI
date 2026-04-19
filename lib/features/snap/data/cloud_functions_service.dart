@@ -121,6 +121,20 @@ class CloudFunctionsService {
       totalInAlbum: (data['totalInAlbum'] as num?)?.toInt() ?? 0,
     );
   }
+
+  /// Web: Photos Library API has no browser CORS — server proxies GET mediaItems + Firestore update.
+  Future<String> refreshWardrobeThumbnail({
+    required String accessToken,
+    required String mediaItemId,
+  }) async {
+    final callable = _functions.httpsCallable('refreshWardrobeThumbnail');
+    final result = await callable.call<Map<dynamic, dynamic>>({
+      'accessToken': accessToken,
+      'mediaItemId': mediaItemId,
+    });
+    final data = _asStringKeyedMap(result.data);
+    return _requireString(data, 'thumbnailUrl');
+  }
 }
 
 class AnalyzeClothingResult {

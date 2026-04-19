@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_spacing.dart';
-import '../../../../core/providers/firebase_providers.dart';
 import '../../snap/data/cloud_functions_service.dart';
 import '../../wardrobe/data/wardrobe_item.dart';
 import '../../wardrobe/data/wardrobe_repository.dart';

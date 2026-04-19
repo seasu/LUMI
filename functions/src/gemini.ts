@@ -1,6 +1,8 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { HttpsError } from "firebase-functions/v2/https";
 
+import { geminiGeneratedDefaults } from "./geminiDefaults.generated";
+
 export interface GeminiAnalysis {
   category: string;
   colors: string[];
@@ -9,42 +11,48 @@ export interface GeminiAnalysis {
 }
 
 /**
- * Model IDs — override via `GEMINI_VISION_MODEL` / `GEMINI_EMBEDDING_MODEL`
- * (GitHub Actions vars → `.env.<project>` or `.env`).
- * Defaults target models that resolve for most Gemini API keys; if API returns 404,
- * vision falls through a short compatibility list automatically.
+ * Model IDs: defaults + fallback chains from `geminiDefaults.generated.ts`
+ * (`npm run codegen:gemini` — CI injects GitHub Variables).
+ * Runtime overrides: `GEMINI_VISION_MODEL`, `GEMINI_EMBEDDING_MODEL`.
+ * Vision and embedding use the same resolution pattern (primary → deprecated remap → fallback chain).
  */
-const DEFAULT_VISION_MODEL = "gemini-2.0-flash";
-const DEFAULT_EMBEDDING_MODEL = "text-embedding-004";
+function defaultVisionModel(): string {
+  return geminiGeneratedDefaults.defaultVisionModel;
+}
 
-/**
- * Models removed from the Gemini API for `generateContent` (404 forever).
- * If env still uses one of these, we substitute [DEFAULT_VISION_MODEL].
- */
-const DEPRECATED_VISION_MODEL_IDS = new Set([
-  "gemini-1.5-flash",
-  "gemini-1.5-flash-8b",
-  "gemini-1.5-pro",
-]);
+function defaultEmbeddingModel(): string {
+  return geminiGeneratedDefaults.defaultEmbeddingModel;
+}
 
-/** Ordered fallbacks when the primary vision model returns 404 (API key / tier differences). */
-const VISION_FALLBACK_CHAIN = [
-  DEFAULT_VISION_MODEL,
-  "gemini-flash-latest",
-  "gemini-2.5-flash",
-] as const;
+const DEPRECATED_VISION_MODEL_IDS = new Set(
+  geminiGeneratedDefaults.deprecatedVisionModelIds.map((id) => id.toLowerCase())
+);
+
+const DEPRECATED_EMBEDDING_MODEL_IDS = new Set(
+  Array.from(
+    geminiGeneratedDefaults.deprecatedEmbeddingModelIds as readonly string[]
+  ).map((id) => id.toLowerCase())
+);
+
+const VISION_FALLBACK_CHAIN = [...geminiGeneratedDefaults.visionFallbackChain];
+const EMBEDDING_FALLBACK_CHAIN = [
+  ...geminiGeneratedDefaults.embeddingFallbackChain,
+];
 
 function geminiVisionModelId(): string {
   const raw = process.env.GEMINI_VISION_MODEL?.trim();
-  if (!raw || raw.length === 0) return DEFAULT_VISION_MODEL;
+  if (!raw || raw.length === 0) return defaultVisionModel();
   const lower = raw.toLowerCase();
-  if (DEPRECATED_VISION_MODEL_IDS.has(lower)) return DEFAULT_VISION_MODEL;
+  if (DEPRECATED_VISION_MODEL_IDS.has(lower)) return defaultVisionModel();
   return raw;
 }
 
 function geminiEmbeddingModelId(): string {
-  const v = process.env.GEMINI_EMBEDDING_MODEL?.trim();
-  return v && v.length > 0 ? v : DEFAULT_EMBEDDING_MODEL;
+  const raw = process.env.GEMINI_EMBEDDING_MODEL?.trim();
+  if (!raw || raw.length === 0) return defaultEmbeddingModel();
+  const lower = raw.toLowerCase();
+  if (DEPRECATED_EMBEDDING_MODEL_IDS.has(lower)) return defaultEmbeddingModel();
+  return raw;
 }
 
 function isLikelyModelNotFoundMessage(msg: string): boolean {
@@ -57,10 +65,24 @@ function isLikelyModelNotFoundMessage(msg: string): boolean {
   );
 }
 
-/** Unique ordered list: env primary first, then built-in compatibility chain (no duplicates). */
+/** Unique ordered list: env primary first, then codegen fallback chain (no duplicates). */
 function visionModelCandidates(): string[] {
   const primary = geminiVisionModelId();
   const ordered = [primary, ...VISION_FALLBACK_CHAIN];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const id of ordered) {
+    const t = id.trim();
+    if (!t || seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+  }
+  return out;
+}
+
+function embeddingModelCandidates(): string[] {
+  const primary = geminiEmbeddingModelId();
+  const ordered = [primary, ...EMBEDDING_FALLBACK_CHAIN];
   const seen = new Set<string>();
   const out: string[] = [];
   for (const id of ordered) {
@@ -152,9 +174,6 @@ export async function generateEmbedding(
   analysis: GeminiAnalysis
 ): Promise<number[]> {
   const genAI = new GoogleGenerativeAI(apiKey);
-  const embeddingModel = genAI.getGenerativeModel({
-    model: geminiEmbeddingModelId(),
-  });
 
   const input = [
     analysis.category,
@@ -163,11 +182,31 @@ export async function generateEmbedding(
     analysis.description,
   ].join(" ");
 
-  try {
-    const result = await embeddingModel.embedContent(input);
-    return result.embedding.values;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    throw new HttpsError("internal", `Gemini embedding API error: ${msg}`);
+  const candidates = embeddingModelCandidates();
+  let lastErr = "";
+
+  for (let i = 0; i < candidates.length; i++) {
+    const modelId = candidates[i];
+    try {
+      const embeddingModel = genAI.getGenerativeModel({ model: modelId });
+      const result = await embeddingModel.embedContent(input);
+      return result.embedding.values;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      lastErr = msg;
+      const canRetry =
+        i < candidates.length - 1 && isLikelyModelNotFoundMessage(msg);
+      if (!canRetry) {
+        throw new HttpsError(
+          "internal",
+          `Gemini embedding API error (model: ${modelId}): ${msg}`
+        );
+      }
+    }
   }
+
+  throw new HttpsError(
+    "internal",
+    `Gemini embedding API error (tried ${candidates.join(", ")}): ${lastErr}`
+  );
 }

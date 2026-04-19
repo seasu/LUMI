@@ -324,7 +324,7 @@ String _sanitizeErrorBlob(String raw) {
   // Common operator-facing hints (Chinese)
   final lower = s.toLowerCase();
   if (lower.contains('404') && lower.contains('model')) {
-    return '模型名稱或 API 版本可能過期，請請開發者更新 Cloud Functions 的 Gemini 模型設定。';
+    return '模型名稱或 API 版本可能過期，請開發者更新 Cloud Functions 的 Gemini 模型設定。';
   }
   if (lower.contains('api key') ||
       lower.contains('permission denied') ||

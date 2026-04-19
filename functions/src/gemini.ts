@@ -8,6 +8,10 @@ export interface GeminiAnalysis {
   description: string;
 }
 
+/** Gemini API model IDs — bump when Google deprecates names (404 on `models/...`). */
+const GEMINI_VISION_MODEL = "gemini-2.5-flash";
+const GEMINI_EMBEDDING_MODEL = "text-embedding-004";
+
 export async function analyzeImage(
   apiKey: string,
   imageBase64: string,
@@ -18,7 +22,7 @@ export async function analyzeImage(
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const visionModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const visionModel = genAI.getGenerativeModel({ model: GEMINI_VISION_MODEL });
 
   let visionResult;
   try {
@@ -68,7 +72,7 @@ export async function generateEmbedding(
 ): Promise<number[]> {
   const genAI = new GoogleGenerativeAI(apiKey);
   const embeddingModel = genAI.getGenerativeModel({
-    model: "text-embedding-004",
+    model: GEMINI_EMBEDDING_MODEL,
   });
 
   const input = [

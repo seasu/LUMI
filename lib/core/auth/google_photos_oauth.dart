@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../providers/firebase_providers.dart'
@@ -5,13 +6,12 @@ import '../providers/firebase_providers.dart'
 
 /// Ensures an OAuth **access token** with the requested Google Photos scopes.
 ///
-/// Default is [kGooglePhotosAppendOnlyScope] only. Pass [scopes] to request
-/// multiple scopes (e.g. append + readonly for album sync).
+/// **Append-only only** (`scopes` default): reuse existing token when possible;
+/// prompt with [GoogleSignIn.requestScopes] only when needed.
 ///
-/// **Important**: If [scopes] includes [kGooglePhotosReadonlyScope], we always
-/// call [GoogleSignIn.requestScopes] before returning a token. Otherwise a
-/// token obtained with only append-only would be returned early and APIs like
-/// `GET /albums` would respond 403 insufficient scopes.
+/// **Includes [kGooglePhotosReadonlyScope]** (album sync): tries to reuse tokens
+/// first — on Web uses [GoogleSignIn.canAccessScopes] (scopes only) to skip redundant consent
+/// dialogs after the user has already approved once.
 ///
 /// Returns `null` if the user denies incremental scope or no token can be resolved.
 Future<String?> ensureGooglePhotosAccessToken(
@@ -44,13 +44,39 @@ Future<String?> ensureGooglePhotosAccessToken(
     return extract(auth);
   }
 
+  // ── Album list / sync: append + readonly ─────────────────────────────────────
   if (needsAlbumListScope) {
+    // Web: if already authorized, reuse token — avoids a consent popup every time.
+    if (kIsWeb) {
+      try {
+        final already = await googleSignIn.canAccessScopes(scopeList);
+        if (already) {
+          final t = await readAfterAuth();
+          if (t != null) return t;
+          await account.clearAuthCache();
+          final t2 = await readAfterAuth();
+          if (t2 != null) return t2;
+        }
+      } catch (_) {
+        // Older clients / stubs: fall through
+      }
+    } else {
+      // Mobile: scopes are usually granted at sign-in — try reuse before prompting.
+      var t = await readAfterAuth();
+      if (t != null) return t;
+      await account.clearAuthCache();
+      t = await readAfterAuth();
+      if (t != null) return t;
+    }
+
     final granted = await googleSignIn.requestScopes(scopeList);
     if (!granted) return null;
+
     await account.clearAuthCache();
     return readAfterAuth();
   }
 
+  // ── Append-only only (Snap upload etc.) ──────────────────────────────────────
   var token = await readAfterAuth();
   if (token != null) return token;
 

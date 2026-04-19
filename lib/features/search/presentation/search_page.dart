@@ -64,12 +64,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     final uid = ref.read(currentUserProvider)?.uid;
     if (uid == null) return;
 
-    try {
-      await _runAlbumSync(showSnackBar: false, showHeaderSpinner: false);
-    } catch (_) {
-      // Pull-to-refresh：同步失敗時不中斷本地資料重新載入。
-    }
-
     await ref.read(wardrobeRepositoryProvider).prefetchWardrobeFromServer(uid);
     // Force stream resubscribe so UI pulls latest snapshot after server read updates cache.
     ref.invalidate(wardrobeStreamProvider);

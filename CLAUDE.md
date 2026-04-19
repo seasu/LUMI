@@ -156,6 +156,19 @@ users/{userId}/
 
 詳細欄位以程式與規格為準。
 
+### Google Photos：Firestore／App 該存哪種「路徑」（對齊官方）
+
+以下對齊 [Photos API Best practices — Caching](https://developers.google.com/photos/overview/best-practices)、[Access app-created media items](https://developers.google.com/photos/library/guides/access-media-items)（含 MediaItem 欄位、`baseUrl`／`productUrl`、`Base URLs`）。
+
+| 做法 | 說明 |
+|------|------|
+| **長期保存** | **`mediaItemId`**（以及必要時 album id）— 官方明確允許長期存放，用來呼叫 `mediaItems.get` / `batchGet` **重新取得**最新 `MediaItem`。 |
+| **不要當永久真相** | **`baseUrl`** — 官方約 **60 分鐘**過期（Library API）；Best practices 亦寫不宜依賴長期快取 **`baseUrl`**。若要在 Firestore 存 **`thumbnailUrl`**（快取）：視為 **短期**，並在過期前用 **`mediaItemId` + OAuth** 呼叫 API 刷新（見 `wardrobe_repository.refreshThumbnailUrl`、`thumbnailRefreshedAt`）。 |
+| **顯示縮圖／下載像素** | 使用 API 回傳的 **`baseUrl`**，並依 [Base URLs — Image](https://developers.google.com/photos/library/guides/access-media-items#base-urls) **加上維度等參數**（例如 `=w2048-h2048`）；CDN 主機通常為 **`lh3.googleusercontent.com`** 這類形態。 |
+| **禁止當 Flutter 圖檔來源** | **`productUrl`** 以及 **`https://photos.google.com/...`** 這類 **相簿／相片網頁連結** — 官方：`productUrl` 是「在 Google 相簿 UI 裡開給使用者看的連結」，**不是**開發者用來抓 raw bytes 的網址；網頁 URL 回傳 **HTML**，`Image.network` 無法解成圖。 |
+
+**AI 修改衣櫥縮圖／同步／寫入 Firestore 時**：不得以瀏覽器複製的 `photos.google.com/album/.../photo/...` 取代 **`baseUrl`**；新建或修資料時以 **`mediaItemId` + API** 為準。
+
 ---
 
 ## 安全性規範
@@ -164,7 +177,7 @@ users/{userId}/
 2. Firestore 依 **Security Rules**；寫入規則應綁定 `request.auth.uid`。
 3. Cloud Functions 應驗證 **Firebase Auth**，拒絕未認證請求。
 4. Google OAuth **最小 scope**；實際請求 scope 見 `lib/core/providers/firebase_providers.dart`。
-5. **`thumbnailUrl`** 為短期有效時需依設計刷新，勿假設永久有效。
+5. **`thumbnailUrl`** 須為 API 之 **`baseUrl`（含尺寸參數之快取）**，約 60 分鐘內依設計刷新；見上方「Google Photos：Firestore／App 該存哪種路徑」。
 
 細部 checklist 見 [SECURITY.md](./SECURITY.md)。
 

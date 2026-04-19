@@ -26,6 +26,18 @@ jobs:
         run: npm ci
         working-directory: functions
 
+      # Inject GitHub Repository variables → geminiDefaults.generated.ts (see functions/ENV.md).
+      - name: Generate Gemini defaults from GitHub Variables
+        working-directory: functions
+        env:
+          GEMINI_DEFAULT_VISION_MODEL: ${{ vars.GEMINI_DEFAULT_VISION_MODEL }}
+          GEMINI_DEFAULT_EMBEDDING_MODEL: ${{ vars.GEMINI_DEFAULT_EMBEDDING_MODEL }}
+          GEMINI_DEPRECATED_VISION_MODELS: ${{ vars.GEMINI_DEPRECATED_VISION_MODELS }}
+          GEMINI_DEPRECATED_EMBEDDING_MODELS: ${{ vars.GEMINI_DEPRECATED_EMBEDDING_MODELS }}
+          GEMINI_VISION_FALLBACK_CHAIN: ${{ vars.GEMINI_VISION_FALLBACK_CHAIN }}
+          GEMINI_EMBEDDING_FALLBACK_CHAIN: ${{ vars.GEMINI_EMBEDDING_FALLBACK_CHAIN }}
+        run: npm run codegen:gemini
+
       - name: Build TypeScript
         run: npm run build
         working-directory: functions
@@ -56,9 +68,8 @@ jobs:
       # --force on deploy: CLI applies Artifact Registry cleanup policy for build artifacts;
       # without it, deploy can exit 1 after functions succeeded.
 
-      # Optional Repository variables GEMINI_VISION_MODEL / GEMINI_EMBEDDING_MODEL →
-      # functions/.env.lumi-309ff so Firebase CLI deploy persists them at runtime (see functions/ENV.md).
-      - name: Write Gemini model env for Firebase deploy
+      # Optional runtime overrides on the deployed function (still via .env.lumi-309ff).
+      - name: Write optional runtime Gemini env for Firebase deploy
         working-directory: functions
         run: |
           rm -f .env.lumi-309ff

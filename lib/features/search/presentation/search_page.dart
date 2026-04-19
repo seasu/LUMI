@@ -46,7 +46,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     } catch (e) {
       if (showSnackBar && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e')),
+          SnackBar(content: Text(formatFirebaseCallableError(e))),
         );
       }
       rethrow;

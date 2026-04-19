@@ -10,7 +10,7 @@ import '../providers/firebase_providers.dart'
 /// prompt with [GoogleSignIn.requestScopes] only when needed.
 ///
 /// **Includes [kGooglePhotosReadonlyScope]** (album sync): tries to reuse tokens
-/// first — on Web uses [GoogleSignIn.canAccessScopes] to skip redundant consent
+/// first — on Web uses [GoogleSignIn.canAccessScopes] (scopes only) to skip redundant consent
 /// dialogs after the user has already approved once.
 ///
 /// Returns `null` if the user denies incremental scope or no token can be resolved.
@@ -49,8 +49,7 @@ Future<String?> ensureGooglePhotosAccessToken(
     // Web: if already authorized, reuse token — avoids a consent popup every time.
     if (kIsWeb) {
       try {
-        final already =
-            await googleSignIn.canAccessScopes(account, scopeList);
+        final already = await googleSignIn.canAccessScopes(scopeList);
         if (already) {
           final t = await readAfterAuth();
           if (t != null) return t;

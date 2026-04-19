@@ -187,13 +187,15 @@ class _PendingOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final isQuota = item.isQuotaExceeded;
     final err = item.analyzeError;
-    final hasBackendErr = err != null && err.isNotEmpty;
 
-    final title = isQuota
-        ? '配額已用完'
-        : (hasBackendErr && err != null)
-            ? _analyzeErrorTitle(err)
-            : 'AI 分析中';
+    final String title;
+    if (isQuota) {
+      title = '配額已用完';
+    } else if (err != null && err.isNotEmpty) {
+      title = _analyzeErrorTitle(err);
+    } else {
+      title = 'AI 分析中';
+    }
 
     return Container(
       color: LumiColors.text.withOpacity(0.35),
@@ -203,7 +205,7 @@ class _PendingOverlay extends StatelessWidget {
           if (isQuota)
             const Icon(Icons.lock_outline,
                 color: LumiColors.onPrimary, size: 24)
-          else if (hasBackendErr)
+          else if (err != null && err.isNotEmpty)
             const Icon(Icons.error_outline,
                 color: LumiColors.onPrimary, size: 22)
           else

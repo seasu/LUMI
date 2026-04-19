@@ -1,6 +1,5 @@
 import 'dart:convert';
-
-import 'package:web/web.dart';
+import 'dart:html' as html;
 
 /// Writes one line to the browser console (DevTools → Console).
 void webConsoleInfo(String tag, String message, [Map<String, Object?>? data]) {
@@ -11,8 +10,8 @@ void webConsoleInfo(String tag, String message, [Map<String, Object?>? data]) {
       if (data != null && data.isNotEmpty) 'data': data,
       'at': DateTime.now().toUtc().toIso8601String(),
     };
-    console.log(jsonEncode(payload));
+    html.window.console.log(jsonEncode(payload));
   } catch (_) {
-    console.log('[Lumi][$tag] $message');
+    html.window.console.log('[Lumi][$tag] $message');
   }
 }

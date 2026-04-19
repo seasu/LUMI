@@ -47,8 +47,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       if (showSnackBar && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(formatWardrobeSyncErrorForUser(e)),
-            maxLines: 8,
+            content: Text(
+              formatWardrobeSyncErrorForUser(e),
+              maxLines: 8,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         );
       }

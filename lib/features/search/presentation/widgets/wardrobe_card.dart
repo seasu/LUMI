@@ -56,11 +56,17 @@ class WardrobeCard extends ConsumerWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    maxLines: 1,
+                    maxLines:
+                        item.analyzeError != null &&
+                                item.analyzeError!.isNotEmpty &&
+                                !item.isQuotaExceeded
+                            ? 3
+                            : 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 9,
                       color: LumiColors.subtext,
+                      height: 1.35,
                     ),
                   ),
                 ],
@@ -102,12 +108,8 @@ String _displaySubtitle(WardrobeItem item) {
   }
   final err = item.analyzeError;
   if (err != null && err.isNotEmpty && !item.isQuotaExceeded) {
-    if (err.startsWith('analysis_failed:')) {
-      return '請稍後重試或聯絡支援';
-    }
-    if (err.startsWith('download_failed:')) {
-      return '縮圖連結可能已過期';
-    }
+    final hint = _analyzeErrorHintForUser(err);
+    if (hint.isNotEmpty) return hint;
     return '請至 Firebase 後台查看紀錄';
   }
   final category = item.category.isEmpty ? '未分類' : item.category;
@@ -220,17 +222,40 @@ class _PendingOverlay extends StatelessWidget {
           const SizedBox(height: 6),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: LumiColors.onPrimary,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                height: 1.25,
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: LumiColors.onPrimary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    height: 1.25,
+                  ),
+                ),
+                if (err != null &&
+                    err.isNotEmpty &&
+                    err.startsWith('analysis_failed:'))
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      _analyzeErrorTechnicalTail(err),
+                      textAlign: TextAlign.center,
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: LumiColors.onPrimary.withOpacity(0.88),
+                        fontSize: 8,
+                        fontWeight: FontWeight.w400,
+                        height: 1.25,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
@@ -253,4 +278,64 @@ String _analyzeErrorTitle(String analyzeError) {
     return '分析管線錯誤';
   }
   return '分析未完成';
+}
+
+/// Short multi-line hint for subtitle (prefix stripped, truncated).
+String _analyzeErrorHintForUser(String analyzeError) {
+  return _sanitizeErrorBlob(analyzeError).trim();
+}
+
+/// One compressed line from [analysis_failed:...] for overlay (max ~180 chars).
+String _analyzeErrorTechnicalTail(String analyzeError) {
+  return _sanitizeErrorBlob(analyzeError);
+}
+
+/// Maps stored `analyzeError` fields to readable, truncated copy for the UI.
+String _sanitizeErrorBlob(String raw) {
+  var s = raw.trim();
+  const prefixes = [
+    'analysis_failed:',
+    'download_failed:',
+    'trigger_failed:',
+  ];
+  for (final p in prefixes) {
+    if (s.startsWith(p)) {
+      s = s.substring(p.length).trim();
+      break;
+    }
+  }
+  // Drop redundant internal prefixes from Gemini SDK / Functions
+  const noise = [
+    'Gemini vision API error: ',
+    'Gemini embedding API error: ',
+    'INTERNAL: ',
+  ];
+  for (final n in noise) {
+    if (s.contains(n)) {
+      s = s.split(n).last.trim();
+    }
+  }
+  if (s.length > 180) {
+    s = '${s.substring(0, 177)}…';
+  }
+  if (s.isEmpty) {
+    return '';
+  }
+  // Common operator-facing hints (Chinese)
+  final lower = s.toLowerCase();
+  if (lower.contains('404') && lower.contains('model')) {
+    return '模型名稱或 API 版本可能過期，請請開發者更新 Cloud Functions 的 Gemini 模型設定。';
+  }
+  if (lower.contains('api key') ||
+      lower.contains('permission denied') ||
+      lower.contains('permission_denied')) {
+    return 'Gemini API 金鑰或權限有誤：請確認 Firebase 已設定 GEMINI_API_KEY，且 Generative Language API 已啟用。';
+  }
+  if (lower.contains('quota') || lower.contains('resource_exhausted')) {
+    return 'Gemini API 配額或請求過於頻繁，請稍後再試或檢查 Google Cloud 配額。';
+  }
+  if (lower.contains('failed to parse gemini')) {
+    return 'AI 回傳格式異常；請重試或換一張較清楚的衣物照片。';
+  }
+  return s;
 }

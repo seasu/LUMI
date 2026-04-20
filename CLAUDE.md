@@ -170,6 +170,25 @@ users/{userId}/
 
 **AI 修改衣櫥縮圖／同步／寫入 Firestore 時**：不得以瀏覽器複製的 `photos.google.com/album/.../photo/...` 取代 **`baseUrl`**；新建或修資料時以 **`mediaItemId` + API** 為準。
 
+### Google OAuth / Token 流程（必守）
+
+1. **嚴格區分兩種 Token**
+   - **Firebase ID Token**：只用於 Callable / Firestore 身分驗證（`request.auth`），**不可**直接呼叫 Google Photos API。
+   - **Google Access Token**：由 Google Sign-In + Photos scopes 取得，才可作為 `Authorization: Bearer ...` 呼叫 Photos API。
+2. **Lumi 目前採用的模式**
+   - Client 端取得 Google Access Token（包含 `photoslibrary.appendonly`、`photoslibrary.readonly`）。
+   - 呼叫 Cloud Functions（如 `syncWardrobeFromPhotos`、`refreshWardrobeThumbnail`）時，把 **Access Token** 當參數傳入。
+   - Function 端同時檢查 Firebase Auth（`request.auth`）與使用 Access Token 呼叫 Photos API。
+3. **互動授權與背景流程必須分流**
+   - **互動流程**（登入、使用者手動按同步）：可 `requestScopes`（`interactive: true`）。
+   - **背景流程**（進入衣櫥、自動縮圖刷新、下拉造成的被動刷新）：只可靜默取 token，**不可跳授權視窗**（`interactive: false`）。
+   - 若背景流程拿不到 token：直接略過該次刷新，不得彈授權。
+4. **Token 生命週期**
+   - Access Token 短效（常見約 1 小時）；過期時在下一次**互動流程**補授權或重取。
+   - `thumbnailUrl` 僅作快取，長期真相為 `mediaItemId`。
+5. **目前未採用**
+   - 尚未實作 `serverAuthCode -> 後端換 refreshToken` 長期離線刷新模式；若未來需要離線批次同步，再另開 ADR 討論。
+
 ---
 
 ## 安全性規範

@@ -18,8 +18,8 @@ class _FakeGoogleSignIn extends Fake implements GoogleSignIn {
 }
 
 class _FakeGoogleSignInAccount extends Fake implements GoogleSignInAccount {
-  _FakeGoogleSignInAccount({this.token = 'token-123'});
-  final String token;
+  _FakeGoogleSignInAccount();
+  static const String token = 'token-123';
   int clearCalls = 0;
 
   @override

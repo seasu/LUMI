@@ -2,7 +2,8 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**版本：** 1.0.0
+**前端版本 (Flutter App)：** 1.0.3+83
+**後端版本 (Cloud Functions)：** 1.0.0
 **開發框架：** Flutter (Cross-platform)
 
 ---
@@ -297,3 +298,14 @@ users/{userId}/
 - [ ] 核心流程無 crash
 - [ ] TestFlight build 成功分發給測試員
 - [ ] Android beta 透過 Firebase App Distribution 分發
+
+---
+
+## 版本歷史（Changelog）
+
+> 本章節固定置於 PRD **最後一節**。  
+> 每次程式碼更新需同步新增一筆，前後端版本分開管理。
+
+| 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
+|------|---------|---------|---------|---------|
+| 2026-04-20 | 1.0.3+83 | 1.0.0 | 建立前後端分離版本欄位；新增 PRD 版本歷史章節並規範固定置底 | PRD / Process |

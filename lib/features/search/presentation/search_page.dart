@@ -8,6 +8,7 @@ import '../../snap/data/cloud_functions_service.dart';
 import '../../wardrobe/data/wardrobe_item.dart';
 import '../../wardrobe/data/wardrobe_repository.dart';
 import 'providers/search_provider.dart';
+import 'providers/thumbnail_repair_provider.dart';
 import 'widgets/filter_bar.dart';
 import 'widgets/wardrobe_card.dart';
 import 'widgets/item_detail_modal.dart';
@@ -113,6 +114,14 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   @override
   Widget build(BuildContext context) {
     final filtered = ref.watch(filteredWardrobeProvider);
+    final rawWardrobe = ref.watch(wardrobeStreamProvider);
+    ref.watch(thumbnailRepairCoordinatorProvider);
+    rawWardrobe.whenData((items) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(thumbnailRepairCoordinatorProvider).scheduleRepair(items);
+      });
+    });
 
     return Scaffold(
       backgroundColor: LumiColors.base,

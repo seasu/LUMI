@@ -121,6 +121,20 @@ class CloudFunctionsService {
       totalInAlbum: (data['totalInAlbum'] as num?)?.toInt() ?? 0,
     );
   }
+
+  /// Web: Photos Library API has no browser CORS — server proxies GET mediaItems + Firestore update.
+  Future<String> refreshWardrobeThumbnail({
+    required String accessToken,
+    required String mediaItemId,
+  }) async {
+    final callable = _functions.httpsCallable('refreshWardrobeThumbnail');
+    final result = await callable.call<Map<dynamic, dynamic>>({
+      'accessToken': accessToken,
+      'mediaItemId': mediaItemId,
+    });
+    final data = _asStringKeyedMap(result.data);
+    return _requireString(data, 'thumbnailUrl');
+  }
 }
 
 class AnalyzeClothingResult {
@@ -230,8 +244,14 @@ String formatWardrobeSyncErrorForUser(Object error) {
       case 'unauthenticated':
         return '登入已失效，請重新登入後再按同步。';
       case 'permission-denied':
-        if (lower.contains('readonly') || lower.contains('photos')) {
-          return 'Google 相簿讀取權限不足。請登出後再登入，並允許 Lumi 存取 Google 相簿。';
+        if (lower.contains('readonly') ||
+            lower.contains('photos') ||
+            lower.contains('insufficient authentication scopes')) {
+          return 'Google 相簿 API 拒絕存取（常見：OAuth 存取權杖仍缺少「讀取相簿」範圍）。'
+              '請再按一次「同步」並完成授權；若仍失敗，請登出後再登入。'
+              '開發者請確認 Google Cloud → OAuth 同意畫面／用戶端已納入 '
+              'https://www.googleapis.com/auth/photoslibrary.readonly'
+              '（與 appendonly），且已發布或測試使用者已加入。';
         }
         return '沒有權限執行同步。$raw';
       case 'not-found':

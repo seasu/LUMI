@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/logging/web_console_log.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_spacing.dart';
 import '../../snap/data/cloud_functions_service.dart';
@@ -29,8 +30,20 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }) async {
     if (_syncBusy) return;
     if (showHeaderSpinner) setState(() => _syncBusy = true);
+    webConsoleInfo('sync', 'wardrobe_album_sync_start');
     try {
       final r = await syncWardrobeAlbumFromGooglePhotos(ref);
+      webConsoleInfo(
+        'sync',
+        'wardrobe_album_sync_ok',
+        {
+          'created': r.created,
+          'skipped': r.skipped,
+          'skippedNoPreview': r.skippedNoPreview,
+          'totalInAlbum': r.totalInAlbum,
+          'albumId': r.albumId,
+        },
+      );
       ref.invalidate(wardrobeStreamProvider);
       if (showSnackBar && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -44,6 +57,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         );
       }
     } catch (e) {
+      webConsoleInfo(
+        'sync',
+        'wardrobe_album_sync_error',
+        {'detail': formatWardrobeSyncErrorForUser(e)},
+      );
       if (showSnackBar && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

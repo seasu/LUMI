@@ -4,6 +4,9 @@ analyzer:
   errors:
     missing_required_param: error
     missing_return: error
+    # Conditional export implementation (`web_console_log_web.dart`) needs browser APIs;
+    # both `dart:html` and `package:web` trigger this lint outside plugin packages.
+    avoid_web_libraries_in_flutter: ignore
 
 linter:
   rules:

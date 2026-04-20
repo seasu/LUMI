@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../../core/auth/google_photos_oauth.dart';
@@ -142,12 +143,12 @@ void _refreshInBackground(Ref ref, WardrobeItem item) {
   if (user == null) return;
 
   Future(() async {
-    try {
-      final googleSignIn = ref.read(googleSignInProvider);
-      GoogleSignInAccount? gUser =
-          googleSignIn.currentUser ?? await googleSignIn.signInSilently();
+    final googleSignIn = ref.read(googleSignInProvider);
+    GoogleSignInAccount? gUser =
+        googleSignIn.currentUser ?? await googleSignIn.signInSilently();
 
-      final token = await ensureGooglePhotosAccessToken(
+    Future<String?> readToken({bool clearCacheFirst = false}) {
+      return ensureGooglePhotosAccessToken(
         googleSignIn,
         gUser,
         scopes: const [
@@ -155,14 +156,51 @@ void _refreshInBackground(Ref ref, WardrobeItem item) {
           kGooglePhotosReadonlyScope,
         ],
         interactive: false,
+        clearCacheFirst: clearCacheFirst,
       );
+    }
+
+    try {
+      var token = await readToken();
       if (token == null) return;
 
-      await ref.read(wardrobeRepositoryProvider).refreshThumbnailUrl(
-            userId: user.uid,
-            mediaItemId: item.mediaItemId,
-            accessToken: token,
+      try {
+        await ref.read(wardrobeRepositoryProvider).refreshThumbnailUrl(
+              userId: user.uid,
+              mediaItemId: item.mediaItemId,
+              accessToken: token,
+            );
+      } on FirebaseFunctionsException catch (e) {
+        final fnCode = e.code.toLowerCase();
+        final raw = '${e.message ?? ''} ${e.details ?? ''}'.toLowerCase();
+        final invalidAuth =
+            fnCode == 'unauthenticated' ||
+            raw.contains('401') ||
+            raw.contains('unauthenticated') ||
+            raw.contains('invalid authentication credentials');
+        if (!invalidAuth) rethrow;
+
+        token = await readToken(clearCacheFirst: true);
+        if (token == null) {
+          webConsoleInfo(
+            'thumbnail',
+            'refresh_thumbnail_skipped',
+            {
+              'mediaItemIdPrefix': item.mediaItemId.length > 8
+                  ? '${item.mediaItemId.substring(0, 8)}…'
+                  : item.mediaItemId,
+              'reason': 'oauth_token_expired',
+            },
           );
+          return;
+        }
+
+        await ref.read(wardrobeRepositoryProvider).refreshThumbnailUrl(
+              userId: user.uid,
+              mediaItemId: item.mediaItemId,
+              accessToken: token,
+            );
+      }
       webConsoleInfo(
         'thumbnail',
         'refresh_thumbnail_ok',

@@ -17,6 +17,7 @@ Future<String?> ensureGooglePhotosAccessToken(
   GoogleSignInAccount? account, {
   List<String>? scopes,
   bool interactive = false,
+  bool clearCacheFirst = false,
 }) async {
   if (account == null) return null;
 
@@ -52,6 +53,14 @@ Future<String?> ensureGooglePhotosAccessToken(
   Future<String?> readAfterAuth() async {
     final auth = await account.authentication;
     return extract(auth);
+  }
+
+  if (clearCacheFirst) {
+    try {
+      await account.clearAuthCache();
+    } catch (_) {
+      // Best-effort only: some platforms may not have a cache to clear.
+    }
   }
 
   // 1) Silent path first — do not prompt during passive/background flows.

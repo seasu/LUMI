@@ -36,20 +36,33 @@ class _FakeGoogleSignIn extends Fake implements GoogleSignIn {
 }
 
 class _FakeGoogleSignInAccount extends Fake implements GoogleSignInAccount {
-  _FakeGoogleSignInAccount(this.onClearAuthCache);
+  _FakeGoogleSignInAccount(this.onClearAuthCache, {this.tokens});
   static const String token = 'token-123';
   final void Function() onClearAuthCache;
+  final List<String>? tokens;
+  int _tokenIndex = 0;
+
+  String get _currentToken {
+    final values = tokens;
+    if (values == null || values.isEmpty) return token;
+    if (_tokenIndex >= values.length) return values.last;
+    return values[_tokenIndex];
+  }
 
   @override
   Future<GoogleSignInAuthentication> get authentication async =>
-      _FakeGoogleSignInAuthentication(token);
+      _FakeGoogleSignInAuthentication(_currentToken);
 
   @override
   Future<Map<String, String>> get authHeaders async =>
-      {'Authorization': 'Bearer $token'};
+      {'Authorization': 'Bearer $_currentToken'};
 
   @override
   Future<void> clearAuthCache() async {
+    final values = tokens;
+    if (values != null && _tokenIndex < values.length - 1) {
+      _tokenIndex++;
+    }
     onClearAuthCache();
   }
 }
@@ -123,5 +136,29 @@ void main() {
     expect(googleSignIn.canAccessScopesCalls, 1);
     expect(googleSignIn.requestScopesCalls, 1);
     expect(clearCalls, 1);
+  });
+
+  test('silent mode can refresh token after clearing auth cache', () async {
+    final googleSignIn = _FakeGoogleSignIn(granted: true, canAccess: true);
+    var clearCalls = 0;
+    final account = _FakeGoogleSignInAccount(
+      () => clearCalls++,
+      tokens: const ['expired-token', 'fresh-token'],
+    );
+
+    final token = await ensureGooglePhotosAccessToken(
+      googleSignIn,
+      account,
+      scopes: const [
+        kGooglePhotosAppendOnlyScope,
+        kGooglePhotosReadonlyScope,
+      ],
+      interactive: false,
+      clearCacheFirst: true,
+    );
+
+    expect(token, 'fresh-token');
+    expect(clearCalls, 1);
+    expect(googleSignIn.requestScopesCalls, 0);
   });
 }

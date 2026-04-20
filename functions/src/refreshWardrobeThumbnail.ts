@@ -46,6 +46,12 @@ export const refreshWardrobeThumbnail = onCall(
 
     if (!res.ok) {
       const body = await res.text();
+      if (res.status === 401) {
+        throw new HttpsError(
+          "unauthenticated",
+          `Photos API GET mediaItems failed: ${res.status} ${body}`
+        );
+      }
       throw new HttpsError(
         "permission-denied",
         `Photos API GET mediaItems failed: ${res.status} ${body}`

@@ -1,5 +1,6 @@
 # LUMI
 Lumi (源自 Luminous) 旨在透過科技照亮衣櫥中被遺忘的角落。透過「相簿即資料庫」的創新概念，讓數位衣櫥的維護成本降至零，並利用 AI 協助使用者進行理性消費與高效管理。
+https://seasu.github.io/LUMI/
 
 ## Design Source of Truth
 

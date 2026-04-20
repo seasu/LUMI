@@ -20,7 +20,8 @@ class _FakeGoogleSignIn extends Fake implements GoogleSignIn {
 class _FakeGoogleSignInAccount extends Fake implements GoogleSignInAccount {
   _FakeGoogleSignInAccount();
   static const String token = 'token-123';
-  final int clearCalls = 0;
+  int _clearCalls = 0;
+  int get clearCalls => _clearCalls;
 
   @override
   Future<GoogleSignInAuthentication> get authentication async =>
@@ -31,7 +32,9 @@ class _FakeGoogleSignInAccount extends Fake implements GoogleSignInAccount {
       {'Authorization': 'Bearer $token'};
 
   @override
-  Future<void> clearAuthCache() async {}
+  Future<void> clearAuthCache() async {
+    _clearCalls++;
+  }
 }
 
 class _FakeGoogleSignInAuthentication extends Fake

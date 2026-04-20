@@ -1,7 +1,7 @@
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../providers/firebase_providers.dart'
-    show kGooglePhotosAppendOnlyScope, kGooglePhotosReadonlyScope;
+    show kGooglePhotosAppendOnlyScope;
 
 /// Ensures an OAuth **access token** with the requested Google Photos scopes.
 ///

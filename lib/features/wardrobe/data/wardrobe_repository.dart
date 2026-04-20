@@ -58,8 +58,9 @@ class WardrobeRepository {
     required String mediaItemId,
     required String accessToken,
   }) async {
-    if (_cloudFunctions != null) {
-      return _cloudFunctions!.refreshWardrobeThumbnail(
+    final cf = _cloudFunctions;
+    if (cf != null) {
+      return cf.refreshWardrobeThumbnail(
         accessToken: accessToken,
         mediaItemId: mediaItemId,
       );

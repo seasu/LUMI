@@ -18,9 +18,9 @@ class _FakeGoogleSignIn extends Fake implements GoogleSignIn {
 }
 
 class _FakeGoogleSignInAccount extends Fake implements GoogleSignInAccount {
-  _FakeGoogleSignInAccount();
+  _FakeGoogleSignInAccount(this.onClearAuthCache);
   static const String token = 'token-123';
-  int clearCalls = 0;
+  final void Function() onClearAuthCache;
 
   @override
   Future<GoogleSignInAuthentication> get authentication async =>
@@ -32,7 +32,7 @@ class _FakeGoogleSignInAccount extends Fake implements GoogleSignInAccount {
 
   @override
   Future<void> clearAuthCache() async {
-    clearCalls++;
+    onClearAuthCache();
   }
 }
 
@@ -48,7 +48,8 @@ class _FakeGoogleSignInAuthentication extends Fake
 void main() {
   test('silent mode does not trigger requestScopes', () async {
     final googleSignIn = _FakeGoogleSignIn(granted: true);
-    final account = _FakeGoogleSignInAccount();
+    var clearCalls = 0;
+    final account = _FakeGoogleSignInAccount(() => clearCalls++);
 
     final token = await ensureGooglePhotosAccessToken(
       googleSignIn,
@@ -62,12 +63,12 @@ void main() {
 
     expect(token, 'token-123');
     expect(googleSignIn.requestScopesCalls, 0);
-    expect(account.clearCalls, 0);
+    expect(clearCalls, 0);
   });
 
   test('interactive mode can trigger requestScopes', () async {
     final googleSignIn = _FakeGoogleSignIn(granted: true);
-    final account = _FakeGoogleSignInAccount();
+    final account = _FakeGoogleSignInAccount(() {});
 
     final token = await ensureGooglePhotosAccessToken(
       googleSignIn,

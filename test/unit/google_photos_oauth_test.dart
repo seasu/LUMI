@@ -35,15 +35,17 @@ class _FakeGoogleSignIn extends Fake implements GoogleSignIn {
   }
 }
 
+// ignore: must_be_immutable
 class _FakeGoogleSignInAccount extends Fake implements GoogleSignInAccount {
-  _FakeGoogleSignInAccount(this.onClearAuthCache, {this.tokens});
+  _FakeGoogleSignInAccount(this.onClearAuthCache, {List<String>? tokens})
+    : _tokens = tokens;
   static const String token = 'token-123';
   final void Function() onClearAuthCache;
-  final List<String>? tokens;
+  final List<String>? _tokens;
   int _tokenIndex = 0;
 
   String get _currentToken {
-    final values = tokens;
+    final values = _tokens;
     if (values == null || values.isEmpty) return token;
     if (_tokenIndex >= values.length) return values.last;
     return values[_tokenIndex];
@@ -59,7 +61,7 @@ class _FakeGoogleSignInAccount extends Fake implements GoogleSignInAccount {
 
   @override
   Future<void> clearAuthCache() async {
-    final values = tokens;
+    final values = _tokens;
     if (values != null && _tokenIndex < values.length - 1) {
       _tokenIndex++;
     }

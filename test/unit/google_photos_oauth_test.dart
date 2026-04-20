@@ -15,7 +15,10 @@ class _FakeGoogleSignIn extends Fake implements GoogleSignIn {
   List<String>? lastScopes;
 
   @override
-  Future<bool> canAccessScopes(List<String> scopes) async {
+  Future<bool> canAccessScopes(
+    List<String> scopes, {
+    String? accessToken,
+  }) async {
     canAccessScopesCalls++;
     lastScopes = scopes;
     return canAccess;

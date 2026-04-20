@@ -4,15 +4,30 @@ import 'package:lumi/core/auth/google_photos_oauth.dart';
 import 'package:lumi/core/providers/firebase_providers.dart';
 
 class _FakeGoogleSignIn extends Fake implements GoogleSignIn {
-  _FakeGoogleSignIn({required this.granted});
+  _FakeGoogleSignIn({
+    required this.granted,
+    this.canAccess = true,
+  });
   final bool granted;
+  bool canAccess;
   int requestScopesCalls = 0;
+  int canAccessScopesCalls = 0;
   List<String>? lastScopes;
+
+  @override
+  Future<bool> canAccessScopes(List<String> scopes) async {
+    canAccessScopesCalls++;
+    lastScopes = scopes;
+    return canAccess;
+  }
 
   @override
   Future<bool> requestScopes(List<String> scopes) async {
     requestScopesCalls++;
     lastScopes = scopes;
+    if (granted) {
+      canAccess = true;
+    }
     return granted;
   }
 }
@@ -47,7 +62,7 @@ class _FakeGoogleSignInAuthentication extends Fake
 
 void main() {
   test('silent mode does not trigger requestScopes', () async {
-    final googleSignIn = _FakeGoogleSignIn(granted: true);
+    final googleSignIn = _FakeGoogleSignIn(granted: true, canAccess: true);
     var clearCalls = 0;
     final account = _FakeGoogleSignInAccount(() => clearCalls++);
 
@@ -62,13 +77,34 @@ void main() {
     );
 
     expect(token, 'token-123');
+    expect(googleSignIn.canAccessScopesCalls, 1);
     expect(googleSignIn.requestScopesCalls, 0);
     expect(clearCalls, 0);
   });
 
-  test('interactive mode can trigger requestScopes', () async {
-    final googleSignIn = _FakeGoogleSignIn(granted: true);
+  test('silent mode returns null when required scopes are missing', () async {
+    final googleSignIn = _FakeGoogleSignIn(granted: true, canAccess: false);
     final account = _FakeGoogleSignInAccount(() {});
+
+    final token = await ensureGooglePhotosAccessToken(
+      googleSignIn,
+      account,
+      scopes: const [
+        kGooglePhotosAppendOnlyScope,
+        kGooglePhotosReadonlyScope,
+      ],
+      interactive: false,
+    );
+
+    expect(token, isNull);
+    expect(googleSignIn.canAccessScopesCalls, 1);
+    expect(googleSignIn.requestScopesCalls, 0);
+  });
+
+  test('interactive mode requests scopes when current token is insufficient', () async {
+    final googleSignIn = _FakeGoogleSignIn(granted: true, canAccess: false);
+    var clearCalls = 0;
+    final account = _FakeGoogleSignInAccount(() => clearCalls++);
 
     final token = await ensureGooglePhotosAccessToken(
       googleSignIn,
@@ -81,7 +117,8 @@ void main() {
     );
 
     expect(token, 'token-123');
-    // Current implementation can resolve token silently first.
-    expect(googleSignIn.requestScopesCalls, inInclusiveRange(0, 1));
+    expect(googleSignIn.canAccessScopesCalls, 1);
+    expect(googleSignIn.requestScopesCalls, 1);
+    expect(clearCalls, 1);
   });
 }

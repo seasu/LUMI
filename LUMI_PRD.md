@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.3+83
+**前端版本 (Flutter App)：** 1.0.4+85
 **後端版本 (Cloud Functions)：** 1.0.0
 **開發框架：** Flutter (Cross-platform)
 
@@ -308,4 +308,5 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-04-20 | 1.0.4+85 | 1.0.0 | 修正 Google Photos token scope 驗證，避免背景縮圖刷新誤送 appendonly token；補 OAuth 單元測試；同步對齊前端版本號 | Auth / Wardrobe Thumbnail / Tests |
 | 2026-04-20 | 1.0.3+83 | 1.0.0 | 建立前後端分離版本欄位；新增 PRD 版本歷史章節並規範固定置底 | PRD / Process |

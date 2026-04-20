@@ -23,6 +23,16 @@ Future<String?> ensureGooglePhotosAccessToken(
   final scopeList = scopes ??
       const [kGooglePhotosAppendOnlyScope];
 
+  Future<bool> hasRequiredScopes() async {
+    try {
+      return await googleSignIn.canAccessScopes(scopeList);
+    } catch (_) {
+      // Fall back to the existing token on platforms that cannot introspect
+      // granted scopes yet.
+      return true;
+    }
+  }
+
   Future<String?> extract(GoogleSignInAuthentication auth) async {
     final direct = auth.accessToken;
     if (direct != null && direct.isNotEmpty) return direct;
@@ -43,7 +53,7 @@ Future<String?> ensureGooglePhotosAccessToken(
 
   // 1) Silent path first — do not prompt during passive/background flows.
   var token = await readAfterAuth();
-  if (token != null) return token;
+  if (token != null && await hasRequiredScopes()) return token;
   if (!interactive) return null;
 
   // 2) Interactive path — only for explicit user actions.

@@ -1,6 +1,6 @@
 /// Semantic font sizes for Lumi UI (logical px).
 /// App [ThemeData] sets Noto Sans TC globally; use these sizes for hierarchy.
-/// Wordmark / logo script stays separate (Great Vibes / Dancing Script per design).
+/// Wordmark / logo script stays separate (Dancing Script — see `pubspec.yaml` fonts).
 abstract class LumiTypeScale {
   LumiTypeScale._();
 

@@ -10,7 +10,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: ThemeData(useMaterial3: true),
-        home: Scaffold(
+        home: const Scaffold(
           backgroundColor: LumiColors.base,
           body: Center(child: LumiLogoWordmark(fontSize: 48)),
         ),

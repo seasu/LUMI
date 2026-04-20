@@ -5,27 +5,23 @@ import '../providers/firebase_providers.dart'
 
 /// Ensures an OAuth **access token** with the requested Google Photos scopes.
 ///
-/// **Append-only** (`scopes` default): reuse token when possible; otherwise
-/// [GoogleSignIn.requestScopes].
+/// Default (`interactive = false`) is **silent**: read existing token only.
+/// This avoids unexpected permission popups during background refreshes.
 ///
-/// **Includes [kGooglePhotosReadonlyScope]** (list albums / wardrobe sync):
-/// Always calls [GoogleSignIn.requestScopes] then [GoogleSignInAccount.clearAuthCache]
-/// before reading the token. On Web, [GoogleSignIn.canAccessScopes] could report true
-/// while the Bearer token still lacked `photoslibrary.readonly` for `GET /albums`
-/// (403). If scopes were already granted, [requestScopes] returns without a dialog.
+/// When user explicitly triggers an action (e.g. Login / manual Sync), set
+/// `interactive: true` to allow [GoogleSignIn.requestScopes].
 ///
 /// Returns `null` if the user denies incremental scope or no token can be resolved.
 Future<String?> ensureGooglePhotosAccessToken(
   GoogleSignIn googleSignIn,
   GoogleSignInAccount? account, {
   List<String>? scopes,
+  bool interactive = false,
 }) async {
   if (account == null) return null;
 
   final scopeList = scopes ??
       const [kGooglePhotosAppendOnlyScope];
-
-  final needsAlbumListScope = scopeList.contains(kGooglePhotosReadonlyScope);
 
   Future<String?> extract(GoogleSignInAuthentication auth) async {
     final direct = auth.accessToken;
@@ -45,19 +41,12 @@ Future<String?> ensureGooglePhotosAccessToken(
     return extract(auth);
   }
 
-  // ── Album list / sync: append + readonly ─────────────────────────────────────
-  if (needsAlbumListScope) {
-    final granted = await googleSignIn.requestScopes(scopeList);
-    if (!granted) return null;
-
-    await account.clearAuthCache();
-    return readAfterAuth();
-  }
-
-  // ── Append-only only (Snap upload etc.) ──────────────────────────────────────
+  // 1) Silent path first — do not prompt during passive/background flows.
   var token = await readAfterAuth();
   if (token != null) return token;
+  if (!interactive) return null;
 
+  // 2) Interactive path — only for explicit user actions.
   final granted = await googleSignIn.requestScopes(scopeList);
   if (!granted) return null;
 

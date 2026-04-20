@@ -26,6 +26,7 @@ Future<SyncWardrobeFromPhotosResult> syncWardrobeAlbumFromGooglePhotos(
     );
   }
 
+  // Manual sync button = explicit user action, so interactive OAuth is allowed.
   final token = await ensureGooglePhotosAccessToken(
     googleSignIn,
     account,
@@ -33,6 +34,7 @@ Future<SyncWardrobeFromPhotosResult> syncWardrobeAlbumFromGooglePhotos(
       kGooglePhotosAppendOnlyScope,
       kGooglePhotosReadonlyScope,
     ],
+    interactive: true,
   );
 
   if (token == null) {

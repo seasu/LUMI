@@ -41,6 +41,7 @@ class AuthRepository {
         kGooglePhotosAppendOnlyScope,
         kGooglePhotosReadonlyScope,
       ],
+      interactive: true,
     );
     return userCredential;
   }

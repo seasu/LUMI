@@ -147,25 +147,15 @@ void _refreshInBackground(Ref ref, WardrobeItem item) {
       GoogleSignInAccount? gUser =
           googleSignIn.currentUser ?? await googleSignIn.signInSilently();
 
-      var token = await ensureGooglePhotosAccessToken(
+      final token = await ensureGooglePhotosAccessToken(
         googleSignIn,
         gUser,
         scopes: const [
           kGooglePhotosAppendOnlyScope,
           kGooglePhotosReadonlyScope,
         ],
+        interactive: false,
       );
-      if (token == null) {
-        gUser ??= await googleSignIn.signIn();
-        token = await ensureGooglePhotosAccessToken(
-          googleSignIn,
-          gUser,
-          scopes: const [
-            kGooglePhotosAppendOnlyScope,
-            kGooglePhotosReadonlyScope,
-          ],
-        );
-      }
       if (token == null) return;
 
       await ref.read(wardrobeRepositoryProvider).refreshThumbnailUrl(

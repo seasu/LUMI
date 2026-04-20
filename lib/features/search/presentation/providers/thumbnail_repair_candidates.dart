@@ -7,3 +7,10 @@ bool wardrobeThumbnailNeedsRepair(WardrobeItem item) {
       item.isThumbnailStale ||
       wardrobeThumbnailNeedsApiRefresh(thumbnailUrl);
 }
+
+bool thumbnailRepairNeeded(WardrobeItem item) =>
+    wardrobeThumbnailNeedsRepair(item);
+
+List<WardrobeItem> collectThumbnailRepairCandidates(List<WardrobeItem> items) {
+  return items.where(wardrobeThumbnailNeedsRepair).toList();
+}

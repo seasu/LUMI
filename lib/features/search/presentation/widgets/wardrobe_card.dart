@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/constants/lumi_colors.dart';
 import '../../../wardrobe/data/wardrobe_item.dart';
 import '../../../wardrobe/utils/wardrobe_thumbnail_url.dart';
-import '../../../wardrobe/utils/wardrobe_thumbnail_url.dart';
 
 class WardrobeCard extends ConsumerWidget {
   const WardrobeCard({super.key, required this.item});

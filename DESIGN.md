@@ -35,7 +35,7 @@ For floating elements like "Add to Outfit" FABs or Navigation Bars, use **Glassm
 
 ## 3. Typography: The Editorial Voice
 We use **Noto Sans TC** as the default app typeface for all non-logo UI text to ensure consistent Traditional Chinese readability across screens.
-For the Lumi wordmark only, use **Great Vibes** as the brand script font.
+For the Lumi wordmark only, use **Dancing Script** (bundled under `fonts/Dancing_Script/` from Google Fonts, declared in `pubspec.yaml`).
 
 *   **Display-LG (Noto Sans TC, 3.5rem):** Reserved for "Zero-State" screens or large seasonal headers. Use -0.02em letter spacing.
 *   **Headline-MD (Noto Sans TC, 1.75rem):** Used for wardrobe category titles (e.g., "Summer Silks"). 

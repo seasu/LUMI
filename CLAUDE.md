@@ -189,6 +189,28 @@ users/{userId}/
 5. **目前未採用**
    - 尚未實作 `serverAuthCode -> 後端換 refreshToken` 長期離線刷新模式；若未來需要離線批次同步，再另開 ADR 討論。
 
+#### 快速流程圖（AI 實作請對照）
+
+```text
+[Login button tap]
+  -> Google Sign-In
+  -> ensureGooglePhotosAccessToken(interactive: true, appendonly+readonly)
+  -> Firebase sign-in / profile upsert
+  -> 進入 App
+
+[Manual Sync button tap]
+  -> ensureGooglePhotosAccessToken(interactive: true, appendonly+readonly)
+  -> refresh Firebase ID token
+  -> callable syncWardrobeFromPhotos(accessToken)
+  -> invalidate wardrobe stream
+
+[Background refresh]
+  (進入衣櫥 / 下拉後卡片自動縮圖刷新 / stale thumbnail)
+  -> ensureGooglePhotosAccessToken(interactive: false, appendonly+readonly)
+  -> token == null ? skip : callable refreshWardrobeThumbnail(accessToken)
+  -> 不可 requestScopes，不可彈授權視窗
+```
+
 ---
 
 ## 安全性規範

@@ -54,13 +54,12 @@ export const refreshWardrobeThumbnail = onCall(
 
     const data = (await res.json()) as {
       baseUrl?: string;
-      productUrl?: string;
     };
-    const thumbnailUrl = data.baseUrl ?? data.productUrl;
+    const thumbnailUrl = data.baseUrl;
     if (!thumbnailUrl) {
       throw new HttpsError(
         "failed-precondition",
-        "Photos API returned no baseUrl or productUrl."
+        "Photos API returned no baseUrl."
       );
     }
 

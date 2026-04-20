@@ -8,7 +8,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(
+      MaterialApp(
         theme: ThemeData(useMaterial3: true),
         home: Scaffold(
           backgroundColor: LumiColors.base,

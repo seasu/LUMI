@@ -23,17 +23,8 @@ class AuthRepository {
     final googleUser = await _googleSignIn.signIn();
     if (googleUser == null) throw Exception('Google Sign-In cancelled');
 
-    final googleAuth = await googleUser.authentication;
-    final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
-
-    final userCredential = await _auth.signInWithCredential(credential);
-    // Upsert Firestore profile — creates on first login, refreshes name/email later.
-    await _userRepository.ensureProfile(userCredential.user!);
-    // Prompt for Google Photos (append-only) in the same session as first Google login
-    // so users are not asked again at Snap upload when possible.
+    // Login is an explicit user gesture; complete the Photos incremental grant
+    // while the browser still considers this flow interactive.
     await ensureGooglePhotosAccessToken(
       _googleSignIn,
       googleUser,
@@ -43,6 +34,16 @@ class AuthRepository {
       ],
       interactive: true,
     );
+
+    final googleAuth = await googleUser.authentication;
+    final credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    final userCredential = await _auth.signInWithCredential(credential);
+    // Upsert Firestore profile — creates on first login, refreshes name/email later.
+    await _userRepository.ensureProfile(userCredential.user!);
     return userCredential;
   }
 

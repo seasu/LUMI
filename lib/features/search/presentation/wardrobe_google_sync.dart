@@ -8,8 +8,12 @@ import '../../snap/data/cloud_functions_service.dart';
 /// Imports missing wardrobe documents from Google Photos `Lumi_Wardrobe`
 /// album (callable `syncWardrobeFromPhotos`).
 ///
-/// Does **not** open full-account sign-in UI — only incremental OAuth if needed.
-/// Refreshes Firebase ID token before calling the callable so auth matches Google session.
+/// Uses the existing Google session when available; otherwise, because this is
+/// an explicit user action, it may open Google Sign-In UI first and then
+/// request Photos scopes.
+///
+/// Refreshes Firebase ID token before calling the callable so auth matches
+/// Google session.
 ///
 /// Throws [StateError] if Photos token cannot be obtained (user denied scope).
 Future<SyncWardrobeFromPhotosResult> syncWardrobeAlbumFromGooglePhotos(
@@ -17,8 +21,7 @@ Future<SyncWardrobeFromPhotosResult> syncWardrobeAlbumFromGooglePhotos(
 ) async {
   final googleSignIn = ref.read(googleSignInProvider);
 
-  final account =
-      googleSignIn.currentUser ?? await googleSignIn.signInSilently();
+  final account = googleSignIn.currentUser ?? await googleSignIn.signIn();
 
   if (account == null) {
     throw StateError(

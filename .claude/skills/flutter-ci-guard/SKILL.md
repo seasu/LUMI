@@ -108,6 +108,46 @@ grep <套件名> pubspec.yaml
 
 ---
 
+## 3.5 當 CI Flutter 版本落後於程式碼 API 時
+
+若 `flutter analyze` / CI 錯誤顯示某些 Flutter API 不存在（例如新版 `Color`、`ThemeData`、`PopScope` 參數），**不要直接假設要把程式碼降回舊 API**。
+
+### 判斷順序
+
+1. 先確認 repo 的 GitHub Actions / deploy workflow 正在用哪個 Flutter 版本
+   - 檢查 `.github/workflows/ci.yml`
+   - 檢查 `.github/workflows/deploy.yml`
+   - 常見欄位：`subosito/flutter-action` 的 `flutter-version`
+2. 若專案**已經採用較新的 Flutter API**，且沒有明確要求停留舊版：
+   - **優先升級 workflow 的 Flutter 版本到最新 stable**
+   - 不要為了遷就舊 CI 而大範圍把程式碼降回舊 API
+3. 只有在以下情況才考慮降級程式碼：
+   - 使用者明確要求鎖定某個較舊 Flutter 版本
+   - 發佈環境 / 外部依賴明確受限於舊版 SDK
+   - 升級 CI 會引入不可接受的額外風險，且已與使用者確認
+
+### 升級 CI 後必做
+
+```bash
+/opt/flutter/bin/flutter pub get
+/opt/flutter/bin/flutter analyze
+/opt/flutter/bin/flutter test
+cd functions && npm run build
+```
+
+### 文件同步
+
+- 若這次有程式碼變更並會提交：
+  - 更新 `pubspec.yaml` 版本
+  - 更新 `LUMI_PRD.md` 開頭版本
+  - 在 `LUMI_PRD.md` 版本歷史新增紀錄
+- 若這次主要是 CI / workflow 策略對齊，也應在 PR / 文件摘要寫清楚：
+  - 為何升級 Flutter 版本
+  - 哪些 workflow 被調整
+  - 驗證結果
+
+---
+
 ## 4. 新專案必備的 .gitignore
 
 `flutter pub get` 會產生大量暫存檔，新專案必須在第一次 commit 前建立 `.gitignore`：

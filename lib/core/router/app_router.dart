@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../providers/firebase_providers.dart';
 import '../../features/auth/presentation/login_page.dart';
 import '../../features/auth/presentation/loading_page.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
@@ -15,6 +16,7 @@ import '../../features/search/presentation/search_page.dart';
 import '../../features/snap/presentation/snap_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final auth = ref.watch(firebaseAuthProvider);
   final authNotifier = ValueNotifier<AsyncValue<User?>>(ref.read(authStateProvider));
 
   ref.listen<AsyncValue<User?>>(authStateProvider, (_, next) {
@@ -30,7 +32,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final authValue = authNotifier.value;
       if (authValue is AsyncLoading) return null;
 
-      final isLoggedIn = authValue.valueOrNull != null;
+      // Web popup / consent flows can briefly surface a stale `null` event while
+      // Firebase is still restoring the active user. Fall back to
+      // `FirebaseAuth.currentUser` to avoid flashing back to `/login`.
+      final resolvedUser = authValue.valueOrNull ?? auth.currentUser;
+      final isLoggedIn = resolvedUser != null;
       final loc = state.matchedLocation;
 
       // Not logged in → send to login (except already there)

@@ -42,7 +42,8 @@ Future<SyncWardrobeFromPhotosResult> syncWardrobeAlbumFromGooglePhotos(
 
   if (token == null) {
     throw StateError(
-      '需要讀取 Google 相簿的權限才能同步。若剛才關閉了授權視窗，請再按一次「同步」並允許存取。',
+      '需要讀取 Google 相簿的權限才能同步。瀏覽器可能阻擋了 Google 授權視窗；'
+      '請允許此網站開啟 popup 後，再按一次「同步」並完成授權。',
     );
   }
 

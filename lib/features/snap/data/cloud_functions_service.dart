@@ -231,7 +231,14 @@ String formatFirebaseCallableError(Object error) {
 /// Shorter, user-oriented copy for wardrobe → Google Photos sync failures.
 String formatWardrobeSyncErrorForUser(Object error) {
   if (error is StateError) {
-    return error.message;
+    final message = error.message;
+    final lower = message.toLowerCase();
+    if (lower.contains('授權視窗') ||
+        lower.contains('popup') ||
+        lower.contains('瀏覽器封鎖')) {
+      return '瀏覽器阻擋了 Google 授權視窗。請允許本站彈出視窗後，再按一次「同步」完成 Google 相簿授權。';
+    }
+    return message;
   }
   if (error is FormatException) {
     return '與雲端同步時回傳格式異常。請更新 App 或稍後再試；若持續發生請聯絡開發者。';

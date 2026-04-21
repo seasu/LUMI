@@ -63,16 +63,25 @@ Future<String?> ensureGooglePhotosAccessToken(
     }
   }
 
-  // 1) Silent path first — do not prompt during passive/background flows.
+  // 1) Silent path — used by passive/background flows.
   var token = await readAfterAuth();
-  if (token != null && await hasRequiredScopes(token)) return token;
-  if (!interactive) return null;
+  if (!interactive) {
+    if (token != null && await hasRequiredScopes(token)) return token;
+    return null;
+  }
 
-  // 2) Interactive path — only for explicit user actions.
+  // 2) Interactive path — explicit user action may refresh scope grants and
+  // should return a freshly-minted token rather than trusting the current one.
   final granted = await googleSignIn.requestScopes(scopeList);
   if (!granted) return null;
 
-  await account.clearAuthCache();
+  try {
+    await account.clearAuthCache();
+  } catch (_) {
+    // Best-effort only: still attempt to read a fresh token afterwards.
+  }
   token = await readAfterAuth();
-  return token;
+  if (token == null) return null;
+  if (await hasRequiredScopes(token)) return token;
+  return null;
 }

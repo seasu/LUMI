@@ -140,6 +140,29 @@ void main() {
     expect(clearCalls, 1);
   });
 
+  test('interactive mode refreshes token even when current token already has scopes', () async {
+    final googleSignIn = _FakeGoogleSignIn(granted: true, canAccess: true);
+    var clearCalls = 0;
+    final account = _FakeGoogleSignInAccount(
+      () => clearCalls++,
+      tokens: const ['stale-token', 'fresh-token'],
+    );
+
+    final token = await ensureGooglePhotosAccessToken(
+      googleSignIn,
+      account,
+      scopes: const [
+        kGooglePhotosAppendOnlyScope,
+        kGooglePhotosReadonlyScope,
+      ],
+      interactive: true,
+    );
+
+    expect(token, 'fresh-token');
+    expect(googleSignIn.requestScopesCalls, 1);
+    expect(clearCalls, 1);
+  });
+
   test('silent mode can refresh token after clearing auth cache', () async {
     final googleSignIn = _FakeGoogleSignIn(granted: true, canAccess: true);
     var clearCalls = 0;

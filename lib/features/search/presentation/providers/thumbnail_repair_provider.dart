@@ -215,6 +215,10 @@ class ThumbnailRepairCoordinator {
         await _refreshThumbnail(user.uid, mediaItemId, token);
         _recordSuccess(mediaItemId);
       } on FirebaseFunctionsException catch (error) {
+        if (_isMissingReadonlyScope(error)) {
+          _startAuthBackoff(item, reason: 'readonly_scope_required');
+          return;
+        }
         if (!_isInvalidAuth(error)) rethrow;
 
         token = await _readToken(clearCacheFirst: true);
@@ -227,6 +231,10 @@ class ThumbnailRepairCoordinator {
           await _refreshThumbnail(user.uid, mediaItemId, token);
           _recordSuccess(mediaItemId);
         } on FirebaseFunctionsException catch (retryError) {
+          if (_isMissingReadonlyScope(retryError)) {
+            _startAuthBackoff(item, reason: 'readonly_scope_required');
+            return;
+          }
           if (_isInvalidAuth(retryError)) {
             _startAuthBackoff(item, reason: 'oauth_retry_failed');
             return;
@@ -280,6 +288,15 @@ class ThumbnailRepairCoordinator {
         raw.contains('401') ||
         raw.contains('unauthenticated') ||
         raw.contains('invalid authentication credentials');
+  }
+
+  bool _isMissingReadonlyScope(FirebaseFunctionsException error) {
+    final fnCode = error.code.toLowerCase();
+    final raw = '${error.message ?? ''} ${error.details ?? ''}'.toLowerCase();
+    return fnCode == 'permission-denied' &&
+        (raw.contains('insufficient authentication scopes') ||
+            raw.contains('photoslibrary.readonly') ||
+            raw.contains('request had insufficient authentication scopes'));
   }
 
   void _startAuthBackoff(WardrobeItem item, {required String reason}) {

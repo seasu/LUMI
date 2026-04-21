@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.10+91
+**前端版本 (Flutter App)：** 1.0.11+93
 **後端版本 (Cloud Functions)：** 1.0.0
 **開發框架：** Flutter (Cross-platform)
 
@@ -308,7 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
-| 2026-04-21 | 1.0.11+92 | 1.0.0 | 互動授權流程強制刷新 Google Photos token 並重新驗 scope；背景縮圖修復把 scope 不足視為等待下一次互動授權，避免進衣櫥就大量 403；同步失敗時補上瀏覽器阻擋 popup 的中文提示 | Auth / Wardrobe Thumbnail / OAuth / UX |
+| 2026-04-21 | 1.0.11+93 | 1.0.0 | 互動授權流程強制刷新 Google Photos token 並重新驗 scope；背景縮圖修復把 scope 不足視為等待下一次互動授權，避免進衣櫥就大量 403；同步失敗時補上瀏覽器阻擋 popup 的中文提示 | Auth / Wardrobe Thumbnail / OAuth / UX |
 | 2026-04-21 | 1.0.10+91 | 1.0.0 | 互動授權流程強制刷新 Google Photos token 並重新驗 scope；背景縮圖修復把 scope 不足視為等待下一次互動授權，避免進衣櫥就大量 403 | Auth / Wardrobe Thumbnail / OAuth |
 | 2026-04-20 | 1.0.9+90 | 1.0.0 | 將 GitHub Actions / Deploy workflow 的 Flutter 版本升級到 3.29.1，讓 CI 與程式碼使用的新版 Flutter API 對齊；補充 repo 級與 skill 級規範，統一未來處理方式 | CI / Tooling / Process |
 | 2026-04-20 | 1.0.8+89 | 1.0.0 | 清理 Flutter analyze 舊版 API 與 node_modules 掃描問題；新增 Search 頁縮圖修復狀態指示；補直接依賴 web 套件 | Tooling / Search / Logging / Tests |

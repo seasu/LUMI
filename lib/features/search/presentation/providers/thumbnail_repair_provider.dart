@@ -12,12 +12,111 @@ import '../../../wardrobe/data/wardrobe_item.dart';
 import '../../../wardrobe/data/wardrobe_repository.dart';
 import 'thumbnail_repair_candidates.dart';
 
+enum ThumbnailRepairPhase {
+  idle,
+  repairing,
+  waitingForAuth,
+  coolingDown,
+  recentlyCompleted,
+  recentlyFailed,
+}
+
+class ThumbnailRepairStatus {
+  const ThumbnailRepairStatus({
+    required this.phase,
+    this.pendingCount = 0,
+    this.runningCount = 0,
+    this.lastUpdatedAt,
+    this.lastRecoveredCount = 0,
+    this.lastErrorMessage,
+  });
+
+  const ThumbnailRepairStatus.idle()
+      : phase = ThumbnailRepairPhase.idle,
+        pendingCount = 0,
+        runningCount = 0,
+        lastUpdatedAt = null,
+        lastRecoveredCount = 0,
+        lastErrorMessage = null;
+
+  final ThumbnailRepairPhase phase;
+  final int pendingCount;
+  final int runningCount;
+  final DateTime? lastUpdatedAt;
+  final int lastRecoveredCount;
+  final String? lastErrorMessage;
+
+  ThumbnailRepairStatus copyWith({
+    ThumbnailRepairPhase? phase,
+    int? pendingCount,
+    int? runningCount,
+    DateTime? lastUpdatedAt,
+    int? lastRecoveredCount,
+    String? lastErrorMessage,
+    bool clearError = false,
+  }) {
+    return ThumbnailRepairStatus(
+      phase: phase ?? this.phase,
+      pendingCount: pendingCount ?? this.pendingCount,
+      runningCount: runningCount ?? this.runningCount,
+      lastUpdatedAt: lastUpdatedAt ?? this.lastUpdatedAt,
+      lastRecoveredCount: lastRecoveredCount ?? this.lastRecoveredCount,
+      lastErrorMessage: clearError
+          ? null
+          : (lastErrorMessage ?? this.lastErrorMessage),
+    );
+  }
+}
+
+extension ThumbnailRepairStatusX on ThumbnailRepairStatus {
+  static const Duration _recentVisibilityWindow = Duration(seconds: 8);
+
+  bool get isVisible {
+    if (phase != ThumbnailRepairPhase.idle) return true;
+    final updatedAt = lastUpdatedAt;
+    if (updatedAt == null) return false;
+    return DateTime.now().difference(updatedAt) <= _recentVisibilityWindow &&
+        (lastRecoveredCount > 0 || lastErrorMessage != null);
+  }
+
+  String get label {
+    switch (phase) {
+      case ThumbnailRepairPhase.repairing:
+        final active = pendingCount + runningCount;
+        return active > 0 ? '縮圖修復中 $active 筆' : '縮圖修復中';
+      case ThumbnailRepairPhase.waitingForAuth:
+        return '縮圖等待重新驗證';
+      case ThumbnailRepairPhase.coolingDown:
+        return '縮圖稍後重試';
+      case ThumbnailRepairPhase.recentlyCompleted:
+        return lastRecoveredCount > 0
+            ? '縮圖已恢復 $lastRecoveredCount 筆'
+            : '縮圖已恢復';
+      case ThumbnailRepairPhase.recentlyFailed:
+        return '部分縮圖稍後重試';
+      case ThumbnailRepairPhase.idle:
+        if (lastRecoveredCount > 0) {
+          return '縮圖已恢復 $lastRecoveredCount 筆';
+        }
+        if (lastErrorMessage != null) {
+          return '部分縮圖稍後重試';
+        }
+        return '';
+    }
+  }
+}
+
 final thumbnailRepairCoordinatorProvider =
     Provider.autoDispose<ThumbnailRepairCoordinator>((ref) {
       final coordinator = ThumbnailRepairCoordinator(ref);
       ref.onDispose(coordinator.dispose);
       return coordinator;
     });
+
+final thumbnailRepairStatusProvider =
+    StateProvider.autoDispose<ThumbnailRepairStatus>(
+      (_) => const ThumbnailRepairStatus.idle(),
+    );
 
 class ThumbnailRepairCoordinator {
   ThumbnailRepairCoordinator(this._ref);
@@ -47,6 +146,7 @@ class ThumbnailRepairCoordinator {
   final Set<String> _failureSamples = <String>{};
   String? _lastFailureMessage;
   String? _lastAuthReason;
+  int _lastBatchRecoveredCount = 0;
 
   void scheduleRepair(List<WardrobeItem> items) {
     if (_disposed) return;
@@ -65,6 +165,7 @@ class ThumbnailRepairCoordinator {
       _queuedIds.add(mediaItemId);
     }
 
+    _publishStatus();
     _drain();
   }
 
@@ -77,6 +178,7 @@ class ThumbnailRepairCoordinator {
   void _drain() {
     if (_disposed) return;
     if (_authBackoffUntil case final until? when until.isAfter(DateTime.now())) {
+      _publishStatus();
       return;
     }
 
@@ -93,6 +195,8 @@ class ThumbnailRepairCoordinator {
       _runningIds.add(mediaItemId);
       unawaited(_repairOne(item));
     }
+
+    _publishStatus();
   }
 
   Future<void> _repairOne(WardrobeItem item) async {
@@ -136,6 +240,7 @@ class ThumbnailRepairCoordinator {
       _recordFailure(mediaItemId, error);
     } finally {
       _runningIds.remove(mediaItemId);
+      _publishStatus();
       _drain();
     }
   }
@@ -183,12 +288,14 @@ class ThumbnailRepairCoordinator {
     _authBackoffTimer?.cancel();
     _authBackoffTimer = Timer(_authBackoff, () {
       _authBackoffUntil = null;
+      _publishStatus();
       scheduleRepair(_latestItems);
     });
 
     _pending.clear();
     _queuedIds.clear();
     _recordAuthSkip(item.mediaItemId);
+    _publishStatus();
   }
 
   void _recordSuccess(String mediaItemId) {
@@ -219,6 +326,7 @@ class ThumbnailRepairCoordinator {
     if (_disposed) return;
 
     if (_successCount > 0) {
+      _lastBatchRecoveredCount = _successCount;
       webConsoleInfo('thumbnail', 'refresh_thumbnail_batch_ok', {
         'count': _successCount,
         'sampleMediaItemPrefixes': _successSamples.take(3).toList(),
@@ -250,6 +358,7 @@ class ThumbnailRepairCoordinator {
     _failureSamples.clear();
     _lastFailureMessage = null;
     _lastAuthReason = null;
+    _publishStatus();
   }
 
   void _pruneCooldowns() {
@@ -266,6 +375,34 @@ class ThumbnailRepairCoordinator {
   String _mediaItemPrefix(String mediaItemId) {
     if (mediaItemId.length <= 8) return mediaItemId;
     return '${mediaItemId.substring(0, 8)}…';
+  }
+
+  void _publishStatus() {
+    final now = DateTime.now();
+    final status = _ref.read(thumbnailRepairStatusProvider);
+
+    ThumbnailRepairPhase phase = ThumbnailRepairPhase.idle;
+    if (_authBackoffUntil case final until? when until.isAfter(now)) {
+      phase = ThumbnailRepairPhase.waitingForAuth;
+    } else if (_runningIds.isNotEmpty || _pending.isNotEmpty) {
+      phase = ThumbnailRepairPhase.repairing;
+    } else if (_cooldownUntil.isNotEmpty) {
+      phase = ThumbnailRepairPhase.coolingDown;
+    } else if (_lastFailureMessage != null) {
+      phase = ThumbnailRepairPhase.recentlyFailed;
+    } else if (_lastBatchRecoveredCount > 0) {
+      phase = ThumbnailRepairPhase.recentlyCompleted;
+    }
+
+    _ref.read(thumbnailRepairStatusProvider.notifier).state = status.copyWith(
+      phase: phase,
+      pendingCount: _pending.length,
+      runningCount: _runningIds.length,
+      lastUpdatedAt: now,
+      lastRecoveredCount: _lastBatchRecoveredCount,
+      lastErrorMessage: _lastFailureMessage,
+      clearError: _lastFailureMessage == null,
+    );
   }
 }
 

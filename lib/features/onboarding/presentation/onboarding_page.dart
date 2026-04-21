@@ -88,7 +88,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                   decoration: BoxDecoration(
                     color: _currentPage == i
                         ? LumiColors.primary
-                        : LumiColors.subtext.withOpacity(0.3),
+                        : LumiColors.subtext.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(3),
                   ),
                 );
@@ -165,7 +165,7 @@ class _OnboardingStep extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    LumiColors.glow.withOpacity(0.35),
+                    LumiColors.glow.withValues(alpha: 0.35),
                     Colors.transparent,
                   ],
                 ),

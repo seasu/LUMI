@@ -21,7 +21,7 @@ ThemeData buildLumiTheme() {
     onSurfaceVariant: LumiColors.subtext,
     error: LumiColors.warning,
     onError: LumiColors.onPrimary,
-    outline: LumiColors.subtext.withOpacity(0.35),
+    outline: LumiColors.subtext.withValues(alpha: 0.35),
     surfaceContainerLowest: LumiColors.base,
     surfaceContainerLow: LumiColors.baseAlt,
     surfaceTint: Colors.transparent,
@@ -33,8 +33,8 @@ ThemeData buildLumiTheme() {
     useMaterial3: true,
     colorScheme: scheme,
     scaffoldBackgroundColor: LumiColors.base,
-    highlightColor: LumiColors.primaryFixed.withOpacity(0.35),
-    splashColor: LumiColors.primaryFixed.withOpacity(0.45),
+    highlightColor: LumiColors.primaryFixed.withValues(alpha: 0.35),
+    splashColor: LumiColors.primaryFixed.withValues(alpha: 0.45),
     textTheme: baseText.apply(
       bodyColor: scheme.onSurface,
       displayColor: scheme.onSurface,
@@ -52,7 +52,7 @@ ThemeData buildLumiTheme() {
       iconTheme: IconThemeData(color: scheme.onSurfaceVariant),
     ),
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
-      backgroundColor: scheme.surface.withOpacity(0.92),
+      backgroundColor: scheme.surface.withValues(alpha: 0.92),
       selectedItemColor: scheme.primary,
       unselectedItemColor: scheme.onSurfaceVariant,
       elevation: 0,
@@ -73,7 +73,7 @@ ThemeData buildLumiTheme() {
       contentTextStyle: baseText.bodyMedium?.copyWith(color: scheme.onError),
       behavior: SnackBarBehavior.floating,
     ),
-    dialogBackgroundColor: scheme.surface,
+    dialogTheme: DialogThemeData(backgroundColor: scheme.surface),
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: scheme.surface,
       surfaceTintColor: Colors.transparent,

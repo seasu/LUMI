@@ -38,8 +38,8 @@ class LoginPage extends ConsumerWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  LumiColors.primary.withOpacity(0.06),
-                  LumiColors.surface.withOpacity(0.0),
+                  LumiColors.primary.withValues(alpha: 0.06),
+                  LumiColors.surface.withValues(alpha: 0.0),
                 ],
               ),
             ),
@@ -120,7 +120,7 @@ class _GoogleSignInButton extends StatelessWidget {
         height: 56,
         decoration: BoxDecoration(
           gradient: isLoading ? null : LumiColors.buttonGradient,
-          color: isLoading ? LumiColors.primary.withOpacity(0.6) : null,
+          color: isLoading ? LumiColors.primary.withValues(alpha: 0.6) : null,
           borderRadius: BorderRadius.circular(9999),
         ),
         child: Row(

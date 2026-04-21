@@ -210,7 +210,7 @@ class _EmptyState extends StatelessWidget {
                   height: 120,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: LumiColors.glow.withOpacity(0.2),
+                    color: LumiColors.glow.withValues(alpha: 0.2),
                   ),
                 ),
                 const Icon(

@@ -50,7 +50,7 @@ class _ProfileContent extends ConsumerWidget {
         Center(
           child: CircleAvatar(
             radius: 48,
-            backgroundColor: LumiColors.glow.withOpacity(0.3),
+            backgroundColor: LumiColors.glow.withValues(alpha: 0.3),
             backgroundImage: profile.photoUrl != null
                 ? NetworkImage(profile.photoUrl!)
                 : null,
@@ -94,7 +94,7 @@ class _ProfileContent extends ConsumerWidget {
           onPressed: () => signOut(ref),
           style: OutlinedButton.styleFrom(
             foregroundColor: LumiColors.subtext,
-            side: BorderSide(color: LumiColors.subtext.withOpacity(0.55)),
+            side: BorderSide(color: LumiColors.subtext.withValues(alpha: 0.55)),
             padding: const EdgeInsets.symmetric(vertical: LumiSpacing.md),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(9999),
@@ -467,7 +467,7 @@ class _EditMeasurementDialogState extends State<_EditMeasurementDialog> {
                 decoration: BoxDecoration(
                   gradient: _saving ? null : LumiColors.buttonGradient,
                   color: _saving
-                      ? LumiColors.primary.withOpacity(0.5)
+                      ? LumiColors.primary.withValues(alpha: 0.5)
                       : null,
                   borderRadius: BorderRadius.circular(26),
                 ),

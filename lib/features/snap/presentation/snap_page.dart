@@ -335,7 +335,7 @@ class _UploadingView extends StatelessWidget {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: LumiColors.glow.withOpacity(
+                            color: LumiColors.glow.withValues(alpha: 
                               0.25 + animation.value * 0.35,
                             ),
                             blurRadius: 32,
@@ -349,7 +349,7 @@ class _UploadingView extends StatelessWidget {
                       value: current == 0 ? null : progress,
                       color: LumiColors.primary,
                       backgroundColor:
-                          LumiColors.primary.withOpacity(0.12),
+                          LumiColors.primary.withValues(alpha: 0.12),
                       strokeWidth: 6,
                     ),
                     // 百分比文字
@@ -424,8 +424,8 @@ class _DoneView extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  LumiColors.glow.withOpacity(0.35),
-                  LumiColors.glow.withOpacity(0.10),
+                  LumiColors.glow.withValues(alpha: 0.35),
+                  LumiColors.glow.withValues(alpha: 0.10),
                   Colors.transparent,
                 ],
                 stops: const [0.0, 0.58, 1.0],
@@ -488,7 +488,7 @@ class _ErrorView extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(LumiSpacing.md),
             decoration: BoxDecoration(
-              color: LumiColors.warning.withOpacity(0.08),
+              color: LumiColors.warning.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
@@ -558,7 +558,7 @@ class _CancelDialog extends StatelessWidget {
                     onPressed: onCancel,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: LumiColors.subtext,
-                      side: BorderSide(color: LumiColors.subtext.withOpacity(0.35)),
+                      side: BorderSide(color: LumiColors.subtext.withValues(alpha: 0.35)),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(9999)),
                       padding: const EdgeInsets.symmetric(
@@ -616,7 +616,7 @@ class _PrimaryButton extends StatelessWidget {
         height: 56,
         decoration: BoxDecoration(
           gradient: onTap != null ? LumiColors.buttonGradient : null,
-          color: onTap == null ? LumiColors.primary.withOpacity(0.4) : null,
+          color: onTap == null ? LumiColors.primary.withValues(alpha: 0.4) : null,
           borderRadius: BorderRadius.circular(9999),
         ),
         child: Center(

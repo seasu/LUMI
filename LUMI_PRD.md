@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.8+89
+**前端版本 (Flutter App)：** 1.0.9+90
 **後端版本 (Cloud Functions)：** 1.0.0
 **開發框架：** Flutter (Cross-platform)
 
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-04-20 | 1.0.9+90 | 1.0.0 | 將 GitHub Actions / Deploy workflow 的 Flutter 版本升級到 3.29.1，讓 CI 與程式碼使用的新版 Flutter API 對齊 | CI / Tooling |
 | 2026-04-20 | 1.0.8+89 | 1.0.0 | 清理 Flutter analyze 舊版 API 與 node_modules 掃描問題；新增 Search 頁縮圖修復狀態指示；補直接依賴 web 套件 | Tooling / Search / Logging / Tests |
 | 2026-04-20 | 1.0.7+88 | 1.0.0 | 將縮圖修復改為 Search 頁集中批次協調、去重與限流；console log 改為批次摘要；卡片舊縮圖先顯示 placeholder；補候選判定測試 | Wardrobe Thumbnail / Search / Logging / Tests |
 | 2026-04-20 | 1.0.6+87 | 1.0.0 | 背景縮圖刷新遇到 Google Photos 401 時先清除快取 token 並靜默重抓一次；Cloud Function 將 401 映射為 unauthenticated；補 OAuth 測試 | Auth / Wardrobe Thumbnail / Functions / Tests |

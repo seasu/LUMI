@@ -80,11 +80,10 @@ class WardrobeRepository {
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     final baseUrl = data['baseUrl'] as String?;
-    final productUrl = data['productUrl'] as String?;
-    final freshUrl = baseUrl ?? productUrl;
+    final freshUrl = baseUrl;
     if (freshUrl == null || freshUrl.isEmpty) {
       throw Exception(
-        'Photos API: no baseUrl or productUrl for media item',
+        'Photos API: no baseUrl for media item',
       );
     }
     final now = DateTime.now();

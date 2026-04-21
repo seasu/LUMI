@@ -119,6 +119,36 @@ void main() {
       final updated = await repo.getItem(userId, item.mediaItemId);
       expect(updated!.thumbnailUrl, equals(freshUrl));
     });
+
+    test('refreshThumbnailUrl rejects productUrl-only responses', () async {
+      final item = makeItem(mediaItemId: 'item-product-url');
+      await repo.addItem(userId, item);
+
+      final mockClient = MockClient((request) async {
+        expect(
+          request.headers['Authorization'],
+          equals('Bearer test-access-token'),
+        );
+        return http.Response(
+          '{"productUrl": "https://photos.google.com/lr/album/x/photo/y"}',
+          200,
+        );
+      });
+
+      final repoWithMock = WardrobeRepository(
+        fakeFirestore,
+        httpClient: mockClient,
+      );
+
+      await expectLater(
+        () => repoWithMock.refreshThumbnailUrl(
+          userId: userId,
+          mediaItemId: item.mediaItemId,
+          accessToken: 'test-access-token',
+        ),
+        throwsA(isA<Exception>()),
+      );
+    });
   });
 
   group('WardrobeItem.isThumbnailStale', () {

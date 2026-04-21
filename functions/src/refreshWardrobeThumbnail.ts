@@ -46,6 +46,12 @@ export const refreshWardrobeThumbnail = onCall(
 
     if (!res.ok) {
       const body = await res.text();
+      if (res.status === 401) {
+        throw new HttpsError(
+          "unauthenticated",
+          `Photos API GET mediaItems failed: ${res.status} ${body}`
+        );
+      }
       throw new HttpsError(
         "permission-denied",
         `Photos API GET mediaItems failed: ${res.status} ${body}`
@@ -54,13 +60,12 @@ export const refreshWardrobeThumbnail = onCall(
 
     const data = (await res.json()) as {
       baseUrl?: string;
-      productUrl?: string;
     };
-    const thumbnailUrl = data.baseUrl ?? data.productUrl;
+    const thumbnailUrl = data.baseUrl;
     if (!thumbnailUrl) {
       throw new HttpsError(
         "failed-precondition",
-        "Photos API returned no baseUrl or productUrl."
+        "Photos API returned no baseUrl."
       );
     }
 

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_spacing.dart';
 import '../../../features/snap/data/cloud_functions_service.dart';
+import '../../wardrobe/utils/wardrobe_thumbnail_url.dart';
 import '../domain/check_state.dart';
 import 'providers/check_provider.dart';
 
@@ -471,17 +472,25 @@ class _SimilarCard extends StatelessWidget {
             children: [
               // 衣物圖片
               Expanded(
-                child: Image.network(
-                  item.thumbnailUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Center(
-                    child: Icon(
-                      Icons.checkroom_outlined,
-                      color: LumiColors.subtext,
-                      size: 36,
-                    ),
-                  ),
-                ),
+                child: wardrobeThumbnailNeedsApiRefresh(item.thumbnailUrl)
+                    ? const Center(
+                        child: Icon(
+                          Icons.checkroom_outlined,
+                          color: LumiColors.subtext,
+                          size: 36,
+                        ),
+                      )
+                    : Image.network(
+                        item.thumbnailUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Center(
+                          child: Icon(
+                            Icons.checkroom_outlined,
+                            color: LumiColors.subtext,
+                            size: 36,
+                          ),
+                        ),
+                      ),
               ),
               // 衣物資訊
               Padding(

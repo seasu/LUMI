@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../shared/constants/lumi_colors.dart';
 import '../../../../shared/constants/lumi_spacing.dart';
 import '../../../wardrobe/data/wardrobe_item.dart';
+import '../../../wardrobe/utils/wardrobe_thumbnail_url.dart';
 
 void showItemDetailModal(BuildContext context, WardrobeItem item) {
   showDialog(
@@ -18,6 +19,7 @@ class _ItemDetailModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final showPlaceholder = wardrobeThumbnailNeedsApiRefresh(item.thumbnailUrl);
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(
@@ -38,17 +40,25 @@ class _ItemDetailModal extends StatelessWidget {
               aspectRatio: 1,
               child: Container(
                 color: LumiColors.base,
-                child: Image.network(
-                  item.thumbnailUrl,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Center(
-                    child: Icon(
-                      Icons.checkroom_outlined,
-                      size: 56,
-                      color: LumiColors.subtext,
-                    ),
-                  ),
-                ),
+                child: showPlaceholder
+                    ? const Center(
+                        child: Icon(
+                          Icons.checkroom_outlined,
+                          size: 56,
+                          color: LumiColors.subtext,
+                        ),
+                      )
+                    : Image.network(
+                        item.thumbnailUrl,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const Center(
+                          child: Icon(
+                            Icons.checkroom_outlined,
+                            size: 56,
+                            color: LumiColors.subtext,
+                          ),
+                        ),
+                      ),
               ),
             ),
             // 右上角關閉按鈕（絕對定位）

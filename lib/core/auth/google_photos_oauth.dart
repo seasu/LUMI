@@ -17,11 +17,25 @@ Future<String?> ensureGooglePhotosAccessToken(
   GoogleSignInAccount? account, {
   List<String>? scopes,
   bool interactive = false,
+  bool clearCacheFirst = false,
 }) async {
   if (account == null) return null;
 
   final scopeList = scopes ??
       const [kGooglePhotosAppendOnlyScope];
+
+  Future<bool> hasRequiredScopes(String accessToken) async {
+    try {
+      return await googleSignIn.canAccessScopes(
+        scopeList,
+        accessToken: accessToken,
+      );
+    } catch (_) {
+      // Fall back to the existing token on platforms that cannot introspect
+      // granted scopes yet.
+      return true;
+    }
+  }
 
   Future<String?> extract(GoogleSignInAuthentication auth) async {
     final direct = auth.accessToken;
@@ -41,9 +55,17 @@ Future<String?> ensureGooglePhotosAccessToken(
     return extract(auth);
   }
 
+  if (clearCacheFirst) {
+    try {
+      await account.clearAuthCache();
+    } catch (_) {
+      // Best-effort only: some platforms may not have a cache to clear.
+    }
+  }
+
   // 1) Silent path first — do not prompt during passive/background flows.
   var token = await readAfterAuth();
-  if (token != null) return token;
+  if (token != null && await hasRequiredScopes(token)) return token;
   if (!interactive) return null;
 
   // 2) Interactive path — only for explicit user actions.

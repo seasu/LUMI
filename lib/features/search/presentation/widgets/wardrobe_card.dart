@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 
-import '../../../../core/auth/google_photos_oauth.dart';
-import '../../../../core/logging/web_console_log.dart';
-import '../../../../core/providers/firebase_providers.dart';
 import '../../../../shared/constants/lumi_colors.dart';
 import '../../../wardrobe/data/wardrobe_item.dart';
-import '../../../wardrobe/data/wardrobe_repository.dart';
 import '../../../wardrobe/utils/wardrobe_thumbnail_url.dart';
 
 class WardrobeCard extends ConsumerWidget {
@@ -124,64 +119,12 @@ String _displaySubtitle(WardrobeItem item) {
   return '$category | $code';
 }
 
-// ── Thumbnail with stale-check ────────────────────────────────────────────────
+// ── Thumbnail display ─────────────────────────────────────────────────────────
 
 final _thumbnailUrlProvider =
     Provider.family<String, WardrobeItem>((ref, item) {
-  final empty = item.thumbnailUrl.trim().isEmpty;
-  final badWebLink =
-      !empty && wardrobeThumbnailNeedsApiRefresh(item.thumbnailUrl);
-  if (item.isThumbnailStale || empty || badWebLink) {
-    _refreshInBackground(ref, item);
-  }
   return item.thumbnailUrl;
 });
-
-void _refreshInBackground(Ref ref, WardrobeItem item) {
-  final user = ref.read(firebaseAuthProvider).currentUser;
-  if (user == null) return;
-
-  Future(() async {
-    try {
-      final googleSignIn = ref.read(googleSignInProvider);
-      GoogleSignInAccount? gUser =
-          googleSignIn.currentUser ?? await googleSignIn.signInSilently();
-
-      final token = await ensureGooglePhotosAccessToken(
-        googleSignIn,
-        gUser,
-        scopes: const [
-          kGooglePhotosAppendOnlyScope,
-          kGooglePhotosReadonlyScope,
-        ],
-        interactive: false,
-      );
-      if (token == null) return;
-
-      await ref.read(wardrobeRepositoryProvider).refreshThumbnailUrl(
-            userId: user.uid,
-            mediaItemId: item.mediaItemId,
-            accessToken: token,
-          );
-      webConsoleInfo(
-        'thumbnail',
-        'refresh_thumbnail_ok',
-        {'mediaItemIdPrefix': item.mediaItemId.length > 8 ? '${item.mediaItemId.substring(0, 8)}…' : item.mediaItemId},
-      );
-    } catch (e, st) {
-      webConsoleInfo(
-        'thumbnail',
-        'refresh_thumbnail_failed',
-        {
-          'mediaItemIdPrefix':
-              item.mediaItemId.length > 8 ? '${item.mediaItemId.substring(0, 8)}…' : item.mediaItemId,
-          'error': e.toString(),
-          if (st.toString().length <= 800) 'stack': st.toString(),
-        },
-      );
-    }
-  });
-}
 
 class _ThumbnailImage extends StatelessWidget {
   const _ThumbnailImage({required this.url});
@@ -190,7 +133,7 @@ class _ThumbnailImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (url.trim().isEmpty) {
+    if (url.trim().isEmpty || wardrobeThumbnailNeedsApiRefresh(url)) {
       return const ColoredBox(
         color: LumiColors.base,
         child: Center(

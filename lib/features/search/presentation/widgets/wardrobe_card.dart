@@ -78,7 +78,7 @@ class WardrobeCard extends ConsumerWidget {
               child: Icon(
                 Icons.favorite_border,
                 size: 13,
-                color: LumiColors.subtext.withOpacity(0.65),
+                color: LumiColors.subtext.withValues(alpha: 0.65),
               ),
             ),
           ],
@@ -182,7 +182,7 @@ class _PendingOverlay extends StatelessWidget {
     }
 
     return Container(
-      color: LumiColors.text.withOpacity(0.35),
+      color: LumiColors.text.withValues(alpha: 0.35),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -198,7 +198,7 @@ class _PendingOverlay extends StatelessWidget {
               height: 20,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: LumiColors.glow.withOpacity(0.8),
+                color: LumiColors.glow.withValues(alpha: 0.8),
               ),
             ),
           const SizedBox(height: 6),
@@ -230,7 +230,7 @@ class _PendingOverlay extends StatelessWidget {
                       maxLines: 4,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: LumiColors.onPrimary.withOpacity(0.88),
+                        color: LumiColors.onPrimary.withValues(alpha: 0.88),
                         fontSize: 8,
                         fontWeight: FontWeight.w400,
                         height: 1.25,

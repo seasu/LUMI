@@ -45,7 +45,7 @@ class LumiLogoWordmark extends StatelessWidget {
                       color: Theme.of(context)
                           .colorScheme
                           .primary
-                          .withOpacity(0.22),
+                          .withValues(alpha: 0.22),
                       blurRadius: 16,
                       offset: Offset.zero,
                     ),

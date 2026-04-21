@@ -115,6 +115,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   Widget build(BuildContext context) {
     final filtered = ref.watch(filteredWardrobeProvider);
     final rawWardrobe = ref.watch(wardrobeStreamProvider);
+    final repairStatus = ref.watch(thumbnailRepairStatusProvider);
     ref.watch(thumbnailRepairCoordinatorProvider);
     rawWardrobe.whenData((items) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -134,6 +135,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 _WardrobeHeader(
                   syncBusy: _syncBusy,
                   onSyncPressed: () => _runAlbumSync(showSnackBar: true),
+                  repairStatus: repairStatus,
                 ),
                 const FilterBar(),
                 Expanded(
@@ -197,10 +199,12 @@ class _WardrobeHeader extends ConsumerWidget {
   const _WardrobeHeader({
     required this.syncBusy,
     required this.onSyncPressed,
+    required this.repairStatus,
   });
 
   final bool syncBusy;
   final VoidCallback onSyncPressed;
+  final ThumbnailRepairStatus repairStatus;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -209,14 +213,23 @@ class _WardrobeHeader extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Expanded(
-            child: Text(
-              '我的衣櫥',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: LumiColors.text,
-              ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '我的衣櫥',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: LumiColors.text,
+                  ),
+                ),
+                if (repairStatus.isVisible) ...[
+                  const SizedBox(height: 6),
+                  _ThumbnailRepairStatusChip(status: repairStatus),
+                ],
+              ],
             ),
           ),
           IconButton(
@@ -251,6 +264,47 @@ class _WardrobeHeader extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ThumbnailRepairStatusChip extends StatelessWidget {
+  const _ThumbnailRepairStatusChip({required this.status});
+
+  final ThumbnailRepairStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (status.phase) {
+      ThumbnailRepairPhase.idle => LumiColors.subtext,
+      ThumbnailRepairPhase.repairing => LumiColors.primary,
+      ThumbnailRepairPhase.waitingForAuth => LumiColors.warning,
+      ThumbnailRepairPhase.coolingDown => LumiColors.warning,
+      ThumbnailRepairPhase.recentlyCompleted => LumiColors.primary,
+      ThumbnailRepairPhase.recentlyFailed => LumiColors.warning,
+    };
+
+    return AnimatedOpacity(
+      opacity: status.isVisible ? 1 : 0,
+      duration: const Duration(milliseconds: 180),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: color.withValues(alpha: 0.18),
+          ),
+        ),
+        child: Text(
+          status.label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+        ),
       ),
     );
   }
@@ -328,7 +382,7 @@ class _EmptyState extends StatelessWidget {
           Icon(
             Icons.dry_cleaning_outlined,
             size: 76,
-            color: LumiColors.subtext.withOpacity(0.35),
+            color: LumiColors.subtext.withValues(alpha: 0.35),
           ),
           const SizedBox(height: 18),
           const Text(
@@ -389,7 +443,7 @@ class _LoadingGrid extends StatelessWidget {
             width: 72,
             height: 8,
             decoration: BoxDecoration(
-              color: LumiColors.subtext.withOpacity(0.12),
+              color: LumiColors.subtext.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(999),
             ),
           ),
@@ -398,7 +452,7 @@ class _LoadingGrid extends StatelessWidget {
             width: 88,
             height: 6,
             decoration: BoxDecoration(
-              color: LumiColors.subtext.withOpacity(0.08),
+              color: LumiColors.subtext.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(999),
             ),
           ),

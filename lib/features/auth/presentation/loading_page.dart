@@ -83,7 +83,7 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
               appVersionLabel,
               style: TextStyle(
                 fontSize: 11,
-                color: LumiColors.subtext.withOpacity(0.75),
+                color: LumiColors.subtext.withValues(alpha: 0.75),
               ),
             ),
           ),

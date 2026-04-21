@@ -22,7 +22,7 @@ void main() {
 
     test('warning is warm orange-red, not pure red', () {
       expect(LumiColors.warning, isNot(const Color(0xFFFF0000)));
-      expect(LumiColors.warning.red, greaterThan(LumiColors.warning.blue));
+      expect(LumiColors.warning.r, greaterThan(LumiColors.warning.b));
     });
 
     test('onPrimary matches CTA / on-seed surfaces', () {

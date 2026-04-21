@@ -140,7 +140,7 @@ class _ColorDotRow extends ConsumerWidget {
                   color: isSelected
                       ? LumiColors.primary
                       : opt.color.computeLuminance() > 0.9
-                          ? LumiColors.subtext.withOpacity(0.15)
+                          ? LumiColors.subtext.withValues(alpha: 0.15)
                           : Colors.transparent,
                   width: isSelected ? 2.2 : 1.0,
                 ),
@@ -156,9 +156,13 @@ class _ColorDotRow extends ConsumerWidget {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 String _colorToHex(Color color) {
-  return '#${color.red.toRadixString(16).padLeft(2, '0')}'
-         '${color.green.toRadixString(16).padLeft(2, '0')}'
-         '${color.blue.toRadixString(16).padLeft(2, '0')}';
+  final argb = color.toARGB32();
+  final r = (argb >> 16) & 0xFF;
+  final g = (argb >> 8) & 0xFF;
+  final b = argb & 0xFF;
+  return '#${r.toRadixString(16).padLeft(2, '0')}'
+      '${g.toRadixString(16).padLeft(2, '0')}'
+      '${b.toRadixString(16).padLeft(2, '0')}';
 }
 
 class _CategoryTab {

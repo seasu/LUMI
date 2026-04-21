@@ -32,6 +32,18 @@ cd functions && npm run build                             # Cloud Functions Type
 firebase emulators:start --only firestore,auth,functions  # 本機模擬器（已安裝 firebase-tools 時）
 ```
 
+### Flutter SDK / CI 版本對齊原則
+
+- **本機開發、GitHub Actions CI、deploy workflow 的 Flutter 版本應盡量一致**。
+- 當專案程式碼已採用較新的 Flutter SDK API（例如新 widget callback、`Color`/`ThemeData` API 變更）時，**優先升級 repo 內 workflow 使用的 Flutter 版本**，不要為了遷就舊 CI 而先把程式碼降回舊 API。
+- 調整 Flutter 版本時，至少同步檢查：
+  - `.github/workflows/ci.yml`
+  - `.github/workflows/deploy.yml`
+  - `flutter analyze`
+  - `flutter test`
+  - 必要時 Web build / Functions build
+- 只有在使用者明確要求維持舊版 Flutter，或外部依賴/平台限制已確認不能升級時，才回頭評估把程式碼降回舊 API；此時需在 PR 或回覆中明確說明限制原因。
+
 **Cloud Functions — Gemini 模型名稱**（非金鑰）：預設、deprecated 清單與 vision／embedding **fallback 鏈**皆由 **`functions/scripts/generate-gemini-defaults.mjs`** 依 GitHub **Variables** 在 CI 寫入 **`geminiDefaults.generated.ts`**；**`gemini.ts`** 為唯一實際呼叫 `getGenerativeModel` 之處。執行時覆寫見 **`functions/ENV.md`**。
 
 > **禁止**：`flutter build ios`、`flutter build appbundle` 等**正式發佈用**本機建置（專案規範由 CI 處理 Release）。  

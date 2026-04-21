@@ -193,7 +193,7 @@ class _IdleView extends StatelessWidget {
                       height: 84,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: LumiColors.glow.withOpacity(0.22),
+                        color: LumiColors.glow.withValues(alpha: 0.22),
                       ),
                     ),
                     const Icon(
@@ -244,7 +244,7 @@ class _GlowView extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    LumiColors.glow.withOpacity(0.3 + animation.value * 0.7),
+                    LumiColors.glow.withValues(alpha: 0.3 + animation.value * 0.7),
                     Colors.transparent,
                   ],
                 ),
@@ -321,7 +321,7 @@ class _ResultViewState extends State<_ResultView> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: LumiColors.warning.withOpacity(0.14),
+              color: LumiColors.warning.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -368,7 +368,7 @@ class _ResultViewState extends State<_ResultView> {
                       borderRadius: BorderRadius.circular(3),
                       color: active
                           ? LumiColors.primary
-                          : LumiColors.subtext.withOpacity(0.3),
+                          : LumiColors.subtext.withValues(alpha: 0.3),
                     ),
                   );
                 }),
@@ -527,7 +527,7 @@ class _SimilarCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isHighlighted
                     ? LumiColors.warning
-                    : LumiColors.subtext.withOpacity(0.65),
+                    : LumiColors.subtext.withValues(alpha: 0.65),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -670,7 +670,7 @@ class _ErrorView extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(LumiSpacing.md),
             decoration: BoxDecoration(
-              color: LumiColors.warning.withOpacity(0.08),
+              color: LumiColors.warning.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(

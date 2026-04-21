@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../core/auth/google_photos_oauth.dart';
@@ -20,6 +21,17 @@ class AuthRepository {
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
   Future<UserCredential> signInWithGoogle() async {
+    if (kIsWeb) {
+      final provider = GoogleAuthProvider()
+        ..addScope(kGooglePhotosAppendOnlyScope)
+        ..addScope(kGooglePhotosReadonlyScope)
+        ..setCustomParameters({'prompt': 'select_account'});
+
+      final userCredential = await _auth.signInWithPopup(provider);
+      await _userRepository.ensureProfile(userCredential.user!);
+      return userCredential;
+    }
+
     final googleUser = await _googleSignIn.signIn();
     if (googleUser == null) throw Exception('Google Sign-In cancelled');
 

@@ -1,0 +1,4 @@
+# Reduce frequent merge conflicts in generated mobile project metadata
+ios/Runner.xcodeproj/project.pbxproj merge=union
+*.xcworkspace/** merge=union
+android/**/AndroidManifest.xml merge=union

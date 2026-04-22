@@ -1,0 +1,58 @@
+name: Bootstrap iOS/Android Folders
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    name: Generate iOS and Android folders
+    runs-on: macos-latest
+    env:
+      FLUTTER_VERSION: "3.29.1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Generate native platforms
+        run: flutter create . --platforms=ios,android
+
+
+      - name: Apply mobile baseline config
+        run: |
+          python - <<'PY2'
+          from pathlib import Path
+          import re
+
+          gradle_kts = Path('android/app/build.gradle.kts')
+          if gradle_kts.exists():
+              content = gradle_kts.read_text()
+              content = content.replace('minSdk = flutter.minSdkVersion', 'minSdk = maxOf(flutter.minSdkVersion, 23)')
+              if 'ndkVersion = "27.0.12077973"' not in content:
+                  content, _ = re.subn(r'android\s*\{', 'android {\n    ndkVersion = "27.0.12077973"', content, count=1)
+              gradle_kts.write_text(content)
+          PY2
+
+      - name: Commit generated folders
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ios android
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "chore: bootstrap ios/android platform folders"
+          git push origin HEAD

@@ -1,0 +1,112 @@
+name: Android Deploy to Firebase App Distribution
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_id:
+        description: "Firebase Android App ID (e.g. 1:1234567890:android:abcdef)"
+        required: true
+      tester_groups:
+        description: "Comma-separated tester groups"
+        required: false
+        default: "qa"
+      release_notes:
+        description: "Release notes"
+        required: false
+        default: "Automated build from GitHub Actions"
+
+jobs:
+  distribute_android:
+    name: Build APK and Distribute
+    runs-on: ubuntu-latest
+    env:
+      FLUTTER_VERSION: "3.29.1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Android project exists
+        run: |
+          if [ ! -d android ]; then
+            echo "Missing android/ directory. Generate mobile platforms first:"
+            echo "flutter create . --platforms=ios,android"
+            exit 1
+          fi
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Decode Android keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          mkdir -p android/app
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+
+      - name: Generate key.properties for release signing
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          cat > android/key.properties <<EOF
+          storePassword=${ANDROID_KEYSTORE_PASSWORD}
+          keyPassword=${ANDROID_KEY_PASSWORD}
+          keyAlias=${ANDROID_KEY_ALIAS}
+          storeFile=upload-keystore.jks
+          EOF
+
+
+      - name: Align Android config for Firebase plugins
+        run: |
+          python - <<'PY2'
+          from pathlib import Path
+          import re
+
+          gradle_kts = Path('android/app/build.gradle.kts')
+          if not gradle_kts.exists():
+              raise SystemExit('android/app/build.gradle.kts not found')
+
+          content = gradle_kts.read_text()
+          original = content
+
+          content = content.replace('minSdk = flutter.minSdkVersion', 'minSdk = maxOf(flutter.minSdkVersion, 23)')
+
+          if 'ndkVersion = "27.0.12077973"' not in content:
+              content, count = re.subn(
+                  r'android\s*\{',
+                  'android {\n    ndkVersion = "27.0.12077973"',
+                  content,
+                  count=1,
+              )
+              if count == 0:
+                  raise SystemExit('Could not locate android block in build.gradle.kts')
+
+          if content != original:
+              gradle_kts.write_text(content)
+          PY2
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ github.event.inputs.app_id }}
+          token: ${{ secrets.FIREBASE_TOKEN }}
+          groups: ${{ github.event.inputs.tester_groups }}
+          releaseNotes: ${{ github.event.inputs.release_notes }}
+          file: build/app/outputs/flutter-apk/app-release.apk

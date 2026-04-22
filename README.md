@@ -11,3 +11,43 @@ https://seasu.github.io/LUMI/
 ## Security
 
 - API key and credential hardening checklist: see `SECURITY.md`.
+
+## Mobile CI/CD (iOS / Android)
+
+目前已新增 GitHub Actions workflow：
+
+- iOS → TestFlight: `.github/workflows/mobile-testflight.yml`
+- Android → Firebase App Distribution: `.github/workflows/mobile-firebase-app-distribution.yml`
+
+> 注意：此 repo 目前未包含 `ios/`、`android/` 目錄。請先在本機執行：
+>
+> `flutter create . --platforms=ios,android`
+>
+> 若你沒有電腦，可直接在 GitHub Actions 手動執行
+> `Bootstrap iOS/Android Folders` workflow，自動產生並 commit `ios/`、`android/` 目錄。
+
+### Required GitHub Secrets
+
+#### iOS / TestFlight
+
+- `IOS_DISTRIBUTION_CERT_BASE64`
+- `IOS_DISTRIBUTION_CERT_PASSWORD`
+- `IOS_PROVISIONING_PROFILE_BASE64`
+- `APP_STORE_CONNECT_ISSUER_ID`
+- `APP_STORE_CONNECT_KEY_ID`
+- `APP_STORE_CONNECT_PRIVATE_KEY`
+
+#### Android / Firebase App Distribution
+
+- `ANDROID_KEYSTORE_BASE64`
+- `FIREBASE_TOKEN`
+
+### Trigger
+
+- GitHub Actions → Run workflow
+  - `iOS Deploy to TestFlight`
+  - `Android Deploy to Firebase App Distribution`
+
+### Web Deploy
+
+`Deploy to GitHub Pages` 已改為手動觸發（`workflow_dispatch`），避免持續自動部署 web。

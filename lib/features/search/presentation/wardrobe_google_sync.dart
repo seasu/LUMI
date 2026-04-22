@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/google_photos_oauth.dart';
@@ -20,35 +19,6 @@ import '../../snap/data/cloud_functions_service.dart';
 Future<SyncWardrobeFromPhotosResult> syncWardrobeAlbumFromGooglePhotos(
   WidgetRef ref,
 ) async {
-  if (kIsWeb) {
-    final auth = FirebaseAuth.instance;
-    final firebaseUser = auth.currentUser;
-    if (firebaseUser == null) {
-      throw StateError('登入狀態已失效，請重新登入後再試。');
-    }
-
-    final provider = GoogleAuthProvider()
-      ..addScope(kGooglePhotosAppendOnlyScope)
-      ..addScope(kGooglePhotosReadonlyScope)
-      ..setCustomParameters({'prompt': 'consent'});
-
-    final userCredential = await auth.signInWithPopup(provider);
-    final credential = userCredential.credential;
-    final token =
-        credential is OAuthCredential ? credential.accessToken : null;
-
-    if (token == null || token.isEmpty) {
-      throw StateError(
-        '需要讀取 Google 相簿的授權 token 才能同步。請按一次「同步」重新授權後再試。',
-      );
-    }
-
-    await auth.currentUser?.getIdToken(true);
-    return ref.read(cloudFunctionsServiceProvider).syncWardrobeFromPhotos(
-          accessToken: token,
-        );
-  }
-
   final googleSignIn = ref.read(googleSignInProvider);
 
   final account = googleSignIn.currentUser ?? await googleSignIn.signIn();

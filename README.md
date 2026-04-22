@@ -22,6 +22,9 @@ https://seasu.github.io/LUMI/
 > 注意：此 repo 目前未包含 `ios/`、`android/` 目錄。請先在本機執行：
 >
 > `flutter create . --platforms=ios,android`
+>
+> 若你沒有電腦，可直接在 GitHub Actions 手動執行
+> `Bootstrap iOS/Android Folders` workflow，自動產生並 commit `ios/`、`android/` 目錄。
 
 ### Required GitHub Secrets
 

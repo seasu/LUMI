@@ -53,13 +53,19 @@ jobs:
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
+          set -euo pipefail
+          if [ -z "${ANDROID_KEYSTORE_BASE64:-}" ]; then
+            echo "Missing secret: ANDROID_KEYSTORE_BASE64"
+            exit 1
+          fi
           echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/upload-keystore.jks
 
       - name: Decode Firebase Android parameter file (optional)
         env:
           FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64 }}
         run: |
-          if [ -z "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64" ]; then
+          set -euo pipefail
+          if [ -z "${FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64:-}" ]; then
             echo "FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64 not set; skip decoding google-services.json"
             exit 0
           fi
@@ -69,10 +75,11 @@ jobs:
       - name: Resolve Firebase Android App ID
         id: firebase_params
         env:
-          INPUT_APP_ID: ${{ github.event.inputs.app_id }}
+          INPUT_APP_ID: ${{ inputs.app_id }}
           FIREBASE_ANDROID_APP_ID: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
         run: |
-          if [ -n "$INPUT_APP_ID" ]; then
+          set -euo pipefail
+          if [ -n "${INPUT_APP_ID:-}" ]; then
             echo "Using app_id from workflow input"
             echo "app_id=$INPUT_APP_ID" >> "$GITHUB_OUTPUT"
             exit 0
@@ -117,6 +124,6 @@ jobs:
         with:
           appId: ${{ steps.firebase_params.outputs.app_id }}
           token: ${{ secrets.FIREBASE_TOKEN }}
-          groups: ${{ github.event.inputs.tester_groups }}
-          releaseNotes: ${{ github.event.inputs.release_notes }}
+          groups: ${{ inputs.tester_groups }}
+          releaseNotes: ${{ inputs.release_notes }}
           file: build/app/outputs/flutter-apk/app-release.apk

@@ -41,6 +41,26 @@ https://seasu.github.io/LUMI/
 
 - `ANDROID_KEYSTORE_BASE64`
 - `FIREBASE_TOKEN`
+- `FIREBASE_ANDROID_APP_ID`（可選，例：`1:1234567890:android:abcdef123456`）
+- `FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64`（可選，`android/app/google-services.json` 的 base64）
+
+> `app_id` 解析優先順序：
+> 1. workflow 手動輸入 `app_id`
+> 2. `FIREBASE_ANDROID_APP_ID`
+> 3. `FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64` 解碼後的 `google-services.json`
+>
+> 若要產生 `FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64`：
+>
+> - macOS / Linux：
+>   ```bash
+>   base64 -w 0 android/app/google-services.json
+>   ```
+>   （若你是 macOS 且 `-w` 不支援，改用 `base64 < android/app/google-services.json | tr -d '\n'`）
+>
+> - Windows PowerShell：
+>   ```powershell
+>   [Convert]::ToBase64String([IO.File]::ReadAllBytes("android/app/google-services.json"))
+>   ```
 
 ### Trigger
 

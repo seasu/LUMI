@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       app_id:
-        description: "Firebase Android App ID (e.g. 1:1234567890:android:abcdef)"
-        required: true
+        description: "Firebase Android App ID (optional override)"
+        required: false
       tester_groups:
         description: "Comma-separated tester groups"
         required: false
@@ -55,13 +55,67 @@ jobs:
         run: |
           echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/upload-keystore.jks
 
+      - name: Decode Firebase Android parameter file (optional)
+        env:
+          FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          if [ -z "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64" ]; then
+            echo "FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64 not set; skip decoding google-services.json"
+            exit 0
+          fi
+          mkdir -p android/app
+          echo "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
+
+      - name: Resolve Firebase Android App ID
+        id: firebase_params
+        env:
+          INPUT_APP_ID: ${{ github.event.inputs.app_id }}
+          FIREBASE_ANDROID_APP_ID: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
+        run: |
+          if [ -n "$INPUT_APP_ID" ]; then
+            echo "Using app_id from workflow input"
+            echo "app_id=$INPUT_APP_ID" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ -n "$FIREBASE_ANDROID_APP_ID" ]; then
+            echo "Using app_id from FIREBASE_ANDROID_APP_ID secret"
+            echo "app_id=$FIREBASE_ANDROID_APP_ID" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          config_path = Path('android/app/google-services.json')
+          if not config_path.exists():
+              raise SystemExit(
+                  'Unable to resolve Firebase Android app_id. Provide one of: workflow input app_id, '
+                  'secret FIREBASE_ANDROID_APP_ID, or secret FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64.'
+              )
+
+          data = json.loads(config_path.read_text(encoding='utf-8'))
+          clients = data.get('client') or []
+          if not clients:
+              raise SystemExit('No client entries found in android/app/google-services.json.')
+
+          app_id = clients[0].get('client_info', {}).get('mobilesdk_app_id', '').strip()
+          if not app_id:
+              raise SystemExit('mobilesdk_app_id not found in android/app/google-services.json.')
+
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as fh:
+              fh.write(f"app_id={app_id}\n")
+          PY
+
       - name: Build release APK
         run: flutter build apk --release
 
       - name: Upload to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
-          appId: ${{ github.event.inputs.app_id }}
+          appId: ${{ steps.firebase_params.outputs.app_id }}
           token: ${{ secrets.FIREBASE_TOKEN }}
           groups: ${{ github.event.inputs.tester_groups }}
           releaseNotes: ${{ github.event.inputs.release_notes }}

@@ -13,34 +13,8 @@ on:
         default: "Automated build from GitHub Actions"
 
 jobs:
-  check_secrets:
-    name: Check required secrets
-    runs-on: ubuntu-latest
-    outputs:
-      has_secrets: ${{ steps.check.outputs.has_secrets }}
-    steps:
-      - name: Verify secrets are present
-        id: check
-        env:
-          FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64 }}
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: |
-          missing=()
-          [ -z "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64" ] && missing+=("FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64")
-          [ -z "$ANDROID_KEYSTORE_BASE64" ] && missing+=("ANDROID_KEYSTORE_BASE64")
-          [ -z "$FIREBASE_TOKEN" ] && missing+=("FIREBASE_TOKEN")
-          if [ ${#missing[@]} -gt 0 ]; then
-            echo "Skipping distribute job — missing secrets: ${missing[*]}"
-            echo "has_secrets=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_secrets=true" >> "$GITHUB_OUTPUT"
-          fi
-
   distribute_android:
     name: Build APK and Distribute
-    needs: check_secrets
-    if: needs.check_secrets.outputs.has_secrets == 'true'
     runs-on: ubuntu-latest
     env:
       FLUTTER_VERSION: "3.29.1"
@@ -82,6 +56,10 @@ jobs:
         env:
           FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64 }}
         run: |
+          if [ -z "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64" ]; then
+            echo "Missing secret: FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64"
+            exit 1
+          fi
           mkdir -p android/app
           echo "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
 

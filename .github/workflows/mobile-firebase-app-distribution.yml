@@ -88,6 +88,11 @@ jobs:
           PY
 
       - name: Build release APK
+        env:
+          ANDROID_KEYSTORE_PATH: upload-keystore.jks
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: flutter build apk --release
 
       - name: Upload to Firebase App Distribution

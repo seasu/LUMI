@@ -50,7 +50,18 @@ jobs:
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | tr -d ' \r\n' | base64 --decode > android/upload-keystore.jks
+          python3 - <<'PY'
+          import base64, os, pathlib, sys
+          raw = os.environ.get("ANDROID_KEYSTORE_BASE64", "")
+          raw = "".join(raw.split())
+          raw += "=" * (-len(raw) % 4)
+          try:
+            data = base64.b64decode(raw)
+          except Exception as e:
+            sys.exit(f"ANDROID_KEYSTORE_BASE64 is not valid base64: {e}")
+          pathlib.Path("android/upload-keystore.jks").write_bytes(data)
+          print("upload-keystore.jks decoded successfully")
+          PY
 
       - name: Decode Firebase Android parameter file
         env:
@@ -61,7 +72,19 @@ jobs:
             exit 1
           fi
           mkdir -p android/app
-          echo "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64" | tr -d ' \r\n' | base64 --decode > android/app/google-services.json
+          python3 - <<'PY'
+          import base64, os, pathlib, sys
+          raw = os.environ["FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64"]
+          raw = "".join(raw.split())          # strip all whitespace
+          raw += "=" * (-len(raw) % 4)        # fix missing padding
+          try:
+            data = base64.b64decode(raw)
+          except Exception as e:
+            sys.exit(f"FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64 is not valid base64: {e}\n"
+                     "Re-encode with: base64 -w 0 google-services.json")
+          pathlib.Path("android/app/google-services.json").write_bytes(data)
+          print("google-services.json decoded successfully")
+          PY
 
       - name: Resolve Firebase Android App ID from parameter file
         id: firebase_params

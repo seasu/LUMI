@@ -61,7 +61,12 @@ jobs:
             exit 1
           fi
           mkdir -p android/app
-          echo "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64" | tr -d ' \r\n' | base64 --decode > android/app/google-services.json
+          if ! echo "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64" | tr -d ' \r\n' | base64 --decode > android/app/google-services.json 2>/dev/null; then
+            echo "Error: FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_BASE64 is not valid base64."
+            echo "Re-encode with: base64 -w 0 google-services.json  (Linux)"
+            echo "            or: base64 -i google-services.json | tr -d '\\n'  (macOS)"
+            exit 1
+          fi
 
       - name: Resolve Firebase Android App ID from parameter file
         id: firebase_params

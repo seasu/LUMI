@@ -45,12 +45,35 @@ jobs:
       - name: Install provisioning profile
         env:
           IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          IOS_PROVISIONING_PROFILE_NAME: ${{ secrets.IOS_PROVISIONING_PROFILE_NAME }}
         run: |
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          echo "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/app.mobileprovision
+          python3 - <<'PY'
+          import base64, os, pathlib, sys, subprocess
+
+          raw = os.environ.get("IOS_PROVISIONING_PROFILE_BASE64", "")
+          if not raw.strip():
+              sys.exit("Missing secret: IOS_PROVISIONING_PROFILE_BASE64")
+          raw = "".join(raw.split())
+          raw += "=" * (-len(raw) % 4)
+          try:
+              data = base64.b64decode(raw)
+          except Exception as e:
+              sys.exit(f"IOS_PROVISIONING_PROFILE_BASE64 is not valid base64: {e}")
+
+          profiles_dir = pathlib.Path.home() / "Library/MobileDevice/Provisioning Profiles"
+          profiles_dir.mkdir(parents=True, exist_ok=True)
+          profile_path = profiles_dir / "app.mobileprovision"
+          profile_path.write_bytes(data)
+          print(f"Provisioning profile installed to {profile_path}")
+          PY
 
       - name: Build IPA
-        run: flutter build ipa --release
+        env:
+          IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+          IOS_PROVISIONING_PROFILE_NAME: ${{ secrets.IOS_PROVISIONING_PROFILE_NAME }}
+        run: |
+          envsubst < ios/ExportOptions.plist > /tmp/ExportOptions.plist
+          flutter build ipa --release --export-options-plist=/tmp/ExportOptions.plist
 
       - name: Upload to TestFlight
         env:

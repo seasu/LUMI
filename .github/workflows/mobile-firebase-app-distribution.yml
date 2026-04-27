@@ -1,6 +1,14 @@
 name: Android Deploy to Firebase App Distribution
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "lib/**"
+      - "android/**"
+      - "pubspec.yaml"
+      - "pubspec.lock"
   workflow_dispatch:
     inputs:
       tester_groups:

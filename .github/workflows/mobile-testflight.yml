@@ -1,6 +1,14 @@
 name: iOS Deploy to TestFlight
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "lib/**"
+      - "ios/**"
+      - "pubspec.yaml"
+      - "pubspec.lock"
   workflow_dispatch:
     inputs:
       release_notes:

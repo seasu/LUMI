@@ -18,6 +18,35 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check required secrets
+        env:
+          IOS_DISTRIBUTION_CERT_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERT_BASE64 }}
+          IOS_DISTRIBUTION_CERT_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_CERT_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          IOS_PROVISIONING_PROFILE_NAME: ${{ secrets.IOS_PROVISIONING_PROFILE_NAME }}
+          IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          missing=()
+          [ -z "$IOS_DISTRIBUTION_CERT_BASE64" ]    && missing+=("IOS_DISTRIBUTION_CERT_BASE64")
+          [ -z "$IOS_DISTRIBUTION_CERT_PASSWORD" ]   && missing+=("IOS_DISTRIBUTION_CERT_PASSWORD")
+          [ -z "$IOS_PROVISIONING_PROFILE_BASE64" ]  && missing+=("IOS_PROVISIONING_PROFILE_BASE64")
+          [ -z "$IOS_PROVISIONING_PROFILE_NAME" ]    && missing+=("IOS_PROVISIONING_PROFILE_NAME")
+          [ -z "$IOS_TEAM_ID" ]                      && missing+=("IOS_TEAM_ID")
+          [ -z "$APP_STORE_CONNECT_ISSUER_ID" ]      && missing+=("APP_STORE_CONNECT_ISSUER_ID")
+          [ -z "$APP_STORE_CONNECT_KEY_ID" ]         && missing+=("APP_STORE_CONNECT_KEY_ID")
+          [ -z "$APP_STORE_CONNECT_PRIVATE_KEY" ]    && missing+=("APP_STORE_CONNECT_PRIVATE_KEY")
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "❌ Missing required secrets:"
+            for s in "${missing[@]}"; do echo "   - $s"; done
+            echo ""
+            echo "Set these in GitHub → Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+          echo "✅ All required secrets are present"
+
       - name: Validate iOS project exists
         run: |
           if [ ! -d ios ]; then

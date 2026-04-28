@@ -108,6 +108,7 @@ jobs:
         env:
           IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
           IOS_PROVISIONING_PROFILE_NAME: ${{ secrets.IOS_PROVISIONING_PROFILE_NAME }}
+          BUILD_NUMBER: ${{ github.run_number }}
         run: |
           # Inject manual signing settings into xcconfig so xcodebuild archive picks them up
           cat >> ios/Flutter/Release.xcconfig << EOF
@@ -118,12 +119,11 @@ jobs:
           EOF
 
           # Archive only (flutter build ipa without --export-options-plist)
-          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr -d '[:space:]')
-          SEMVER=$(echo "$VERSION" | cut -d'+' -f1)
-          BUILD=$(echo "$VERSION" | cut -d'+' -f2)
+          SEMVER=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr -d '[:space:]' | cut -d'+' -f1)
           flutter build ipa --release \
             --dart-define=APP_SEMVER="$SEMVER" \
-            --dart-define=APP_BUILD_NUMBER="$BUILD"
+            --dart-define=APP_BUILD_NUMBER="$BUILD_NUMBER" \
+            --build-number="$BUILD_NUMBER"
 
       - name: Export IPA
         env:

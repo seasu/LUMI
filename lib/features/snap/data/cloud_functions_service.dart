@@ -1,6 +1,7 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/debug/debug_log.dart';
 import '../../../core/providers/firebase_providers.dart' show cloudFunctionsProvider;
 
 /// Callable responses can omit keys or send null on Web (JS interop); never use `as String` blindly.
@@ -14,6 +15,8 @@ String _requireString(Map<String, dynamic> data, String key) {
     'Field "$key" has unexpected type ${v.runtimeType}',
   );
 }
+
+void _log(String msg) => DebugLogService.instance.log('[fn] $msg');
 
 /// Shared [CloudFunctionsService] for Snap, Check, and wardrobe sync.
 final cloudFunctionsServiceProvider = Provider<CloudFunctionsService>((ref) {
@@ -29,21 +32,31 @@ class CloudFunctionsService {
     required String imageBase64,
     required String mimeType,
   }) async {
-    final callable = _functions.httpsCallable('analyzeClothing');
-    final result = await callable.call<Map<dynamic, dynamic>>({
-      'imageBase64': imageBase64,
-      'mimeType': mimeType,
-    });
+    _log('analyzeClothing → mime=$mimeType');
+    final sw = Stopwatch()..start();
+    try {
+      final callable = _functions.httpsCallable('analyzeClothing');
+      final result = await callable.call<Map<dynamic, dynamic>>({
+        'imageBase64': imageBase64,
+        'mimeType': mimeType,
+      });
 
-    final data = _asStringKeyedMap(result.data);
-    return AnalyzeClothingResult(
-      category: _requireString(data, 'category'),
-      colors: List<String>.from(data['colors'] as List),
-      materials: List<String>.from(data['materials'] as List),
-      embedding: List<double>.from(
-        (data['embedding'] as List).map((e) => (e as num).toDouble()),
-      ),
-    );
+      final data = _asStringKeyedMap(result.data);
+      final r = AnalyzeClothingResult(
+        category: _requireString(data, 'category'),
+        colors: List<String>.from(data['colors'] as List),
+        materials: List<String>.from(data['materials'] as List),
+        embedding: List<double>.from(
+          (data['embedding'] as List).map((e) => (e as num).toDouble()),
+        ),
+      );
+      _log('analyzeClothing ← ok ${sw.elapsedMilliseconds}ms'
+          ' category=${r.category} colors=${r.colors} materials=${r.materials}');
+      return r;
+    } catch (e) {
+      _log('analyzeClothing ✗ ${sw.elapsedMilliseconds}ms $e');
+      rethrow;
+    }
   }
 
   Future<UploadToPhotosResult> uploadToPhotos({
@@ -52,55 +65,83 @@ class CloudFunctionsService {
     required String filename,
     required String accessToken,
   }) async {
-    final callable = _functions.httpsCallable('uploadToPhotos');
-    final result = await callable.call<Map<dynamic, dynamic>>({
-      'imageBase64': imageBase64,
-      'mimeType': mimeType,
-      'filename': filename,
-      'accessToken': accessToken,
-    });
+    _log('uploadToPhotos → file=$filename mime=$mimeType');
+    final sw = Stopwatch()..start();
+    try {
+      final callable = _functions.httpsCallable('uploadToPhotos');
+      final result = await callable.call<Map<dynamic, dynamic>>({
+        'imageBase64': imageBase64,
+        'mimeType': mimeType,
+        'filename': filename,
+        'accessToken': accessToken,
+      });
 
-    final data = _asStringKeyedMap(result.data);
-    return UploadToPhotosResult(
-      mediaItemId: _requireString(data, 'mediaItemId'),
-      thumbnailUrl: _requireString(data, 'thumbnailUrl'),
-    );
+      final data = _asStringKeyedMap(result.data);
+      final r = UploadToPhotosResult(
+        mediaItemId: _requireString(data, 'mediaItemId'),
+        thumbnailUrl: _requireString(data, 'thumbnailUrl'),
+      );
+      _log('uploadToPhotos ← ok ${sw.elapsedMilliseconds}ms'
+          ' mediaItemId=${r.mediaItemId}');
+      return r;
+    } catch (e) {
+      _log('uploadToPhotos ✗ ${sw.elapsedMilliseconds}ms $e');
+      rethrow;
+    }
   }
 
   Future<CompareClothingResult> compareClothing({
     required String imageBase64,
     required String mimeType,
   }) async {
-    final callable = _functions.httpsCallable('compareClothing');
-    final result = await callable.call<Map<dynamic, dynamic>>({
-      'imageBase64': imageBase64,
-      'mimeType': mimeType,
-    });
+    _log('compareClothing → mime=$mimeType');
+    final sw = Stopwatch()..start();
+    try {
+      final callable = _functions.httpsCallable('compareClothing');
+      final result = await callable.call<Map<dynamic, dynamic>>({
+        'imageBase64': imageBase64,
+        'mimeType': mimeType,
+      });
 
-    final data = _asStringKeyedMap(result.data);
-    final rawMatches = data['topMatches'] as List? ?? [];
-    final topMatches = rawMatches.map((e) {
-      final m = _asStringKeyedMap(e);
-      return MatchedClothingItem(
-        similarity: (m['similarity'] as num).toDouble(),
-        mediaItemId: _requireString(m, 'mediaItemId'),
-        thumbnailUrl: _requireString(m, 'thumbnailUrl'),
-        category: m['category'] as String? ?? '',
-        colors: List<String>.from(m['colors'] as List? ?? []),
-      );
-    }).toList();
+      final data = _asStringKeyedMap(result.data);
+      final rawMatches = data['topMatches'] as List? ?? [];
+      final topMatches = rawMatches.map((e) {
+        final m = _asStringKeyedMap(e);
+        return MatchedClothingItem(
+          similarity: (m['similarity'] as num).toDouble(),
+          mediaItemId: _requireString(m, 'mediaItemId'),
+          thumbnailUrl: _requireString(m, 'thumbnailUrl'),
+          category: m['category'] as String? ?? '',
+          colors: List<String>.from(m['colors'] as List? ?? []),
+        );
+      }).toList();
 
-    return CompareClothingResult(topMatches: topMatches);
+      final r = CompareClothingResult(topMatches: topMatches);
+      _log('compareClothing ← ok ${sw.elapsedMilliseconds}ms'
+          ' matches=${r.topMatches.length}');
+      return r;
+    } catch (e) {
+      _log('compareClothing ✗ ${sw.elapsedMilliseconds}ms $e');
+      rethrow;
+    }
   }
 
   /// Re-run Gemini wardrobe analysis when Firestore trigger did not complete.
   Future<void> retryAnalyzeWardrobeItem({
     required String mediaItemId,
   }) async {
-    final callable = _functions.httpsCallable('retryAnalyzeWardrobeItem');
-    await callable.call<Map<dynamic, dynamic>>({
-      'mediaItemId': mediaItemId,
-    });
+    _log('retryAnalyzeWardrobeItem → mediaItemId=$mediaItemId');
+    final sw = Stopwatch()..start();
+    try {
+      final callable = _functions.httpsCallable('retryAnalyzeWardrobeItem');
+      await callable.call<Map<dynamic, dynamic>>({
+        'mediaItemId': mediaItemId,
+      });
+      _log('retryAnalyzeWardrobeItem ← ok ${sw.elapsedMilliseconds}ms');
+    } catch (e) {
+      _log('retryAnalyzeWardrobeItem ✗ ${sw.elapsedMilliseconds}ms $e');
+      rethrow;
+    }
   }
 
   /// Import missing `users/{uid}/wardrobe/{mediaItemId}` docs from Google Photos
@@ -108,18 +149,29 @@ class CloudFunctionsService {
   Future<SyncWardrobeFromPhotosResult> syncWardrobeFromPhotos({
     required String accessToken,
   }) async {
-    final callable = _functions.httpsCallable('syncWardrobeFromPhotos');
-    final result = await callable.call<Map<dynamic, dynamic>>({
-      'accessToken': accessToken,
-    });
-    final data = _asStringKeyedMap(result.data);
-    return SyncWardrobeFromPhotosResult(
-      albumId: _requireString(data, 'albumId'),
-      created: (data['created'] as num?)?.toInt() ?? 0,
-      skipped: (data['skipped'] as num?)?.toInt() ?? 0,
-      skippedNoPreview: (data['skippedNoPreview'] as num?)?.toInt() ?? 0,
-      totalInAlbum: (data['totalInAlbum'] as num?)?.toInt() ?? 0,
-    );
+    _log('syncWardrobeFromPhotos →');
+    final sw = Stopwatch()..start();
+    try {
+      final callable = _functions.httpsCallable('syncWardrobeFromPhotos');
+      final result = await callable.call<Map<dynamic, dynamic>>({
+        'accessToken': accessToken,
+      });
+      final data = _asStringKeyedMap(result.data);
+      final r = SyncWardrobeFromPhotosResult(
+        albumId: _requireString(data, 'albumId'),
+        created: (data['created'] as num?)?.toInt() ?? 0,
+        skipped: (data['skipped'] as num?)?.toInt() ?? 0,
+        skippedNoPreview: (data['skippedNoPreview'] as num?)?.toInt() ?? 0,
+        totalInAlbum: (data['totalInAlbum'] as num?)?.toInt() ?? 0,
+      );
+      _log('syncWardrobeFromPhotos ← ok ${sw.elapsedMilliseconds}ms'
+          ' total=${r.totalInAlbum} created=${r.created}'
+          ' skipped=${r.skipped} noPreview=${r.skippedNoPreview}');
+      return r;
+    } catch (e) {
+      _log('syncWardrobeFromPhotos ✗ ${sw.elapsedMilliseconds}ms $e');
+      rethrow;
+    }
   }
 
   /// Web: Photos Library API has no browser CORS — server proxies GET mediaItems + Firestore update.
@@ -127,13 +179,22 @@ class CloudFunctionsService {
     required String accessToken,
     required String mediaItemId,
   }) async {
-    final callable = _functions.httpsCallable('refreshWardrobeThumbnail');
-    final result = await callable.call<Map<dynamic, dynamic>>({
-      'accessToken': accessToken,
-      'mediaItemId': mediaItemId,
-    });
-    final data = _asStringKeyedMap(result.data);
-    return _requireString(data, 'thumbnailUrl');
+    _log('refreshWardrobeThumbnail → mediaItemId=$mediaItemId');
+    final sw = Stopwatch()..start();
+    try {
+      final callable = _functions.httpsCallable('refreshWardrobeThumbnail');
+      final result = await callable.call<Map<dynamic, dynamic>>({
+        'accessToken': accessToken,
+        'mediaItemId': mediaItemId,
+      });
+      final data = _asStringKeyedMap(result.data);
+      final url = _requireString(data, 'thumbnailUrl');
+      _log('refreshWardrobeThumbnail ← ok ${sw.elapsedMilliseconds}ms');
+      return url;
+    } catch (e) {
+      _log('refreshWardrobeThumbnail ✗ ${sw.elapsedMilliseconds}ms $e');
+      rethrow;
+    }
   }
 }
 

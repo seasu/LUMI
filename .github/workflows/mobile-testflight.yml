@@ -170,20 +170,22 @@ jobs:
           APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
           IPA_PATH: ${{ steps.locate_ipa.outputs.ipa_path }}
         run: |
+          # Build api_key.json for fastlane (handles Xcode 16 altool auth bug)
           python3 - <<'PY'
-          import os, pathlib, sys
-          key_content = os.environ.get("APP_STORE_CONNECT_PRIVATE_KEY", "")
-          if not key_content.strip():
-              sys.exit("Missing secret: APP_STORE_CONNECT_PRIVATE_KEY")
-          key_id = os.environ["APP_STORE_CONNECT_KEY_ID"]
-          key_path = pathlib.Path.home() / ".private_keys" / f"AuthKey_{key_id}.p8"
-          key_path.parent.mkdir(parents=True, exist_ok=True)
-          key_path.write_text(key_content)
-          print(f"API key written to {key_path}")
+          import json, os, pathlib
+          api_key = {
+              "key_id":     os.environ["APP_STORE_CONNECT_KEY_ID"],
+              "issuer_id":  os.environ["APP_STORE_CONNECT_ISSUER_ID"],
+              "key":        os.environ["APP_STORE_CONNECT_PRIVATE_KEY"],
+              "in_house":   False,
+          }
+          pathlib.Path("/tmp/api_key.json").write_text(json.dumps(api_key))
+          print("api_key.json written")
           PY
-          xcrun altool --upload-app \
-            --type ios \
-            --file "$IPA_PATH" \
-            --apiKey "$APP_STORE_CONNECT_KEY_ID" \
-            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" \
-            --verbose
+          # fastlane is pre-installed on macos-latest; install only if missing
+          which fastlane || gem install fastlane --no-document --quiet
+          fastlane pilot upload \
+            --ipa "$IPA_PATH" \
+            --api_key_path /tmp/api_key.json \
+            --skip_waiting_for_build_processing true \
+            --skip_submission true

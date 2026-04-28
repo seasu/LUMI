@@ -1,4 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app.dart';
@@ -9,9 +11,18 @@ import 'shared/constants/app_version.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Web needs explicit options; Android/iOS auto-configure from google-services.json.
   await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+    options: kIsWeb ? DefaultFirebaseOptions.currentPlatform : null,
   );
+
+  if (!kIsWeb) {
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+  }
 
   webConsoleInfo(
     'bootstrap',

@@ -170,19 +170,27 @@ jobs:
           APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
           IPA_PATH: ${{ steps.locate_ipa.outputs.ipa_path }}
         run: |
-          # Build api_key.json for fastlane (handles Xcode 16 altool auth bug)
           python3 - <<'PY'
           import json, os, pathlib
+
+          key_id    = os.environ["APP_STORE_CONNECT_KEY_ID"]
+          issuer_id = os.environ["APP_STORE_CONNECT_ISSUER_ID"]
+          key_raw   = os.environ["APP_STORE_CONNECT_PRIVATE_KEY"]
+
+          # Write the raw .p8 to a file — avoids any JSON string-escaping issues
+          key_path = pathlib.Path(f"/tmp/AuthKey_{key_id}.p8")
+          key_path.write_text(key_raw)
+
           api_key = {
-              "key_id":     os.environ["APP_STORE_CONNECT_KEY_ID"],
-              "issuer_id":  os.environ["APP_STORE_CONNECT_ISSUER_ID"],
-              "key":        os.environ["APP_STORE_CONNECT_PRIVATE_KEY"],
-              "in_house":   False,
+              "key_id":       key_id,
+              "issuer_id":    issuer_id,
+              "key_filepath": str(key_path),
+              "in_house":     False,
+              "duration":     1200,
           }
           pathlib.Path("/tmp/api_key.json").write_text(json.dumps(api_key))
-          print("api_key.json written")
+          print(f"api_key.json written (key_id={key_id}, filepath={key_path})")
           PY
-          # fastlane is pre-installed on macos-latest; install only if missing
           which fastlane || gem install fastlane --no-document --quiet
           fastlane pilot upload \
             --ipa "$IPA_PATH" \

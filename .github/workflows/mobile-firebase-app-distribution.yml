@@ -14,7 +14,7 @@ on:
       tester_groups:
         description: "Comma-separated tester groups (must exist in Firebase App Distribution)"
         required: false
-        default: ""
+        default: "testers"
       release_notes:
         description: "Release notes"
         required: false
@@ -131,6 +131,6 @@ jobs:
         with:
           appId: ${{ steps.firebase_params.outputs.app_id }}
           token: ${{ secrets.FIREBASE_TOKEN }}
-          groups: ${{ github.event.inputs.tester_groups || '' }}
+          groups: ${{ github.event.inputs.tester_groups || 'testers' }}
           releaseNotes: ${{ github.event.inputs.release_notes }}
           file: build/app/outputs/flutter-apk/app-release.apk

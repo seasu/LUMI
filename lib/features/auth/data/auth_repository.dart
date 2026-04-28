@@ -24,7 +24,7 @@ class AuthRepository {
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
   Future<UserCredential> signInWithGoogle() async {
-    final platform = kIsWeb ? 'web' : 'native';
+    const platform = kIsWeb ? 'web' : 'native';
     _log('signInWithGoogle → platform=$platform');
     final sw = Stopwatch()..start();
     try {

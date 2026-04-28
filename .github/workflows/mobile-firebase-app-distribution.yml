@@ -124,13 +124,13 @@ jobs:
           ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          BUILD_NUMBER: ${{ github.run_number }}
         run: |
-          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr -d '[:space:]')
-          SEMVER=$(echo "$VERSION" | cut -d'+' -f1)
-          BUILD=$(echo "$VERSION" | cut -d'+' -f2)
+          SEMVER=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr -d '[:space:]' | cut -d'+' -f1)
           flutter build apk --release \
             --dart-define=APP_SEMVER="$SEMVER" \
-            --dart-define=APP_BUILD_NUMBER="$BUILD"
+            --dart-define=APP_BUILD_NUMBER="$BUILD_NUMBER" \
+            --build-number="$BUILD_NUMBER"
 
       - name: Upload to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1

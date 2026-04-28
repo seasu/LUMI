@@ -51,7 +51,12 @@ Future<SyncWardrobeFromPhotosResult> syncWardrobeAlbumFromGooglePhotos(
 
   final googleSignIn = ref.read(googleSignInProvider);
 
-  final account = googleSignIn.currentUser ?? await googleSignIn.signIn();
+  // Always call signIn() (not currentUser) so the returned account is fresh
+  // and requestScopes inside ensureGooglePhotosAccessToken gets the latest
+  // auth state. On Android, signIn() returns the current account silently
+  // when already signed in, but the account object is newly resolved and
+  // authentication.accessToken will reflect the most recent token state.
+  final account = await googleSignIn.signIn();
 
   if (account == null) {
     throw StateError(
@@ -68,6 +73,7 @@ Future<SyncWardrobeFromPhotosResult> syncWardrobeAlbumFromGooglePhotos(
       kGooglePhotosReadonlyScope,
     ],
     interactive: true,
+    clearCacheFirst: true,
   );
 
   if (token == null) {

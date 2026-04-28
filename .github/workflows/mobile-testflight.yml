@@ -159,17 +159,9 @@ jobs:
           echo "ipa_path=$IPA_PATH" >> "$GITHUB_OUTPUT"
 
       - name: Upload to TestFlight
-        env:
-          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
-          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
-        run: |
-          IPA_PATH="${{ steps.locate_ipa.outputs.ipa_path }}"
-          echo "Uploading: $IPA_PATH"
-          mkdir -p ~/.appstoreconnect/private_keys
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > ~/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8
-          xcrun altool --upload-app \
-            --type ios \
-            --file "$IPA_PATH" \
-            --apiKey "$APP_STORE_CONNECT_KEY_ID" \
-            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
+        uses: apple-actions/upload-testflight-build@v3
+        with:
+          app-path: ${{ steps.locate_ipa.outputs.ipa_path }}
+          issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          api-key-id: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          api-private-key: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}

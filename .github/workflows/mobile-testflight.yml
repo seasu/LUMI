@@ -126,34 +126,20 @@ jobs:
           IOS_PROVISIONING_PROFILE_NAME: ${{ secrets.IOS_PROVISIONING_PROFILE_NAME }}
         run: |
           python3 - <<'PY'
-          import os, pathlib
+          import os, pathlib, plistlib
           team_id = os.environ["IOS_TEAM_ID"]
           profile_name = os.environ["IOS_PROVISIONING_PROFILE_NAME"]
-          plist = f"""<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>method</key>
-    <string>app-store</string>
-    <key>teamID</key>
-    <string>{team_id}</string>
-    <key>uploadBitcode</key>
-    <false/>
-    <key>uploadSymbols</key>
-    <true/>
-    <key>signingStyle</key>
-    <string>manual</string>
-    <key>provisioningProfiles</key>
-    <dict>
-        <key>io.github.seasu.lumi</key>
-        <string>{profile_name}</string>
-    </dict>
-</dict>
-</plist>"""
-          pathlib.Path("/tmp/ExportOptions.plist").write_text(plist)
+          plist = {
+              "method": "app-store",
+              "teamID": team_id,
+              "uploadBitcode": False,
+              "uploadSymbols": True,
+              "signingStyle": "manual",
+              "provisioningProfiles": {"io.github.seasu.lumi": profile_name},
+          }
+          pathlib.Path("/tmp/ExportOptions.plist").write_bytes(plistlib.dumps(plist))
           print(f"ExportOptions.plist written: team={team_id}, profile={profile_name}")
           PY
-
           xcodebuild -exportArchive \
             -archivePath build/ios/archive/Runner.xcarchive \
             -exportPath build/ios/ipa \

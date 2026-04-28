@@ -1,7 +1,10 @@
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../debug/debug_log.dart';
 import '../providers/firebase_providers.dart'
     show kGooglePhotosAppendOnlyScope;
+
+void _log(String msg) => DebugLogService.instance.log('[token] $msg');
 
 /// Ensures an OAuth **access token** with the requested Google Photos scopes.
 ///
@@ -19,10 +22,16 @@ Future<String?> ensureGooglePhotosAccessToken(
   bool interactive = false,
   bool clearCacheFirst = false,
 }) async {
-  if (account == null) return null;
+  if (account == null) {
+    _log('ensureAccessToken → account=null, skip');
+    return null;
+  }
 
   final scopeList = scopes ??
       const [kGooglePhotosAppendOnlyScope];
+
+  _log('ensureAccessToken → interactive=$interactive'
+      ' scopes=${scopeList.length} clearCache=$clearCacheFirst');
 
   Future<bool> hasRequiredScopes(String accessToken) async {
     try {
@@ -58,6 +67,7 @@ Future<String?> ensureGooglePhotosAccessToken(
   if (clearCacheFirst) {
     try {
       await account.clearAuthCache();
+      _log('ensureAccessToken: cache cleared');
     } catch (_) {
       // Best-effort only: some platforms may not have a cache to clear.
     }
@@ -66,14 +76,22 @@ Future<String?> ensureGooglePhotosAccessToken(
   // 1) Silent path — used by passive/background flows.
   var token = await readAfterAuth();
   if (!interactive) {
-    if (token != null && await hasRequiredScopes(token)) return token;
+    if (token != null && await hasRequiredScopes(token)) {
+      _log('ensureAccessToken ← ok (silent)');
+      return token;
+    }
+    _log('ensureAccessToken ← null (silent, no valid token)');
     return null;
   }
 
   // 2) Interactive path — explicit user action may refresh scope grants and
   // should return a freshly-minted token rather than trusting the current one.
+  _log('ensureAccessToken: requesting scopes interactively…');
   final granted = await googleSignIn.requestScopes(scopeList);
-  if (!granted) return null;
+  if (!granted) {
+    _log('ensureAccessToken ← null (user denied scopes)');
+    return null;
+  }
 
   try {
     await account.clearAuthCache();
@@ -81,7 +99,14 @@ Future<String?> ensureGooglePhotosAccessToken(
     // Best-effort only: still attempt to read a fresh token afterwards.
   }
   token = await readAfterAuth();
-  if (token == null) return null;
-  if (await hasRequiredScopes(token)) return token;
+  if (token == null) {
+    _log('ensureAccessToken ← null (no token after grant)');
+    return null;
+  }
+  if (await hasRequiredScopes(token)) {
+    _log('ensureAccessToken ← ok (interactive)');
+    return token;
+  }
+  _log('ensureAccessToken ← null (token lacks required scopes)');
   return null;
 }

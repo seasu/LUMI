@@ -40,17 +40,17 @@ Future<String?> ensureGooglePhotosAccessToken(
         accessToken: accessToken,
       );
     } catch (_) {
-      // Fall back to the existing token on platforms that cannot introspect
-      // granted scopes yet.
+      // canAccessScopes is not supported on all platforms; assume granted.
       return true;
     }
   }
 
-  Future<String?> extract(GoogleSignInAuthentication auth) async {
+  Future<String?> extractToken(GoogleSignInAccount a) async {
+    final auth = await a.authentication;
     final direct = auth.accessToken;
     if (direct != null && direct.isNotEmpty) return direct;
     try {
-      final headers = await account.authHeaders;
+      final headers = await a.authHeaders;
       final bearer = headers['Authorization'] ?? headers['authorization'];
       if (bearer != null && bearer.startsWith('Bearer ')) {
         return bearer.substring(7).trim();
@@ -59,23 +59,16 @@ Future<String?> ensureGooglePhotosAccessToken(
     return null;
   }
 
-  Future<String?> readAfterAuth() async {
-    final auth = await account.authentication;
-    return extract(auth);
-  }
-
   if (clearCacheFirst) {
     try {
       await account.clearAuthCache();
       _log('ensureAccessToken: cache cleared');
-    } catch (_) {
-      // Best-effort only: some platforms may not have a cache to clear.
-    }
+    } catch (_) {}
   }
 
   // 1) Silent path — used by passive/background flows.
-  var token = await readAfterAuth();
   if (!interactive) {
+    final token = await extractToken(account);
     if (token != null && await hasRequiredScopes(token)) {
       _log('ensureAccessToken ← ok (silent)');
       return token;
@@ -84,8 +77,7 @@ Future<String?> ensureGooglePhotosAccessToken(
     return null;
   }
 
-  // 2) Interactive path — explicit user action may refresh scope grants and
-  // should return a freshly-minted token rather than trusting the current one.
+  // 2) Interactive path — explicit user action.
   _log('ensureAccessToken: requesting scopes interactively…');
   final granted = await googleSignIn.requestScopes(scopeList);
   if (!granted) {
@@ -93,12 +85,23 @@ Future<String?> ensureGooglePhotosAccessToken(
     return null;
   }
 
+  // On Android, requestScopes does not update the token on the existing
+  // account object. Call signInSilently() to obtain a fresh account whose
+  // authentication reflects the newly granted scopes.
+  GoogleSignInAccount? resolvedAccount;
   try {
-    await account.clearAuthCache();
-  } catch (_) {
-    // Best-effort only: still attempt to read a fresh token afterwards.
-  }
-  token = await readAfterAuth();
+    resolvedAccount = await googleSignIn.signInSilently();
+    if (resolvedAccount != null) {
+      _log('ensureAccessToken: refreshed account via signInSilently');
+    }
+  } catch (_) {}
+  resolvedAccount ??= account;
+
+  try {
+    await resolvedAccount.clearAuthCache();
+  } catch (_) {}
+
+  final token = await extractToken(resolvedAccount);
   if (token == null) {
     _log('ensureAccessToken ← null (no token after grant)');
     return null;

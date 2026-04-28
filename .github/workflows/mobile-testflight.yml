@@ -35,17 +35,17 @@ jobs:
           IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
-          APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
         run: |
           missing=()
-          [ -z "$IOS_DISTRIBUTION_CERT_BASE64" ]           && missing+=("IOS_DISTRIBUTION_CERT_BASE64")
-          [ -z "$IOS_DISTRIBUTION_CERT_PASSWORD" ]          && missing+=("IOS_DISTRIBUTION_CERT_PASSWORD")
-          [ -z "$IOS_PROVISIONING_PROFILE_BASE64" ]         && missing+=("IOS_PROVISIONING_PROFILE_BASE64")
-          [ -z "$IOS_PROVISIONING_PROFILE_NAME" ]           && missing+=("IOS_PROVISIONING_PROFILE_NAME")
-          [ -z "$IOS_TEAM_ID" ]                             && missing+=("IOS_TEAM_ID")
-          [ -z "$APP_STORE_CONNECT_ISSUER_ID" ]             && missing+=("APP_STORE_CONNECT_ISSUER_ID")
-          [ -z "$APP_STORE_CONNECT_KEY_ID" ]                && missing+=("APP_STORE_CONNECT_KEY_ID")
-          [ -z "$APP_STORE_CONNECT_PRIVATE_KEY_BASE64" ]    && missing+=("APP_STORE_CONNECT_PRIVATE_KEY_BASE64")
+          [ -z "$IOS_DISTRIBUTION_CERT_BASE64" ]       && missing+=("IOS_DISTRIBUTION_CERT_BASE64")
+          [ -z "$IOS_DISTRIBUTION_CERT_PASSWORD" ]      && missing+=("IOS_DISTRIBUTION_CERT_PASSWORD")
+          [ -z "$IOS_PROVISIONING_PROFILE_BASE64" ]     && missing+=("IOS_PROVISIONING_PROFILE_BASE64")
+          [ -z "$IOS_PROVISIONING_PROFILE_NAME" ]       && missing+=("IOS_PROVISIONING_PROFILE_NAME")
+          [ -z "$IOS_TEAM_ID" ]                         && missing+=("IOS_TEAM_ID")
+          [ -z "$APP_STORE_CONNECT_ISSUER_ID" ]         && missing+=("APP_STORE_CONNECT_ISSUER_ID")
+          [ -z "$APP_STORE_CONNECT_KEY_ID" ]            && missing+=("APP_STORE_CONNECT_KEY_ID")
+          [ -z "$APP_STORE_CONNECT_PRIVATE_KEY" ]       && missing+=("APP_STORE_CONNECT_PRIVATE_KEY")
           if [ ${#missing[@]} -gt 0 ]; then
             echo "❌ Missing required secrets:"
             for s in "${missing[@]}"; do echo "   - $s"; done
@@ -167,30 +167,23 @@ jobs:
         env:
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
           IPA_PATH: ${{ steps.locate_ipa.outputs.ipa_path }}
         run: |
           python3 - <<'PY'
-          import base64, os, pathlib, sys
-          raw = os.environ.get("APP_STORE_CONNECT_PRIVATE_KEY_BASE64", "")
-          if not raw.strip():
-              sys.exit("Missing secret: APP_STORE_CONNECT_PRIVATE_KEY_BASE64")
-          raw = "".join(raw.split())
-          raw += "=" * (-len(raw) % 4)
-          try:
-              data = base64.b64decode(raw)
-          except Exception as e:
-              sys.exit(f"APP_STORE_CONNECT_PRIVATE_KEY_BASE64 is not valid base64: {e}\n"
-                       "Re-encode with: base64 -i AuthKey_XXXX.p8 | tr -d '\\n'")
+          import os, pathlib, sys
+          key_content = os.environ.get("APP_STORE_CONNECT_PRIVATE_KEY", "")
+          if not key_content.strip():
+              sys.exit("Missing secret: APP_STORE_CONNECT_PRIVATE_KEY")
           key_id = os.environ["APP_STORE_CONNECT_KEY_ID"]
           key_path = pathlib.Path.home() / ".private_keys" / f"AuthKey_{key_id}.p8"
           key_path.parent.mkdir(parents=True, exist_ok=True)
-          key_path.write_bytes(data)
+          key_path.write_text(key_content)
           print(f"API key written to {key_path}")
           PY
           xcrun altool --upload-app \
             --type ios \
             --file "$IPA_PATH" \
-            --apiKey  "$APP_STORE_CONNECT_KEY_ID" \
+            --apiKey "$APP_STORE_CONNECT_KEY_ID" \
             --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" \
             --verbose

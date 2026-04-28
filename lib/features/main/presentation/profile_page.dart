@@ -4,6 +4,7 @@ import '../../../shared/constants/app_version.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_spacing.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
+import '../../debug/debug_log_page.dart';
 import '../../user/data/user_profile.dart';
 import '../../user/data/user_repository.dart';
 
@@ -72,7 +73,7 @@ class _ProfileContent extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: LumiSpacing.lg),
-        const _InfoRow(label: '版本', value: appVersionLabel),
+        const _VersionRow(),
         const SizedBox(height: LumiSpacing.xs),
         _InfoRow(label: 'UID', value: profile.uid),
         const SizedBox(height: LumiSpacing.lg),
@@ -152,6 +153,38 @@ class _InfoRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Version row with 5-tap debug unlock ──────────────────────────────────────
+
+class _VersionRow extends StatefulWidget {
+  const _VersionRow();
+
+  @override
+  State<_VersionRow> createState() => _VersionRowState();
+}
+
+class _VersionRowState extends State<_VersionRow> {
+  int _taps = 0;
+
+  void _onTap() {
+    _taps++;
+    if (_taps >= 5) {
+      _taps = 0;
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const DebugLogPage()),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _onTap,
+      behavior: HitTestBehavior.opaque,
+      child: const _InfoRow(label: '版本', value: appVersionLabel),
     );
   }
 }

@@ -170,12 +170,22 @@ class _VersionRowState extends State<_VersionRow> {
   int _taps = 0;
 
   void _onTap() {
-    _taps++;
+    setState(() => _taps++);
     if (_taps >= 5) {
-      _taps = 0;
+      setState(() => _taps = 0);
       Navigator.of(context).push(
         MaterialPageRoute<void>(builder: (_) => const DebugLogPage()),
       );
+    } else {
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('再點 ${5 - _taps} 次開啟 Debug Log'),
+            duration: const Duration(milliseconds: 800),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
     }
   }
 

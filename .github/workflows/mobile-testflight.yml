@@ -118,7 +118,12 @@ jobs:
           EOF
 
           # Archive only (flutter build ipa without --export-options-plist)
-          flutter build ipa --release
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr -d '[:space:]')
+          SEMVER=$(echo "$VERSION" | cut -d'+' -f1)
+          BUILD=$(echo "$VERSION" | cut -d'+' -f2)
+          flutter build ipa --release \
+            --dart-define=APP_SEMVER="$SEMVER" \
+            --dart-define=APP_BUILD_NUMBER="$BUILD"
 
       - name: Export IPA
         env:

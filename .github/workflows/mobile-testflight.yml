@@ -19,7 +19,7 @@ on:
 jobs:
   deploy_testflight:
     name: Build IPA and Upload to TestFlight
-    runs-on: macos-15
+    runs-on: macos-16
     env:
       FLUTTER_VERSION: "3.29.1"
     steps:

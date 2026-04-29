@@ -19,12 +19,17 @@ on:
 jobs:
   deploy_testflight:
     name: Build IPA and Upload to TestFlight
-    runs-on: macos-latest
+    runs-on: macos-15
     env:
       FLUTTER_VERSION: "3.29.1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Select latest stable Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
 
       - name: Check required secrets
         env:

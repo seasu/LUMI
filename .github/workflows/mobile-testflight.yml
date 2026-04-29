@@ -171,25 +171,28 @@ jobs:
           IPA_PATH: ${{ steps.locate_ipa.outputs.ipa_path }}
         run: |
           python3 - <<'PY'
-          import json, os, pathlib
+          import json, os, pathlib, sys
 
           key_id    = os.environ["APP_STORE_CONNECT_KEY_ID"]
           issuer_id = os.environ["APP_STORE_CONNECT_ISSUER_ID"]
           key_raw   = os.environ["APP_STORE_CONNECT_PRIVATE_KEY"]
 
-          # Write the raw .p8 to a file — avoids any JSON string-escaping issues
-          key_path = pathlib.Path(f"/tmp/AuthKey_{key_id}.p8")
-          key_path.write_text(key_raw)
+          # Secrets may store literal \n instead of real newlines — normalise both
+          key = key_raw.replace('\\n', '\n').strip()
+          if '-----BEGIN' not in key:
+              sys.exit("APP_STORE_CONNECT_PRIVATE_KEY does not look like a PEM key "
+                       "(missing -----BEGIN). Re-paste the .p8 file content into the secret.")
 
           api_key = {
-              "key_id":       key_id,
-              "issuer_id":    issuer_id,
-              "key_filepath": str(key_path),
-              "in_house":     False,
-              "duration":     1200,
+              "key_id":    key_id,
+              "issuer_id": issuer_id,
+              "key":       key,   # fastlane 2.233+ requires this field (key_filepath not supported)
+              "in_house":  False,
+              "duration":  1200,
           }
           pathlib.Path("/tmp/api_key.json").write_text(json.dumps(api_key))
-          print(f"api_key.json written (key_id={key_id}, filepath={key_path})")
+          first_line = key.split('\n')[0]
+          print(f"api_key.json written: key_id={key_id}, pem_header='{first_line}'")
           PY
           which fastlane || gem install fastlane --no-document --quiet
           fastlane pilot upload \

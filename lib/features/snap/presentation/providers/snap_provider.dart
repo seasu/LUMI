@@ -95,10 +95,18 @@ class SnapNotifier extends Notifier<SnapState> {
 
   Future<void> _uploadOne(XFile file, int index, String accessToken) async {
     final bytes = await file.readAsBytes();
+
+    // image_picker with imageQuality: 85 converts all formats (HEIC, PNG, etc.)
+    // to JPEG bytes on iOS. Detect actual content by JPEG magic bytes (FF D8)
+    // rather than relying on the file extension, which may still say .heic.
+    final isActuallyJpeg =
+        bytes.length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xD8;
+    final mimeType = isActuallyJpeg ? 'image/jpeg' : _effectiveMimeType(file);
+    final ext = isActuallyJpeg ? '.jpg' : _extForMime(_effectiveMimeType(file));
+
     final imageBase64 = base64Encode(bytes);
-    final mimeType = _effectiveMimeType(file);
     final filename =
-        'lumi_${DateTime.now().millisecondsSinceEpoch}_$index${_extForMime(mimeType)}';
+        'lumi_${DateTime.now().millisecondsSinceEpoch}_$index$ext';
 
     final service = ref.read(cloudFunctionsServiceProvider);
     final upload = await service.uploadToPhotos(

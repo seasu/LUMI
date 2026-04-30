@@ -207,7 +207,7 @@ async function createMediaItem(
 // ── Callable Function ─────────────────────────────────────────────────────────
 
 export const uploadToPhotos = onCall(
-  { region: FUNCTIONS_REGION },
+  { region: FUNCTIONS_REGION, timeoutSeconds: 300, memory: "512MiB" },
   async (request): Promise<UploadToPhotosResult> => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentication required.");

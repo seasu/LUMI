@@ -4,11 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "lib/**"
-      - "ios/**"
-      - "pubspec.yaml"
-      - "pubspec.lock"
   workflow_dispatch:
     inputs:
       release_notes:
@@ -79,6 +74,9 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Generate app icons
+        run: dart run flutter_launcher_icons
 
       - name: Write GoogleService-Info.plist
         env:

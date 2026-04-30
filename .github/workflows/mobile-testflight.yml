@@ -41,6 +41,7 @@ jobs:
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+          GOOGLE_SERVICE_INFO_PLIST: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}
         run: |
           missing=()
           [ -z "$IOS_DISTRIBUTION_CERT_BASE64" ]       && missing+=("IOS_DISTRIBUTION_CERT_BASE64")
@@ -51,6 +52,7 @@ jobs:
           [ -z "$APP_STORE_CONNECT_ISSUER_ID" ]         && missing+=("APP_STORE_CONNECT_ISSUER_ID")
           [ -z "$APP_STORE_CONNECT_KEY_ID" ]            && missing+=("APP_STORE_CONNECT_KEY_ID")
           [ -z "$APP_STORE_CONNECT_PRIVATE_KEY" ]       && missing+=("APP_STORE_CONNECT_PRIVATE_KEY")
+          [ -z "$GOOGLE_SERVICE_INFO_PLIST" ]           && missing+=("GOOGLE_SERVICE_INFO_PLIST")
           if [ ${#missing[@]} -gt 0 ]; then
             echo "❌ Missing required secrets:"
             for s in "${missing[@]}"; do echo "   - $s"; done
@@ -77,6 +79,44 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Write GoogleService-Info.plist
+        env:
+          GOOGLE_SERVICE_INFO_PLIST: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}
+        run: |
+          if [ -z "$GOOGLE_SERVICE_INFO_PLIST" ]; then
+            echo "❌ GOOGLE_SERVICE_INFO_PLIST secret is missing"
+            exit 1
+          fi
+          printf '%s' "$GOOGLE_SERVICE_INFO_PLIST" > ios/Runner/GoogleService-Info.plist
+          echo "✅ GoogleService-Info.plist written"
+
+      - name: Inject REVERSED_CLIENT_ID into Info.plist URL scheme
+        run: |
+          REVERSED_CLIENT_ID=$(/usr/libexec/PlistBuddy \
+            -c "Print :REVERSED_CLIENT_ID" \
+            ios/Runner/GoogleService-Info.plist 2>/dev/null || echo "")
+          if [ -z "$REVERSED_CLIENT_ID" ]; then
+            echo "❌ REVERSED_CLIENT_ID not found in GoogleService-Info.plist"
+            exit 1
+          fi
+          echo "REVERSED_CLIENT_ID=${REVERSED_CLIENT_ID:0:30}…"
+          /usr/libexec/PlistBuddy \
+            -c "Add :CFBundleURLTypes array" \
+            ios/Runner/Info.plist 2>/dev/null || true
+          /usr/libexec/PlistBuddy \
+            -c "Add :CFBundleURLTypes:0 dict" \
+            ios/Runner/Info.plist 2>/dev/null || true
+          /usr/libexec/PlistBuddy \
+            -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" \
+            ios/Runner/Info.plist 2>/dev/null || true
+          /usr/libexec/PlistBuddy \
+            -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string $REVERSED_CLIENT_ID" \
+            ios/Runner/Info.plist 2>/dev/null || \
+          /usr/libexec/PlistBuddy \
+            -c "Set :CFBundleURLTypes:0:CFBundleURLSchemes:0 $REVERSED_CLIENT_ID" \
+            ios/Runner/Info.plist
+          echo "✅ CFBundleURLTypes injected"
 
       - name: Import signing certificate
         uses: apple-actions/import-codesign-certs@v3

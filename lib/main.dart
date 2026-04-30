@@ -9,6 +9,22 @@ import 'core/debug/debug_log.dart';
 import 'core/logging/web_console_log.dart';
 import 'shared/constants/app_version.dart';
 
+/// Returns the correct [FirebaseOptions] for the current platform.
+/// - Web: always uses dart-define options.
+/// - iOS in CI: dart-defines are populated from GoogleService-Info.plist values
+///   extracted during build; [DefaultFirebaseOptions.ios] is used.
+/// - iOS local dev (no dart-defines): returns null so Firebase reads the plist
+///   from the app bundle automatically.
+FirebaseOptions? _resolveFirebaseOptions() {
+  if (kIsWeb) return DefaultFirebaseOptions.currentPlatform;
+  if (defaultTargetPlatform == TargetPlatform.iOS) {
+    const iosApiKey = String.fromEnvironment('FIREBASE_IOS_API_KEY');
+    if (iosApiKey.isNotEmpty) return DefaultFirebaseOptions.ios;
+    return null; // local dev: let Firebase read plist from bundle
+  }
+  return null;
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -32,11 +48,11 @@ void main() async {
     };
   }
 
-  // Web needs explicit options; Android/iOS auto-configure from GoogleService-Info.plist.
+  // Web + iOS (CI): use dart-define options injected at build time.
+  // iOS local dev without dart-defines: pass null → auto-read from plist.
+  final firebaseOptions = _resolveFirebaseOptions();
   try {
-    await Firebase.initializeApp(
-      options: kIsWeb ? DefaultFirebaseOptions.currentPlatform : null,
-    );
+    await Firebase.initializeApp(options: firebaseOptions);
   } catch (e, stack) {
     // Firebase failed — most likely GoogleService-Info.plist is missing or invalid.
     // Show a minimal branded screen so the user sees something instead of white.

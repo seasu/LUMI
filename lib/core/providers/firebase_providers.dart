@@ -26,8 +26,9 @@ final cloudFunctionsProvider = Provider<FirebaseFunctions>((ref) {
 });
 
 final googleSignInProvider = Provider<GoogleSignIn>((ref) {
+  const clientId = String.fromEnvironment('GOOGLE_CLIENT_ID');
   return GoogleSignIn(
-    clientId: const String.fromEnvironment('GOOGLE_CLIENT_ID'),
+    clientId: clientId.isEmpty ? null : clientId,
     scopes: [
       'email',
       kGooglePhotosAppendOnlyScope,

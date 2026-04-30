@@ -89,6 +89,16 @@ jobs:
           printf '%s' "$GOOGLE_SERVICE_INFO_PLIST" > ios/Runner/GoogleService-Info.plist
           echo "✅ GoogleService-Info.plist written"
 
+      - name: Validate GoogleService-Info.plist
+        run: |
+          /usr/bin/plutil -lint ios/Runner/GoogleService-Info.plist \
+            && echo "✅ plist syntax OK" \
+            || (echo "❌ GoogleService-Info.plist is not valid XML — re-paste the file content into the secret" && exit 1)
+          # Verify it has the expected Firebase keys
+          /usr/libexec/PlistBuddy -c "Print :PROJECT_ID" ios/Runner/GoogleService-Info.plist \
+            && echo "✅ PROJECT_ID present" \
+            || (echo "❌ PROJECT_ID missing — wrong plist content?" && exit 1)
+
       - name: Inject REVERSED_CLIENT_ID into Info.plist URL scheme
         run: |
           REVERSED_CLIENT_ID=$(/usr/libexec/PlistBuddy \

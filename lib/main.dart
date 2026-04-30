@@ -14,21 +14,35 @@ void main() async {
 
   DebugLogService.instance.install();
 
-  // Web needs explicit options; Android/iOS auto-configure from google-services.json.
-  await Firebase.initializeApp(
-    options: kIsWeb ? DefaultFirebaseOptions.currentPlatform : null,
-  );
-
+  // Install error handlers early so Firebase-init errors are also captured.
   if (!kIsWeb) {
     FlutterError.onError = (details) {
       DebugLogService.instance.log('FlutterError: ${details.exceptionAsString()}');
-      FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+      // Crashlytics may not be initialised yet; guard with try-catch.
+      try {
+        FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+      } catch (_) {}
     };
     PlatformDispatcher.instance.onError = (error, stack) {
       DebugLogService.instance.log('PlatformError: $error');
-      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      try {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      } catch (_) {}
       return true;
     };
+  }
+
+  // Web needs explicit options; Android/iOS auto-configure from GoogleService-Info.plist.
+  try {
+    await Firebase.initializeApp(
+      options: kIsWeb ? DefaultFirebaseOptions.currentPlatform : null,
+    );
+  } catch (e, stack) {
+    // Firebase failed — most likely GoogleService-Info.plist is missing or invalid.
+    // Show a minimal branded screen so the user sees something instead of white.
+    debugPrint('Firebase.initializeApp failed: $e\n$stack');
+    runApp(const _FirebaseErrorApp());
+    return;
   }
 
   webConsoleInfo(
@@ -47,4 +61,27 @@ void main() async {
       child: LumiApp(),
     ),
   );
+}
+
+/// Shown only when Firebase fails to initialise (e.g. missing plist in CI build).
+/// Displays a non-white screen so the failure is immediately obvious.
+class _FirebaseErrorApp extends StatelessWidget {
+  const _FirebaseErrorApp();
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: Color(0xFFFF8C00), // Lumi primary-light — clearly non-white
+        body: Center(
+          child: Text(
+            'Firebase init failed\nCheck GoogleService-Info.plist',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ),
+      ),
+    );
+  }
 }

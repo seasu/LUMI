@@ -2,8 +2,8 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.11+99
-**後端版本 (Cloud Functions)：** 1.0.1
+**前端版本 (Flutter App)：** 1.0.11+100
+**後端版本 (Cloud Functions)：** 1.0.2
 **開發框架：** Flutter (Cross-platform)
 
 ---
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-04-30 | 1.0.11+100 | 1.0.2 | 修正 uploadToPhotos INTERNAL 錯誤：移除依賴 readonly scope 的 baseUrl fallback GET，batchCreate 無 baseUrl 時改回傳空字串（由縮圖刷新補填）；加 console.error 保留 CF log；客戶端設定 5 分鐘 timeout；thumbnailUrl 空字串不再觸發 FormatException | Snap / Upload / Cloud Functions |
 | 2026-04-30 | 1.0.11+99 | 1.0.1 | 上傳前偵測 JPEG magic bytes（FF D8），若 image_picker 已轉為 JPEG（HEIC/PNG 等），自動使用 image/jpeg MIME type 與 .jpg 副檔名，減少上傳大小並避免 Photos API HEIC 相容問題 | Snap / Upload |
 | 2026-04-30 | 1.0.11+98 | 1.0.1 | 修正衣櫥重新整理按鈕在 iOS 會彈出 Google 帳號選擇器的登入循環（改用 currentUser/signInSilently 取代 signIn()）；uploadToPhotos Cloud Function 加上 300s timeout 與 512MiB 記憶體，修正大圖上傳逾時導致的「伺服器忙碌中」錯誤 | Auth / Snap / iOS / Cloud Functions |
 | 2026-04-21 | 1.0.11+93 | 1.0.0 | 互動授權流程強制刷新 Google Photos token 並重新驗 scope；背景縮圖修復把 scope 不足視為等待下一次互動授權，避免進衣櫥就大量 403；同步失敗時補上瀏覽器阻擋 popup 的中文提示 | Auth / Wardrobe Thumbnail / OAuth / UX |

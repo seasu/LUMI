@@ -344,13 +344,17 @@ class _UploadingView extends StatelessWidget {
                         ],
                       ),
                     ),
-                    // 進度環
-                    CircularProgressIndicator(
-                      value: current == 0 ? null : progress,
-                      color: LumiColors.primary,
-                      backgroundColor:
-                          LumiColors.primary.withValues(alpha: 0.12),
-                      strokeWidth: 6,
+                    // 進度環 — 明確給尺寸，否則 Stack 內預設 36×36
+                    SizedBox(
+                      width: 116,
+                      height: 116,
+                      child: CircularProgressIndicator(
+                        value: current == 0 ? null : progress,
+                        color: LumiColors.primary,
+                        backgroundColor:
+                            LumiColors.primary.withValues(alpha: 0.12),
+                        strokeWidth: 6,
+                      ),
                     ),
                     // 百分比文字
                     if (current > 0)

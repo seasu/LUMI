@@ -51,17 +51,10 @@ ThemeData buildLumiTheme() {
       ),
       iconTheme: IconThemeData(color: scheme.onSurfaceVariant),
     ),
-    bottomNavigationBarTheme: BottomNavigationBarThemeData(
-      backgroundColor: scheme.surface.withValues(alpha: 0.92),
-      selectedItemColor: scheme.primary,
-      unselectedItemColor: scheme.onSurfaceVariant,
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       elevation: 0,
-      type: BottomNavigationBarType.fixed,
-      selectedLabelStyle: const TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w500,
-      ),
-      unselectedLabelStyle: const TextStyle(fontSize: 11),
+      showSelectedLabels: false,
+      showUnselectedLabels: false,
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: scheme.primary,

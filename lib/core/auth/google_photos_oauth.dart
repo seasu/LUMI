@@ -40,8 +40,10 @@ Future<String?> ensureGooglePhotosAccessToken(
         accessToken: accessToken,
       );
     } catch (_) {
-      // canAccessScopes is not supported on all platforms; assume granted.
-      return true;
+      // canAccessScopes unsupported or threw unexpectedly.
+      // Interactive: requestScopes() just succeeded — trust the grant.
+      // Silent/background: be conservative; skip rather than risk a 403.
+      return interactive;
     }
   }
 

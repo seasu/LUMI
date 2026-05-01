@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/constants/lumi_colors.dart';
+import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
+import '../../../shared/constants/lumi_type_scale.dart';
 import '../../../features/snap/data/cloud_functions_service.dart';
 import '../../wardrobe/utils/wardrobe_thumbnail_url.dart';
 import '../domain/check_state.dart';
@@ -66,7 +68,7 @@ class _CheckPageState extends ConsumerState<CheckPage>
           child: Text(
             canGoBackToIdle ? '< 上一步' : '< 回衣櫥',
             style: const TextStyle(
-              fontSize: 14,
+              fontSize: LumiTypeScale.labelMd,
               color: LumiColors.primary,
             ),
           ),
@@ -75,7 +77,7 @@ class _CheckPageState extends ConsumerState<CheckPage>
         title: const Text(
           '似曾相識',
           style: TextStyle(
-            fontSize: 17,
+            fontSize: LumiTypeScale.titleSm,
             fontWeight: FontWeight.w700,
             color: LumiColors.text,
           ),
@@ -160,15 +162,15 @@ class _IdleView extends StatelessWidget {
             width: double.infinity,
             decoration: const BoxDecoration(
               color: LumiColors.surface,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(LumiRadii.xl)),
             ),
-            padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
+            padding: const EdgeInsets.fromLTRB(LumiSpacing.lg, LumiSpacing.lg + LumiSpacing.xs, LumiSpacing.lg, 0),
             child: Column(
               children: [
                 const Text(
                   '開始比對',
                   style: TextStyle(
-                    fontSize: 22,
+                    fontSize: LumiTypeScale.titleLg,
                     fontWeight: FontWeight.w700,
                     color: LumiColors.text,
                   ),
@@ -178,7 +180,7 @@ class _IdleView extends StatelessWidget {
                   '拍下妳想買的衣物，Lumi 將立即為妳從衣櫥中\n尋找相似款式，讓妳購物更有底氣。',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: LumiTypeScale.labelMd,
                     color: LumiColors.subtext,
                     height: 1.6,
                   ),
@@ -210,7 +212,7 @@ class _IdleView extends StatelessWidget {
                   onPressed: onCancel,
                   child: const Text(
                     '取消',
-                    style: TextStyle(fontSize: 15, color: LumiColors.subtext),
+                    style: TextStyle(fontSize: LumiTypeScale.body, color: LumiColors.subtext),
                   ),
                 ),
                 const SizedBox(height: LumiSpacing.lg),
@@ -255,7 +257,7 @@ class _GlowView extends StatelessWidget {
           const Text(
             'AI 比對中...',
             style: TextStyle(
-              fontSize: 15,
+              fontSize: LumiTypeScale.body,
               color: LumiColors.subtext,
             ),
           ),
@@ -319,15 +321,15 @@ class _ResultViewState extends State<_ResultView> {
           _NewItemCard(imageBytes: widget.newImageBytes),
           const SizedBox(height: LumiSpacing.md),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.sm + LumiSpacing.xs, vertical: LumiSpacing.xs),
             decoration: BoxDecoration(
               color: LumiColors.warning.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(LumiRadii.pill),
             ),
             child: Text(
               '$currentPct% 相似',
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: LumiTypeScale.labelSm,
                 fontWeight: FontWeight.w700,
                 color: LumiColors.warning,
               ),
@@ -361,11 +363,11 @@ class _ResultViewState extends State<_ResultView> {
                   final active = i == _currentPage;
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    margin: const EdgeInsets.symmetric(horizontal: LumiSpacing.xs),
                     width: active ? 16 : 6,
                     height: 6,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(3),
+                      borderRadius: BorderRadius.circular(LumiRadii.pill),
                       color: active
                           ? LumiColors.primary
                           : LumiColors.subtext.withValues(alpha: 0.3),
@@ -385,7 +387,7 @@ class _ResultViewState extends State<_ResultView> {
                     foregroundColor: LumiColors.text,
                     side: const BorderSide(color: LumiColors.subtext),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(28)),
+                        borderRadius: BorderRadius.circular(LumiRadii.pill)),
                     padding:
                         const EdgeInsets.symmetric(vertical: LumiSpacing.md),
                   ),
@@ -417,7 +419,7 @@ class _NewItemCard extends StatelessWidget {
         const Text(
           '新品',
           style: TextStyle(
-            fontSize: 13,
+            fontSize: LumiTypeScale.labelMd,
             color: LumiColors.subtext,
             fontWeight: FontWeight.w500,
           ),
@@ -427,7 +429,7 @@ class _NewItemCard extends StatelessWidget {
           height: 180,
           decoration: BoxDecoration(
             color: LumiColors.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(LumiRadii.lg),
           ),
           clipBehavior: Clip.antiAlias,
           child: SizedBox.expand(
@@ -456,9 +458,9 @@ class _SimilarCard extends StatelessWidget {
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: LumiSpacing.sm, vertical: LumiSpacing.xs),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(LumiRadii.lg),
         border: isHighlighted
             ? Border.all(color: LumiColors.primary, width: 2.5)
             : Border.all(color: Colors.transparent, width: 2.5),
@@ -494,14 +496,14 @@ class _SimilarCard extends StatelessWidget {
               ),
               // 衣物資訊
               Padding(
-                padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                padding: const EdgeInsets.all(LumiSpacing.sm),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       '類別：${item.category.isEmpty ? "—" : item.category}',
                       style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: LumiTypeScale.labelSm,
                         color: LumiColors.subtext,
                       ),
                     ),
@@ -509,7 +511,7 @@ class _SimilarCard extends StatelessWidget {
                     Text(
                       '顏色：$colorLabel',
                       style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: LumiTypeScale.labelSm,
                         color: LumiColors.subtext,
                       ),
                     ),
@@ -523,18 +525,18 @@ class _SimilarCard extends StatelessWidget {
             top: 8,
             right: 8,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.sm, vertical: LumiSpacing.xs),
               decoration: BoxDecoration(
                 color: isHighlighted
                     ? LumiColors.warning
                     : LumiColors.subtext.withValues(alpha: 0.65),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(LumiRadii.pill),
               ),
               child: Text(
                 '$pct%\n相似',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 10,
+                  fontSize: LumiTypeScale.labelSm,
                   fontWeight: FontWeight.w700,
                   color: LumiColors.onPrimary,
                   height: 1.2,
@@ -575,7 +577,7 @@ class _MediumView extends StatelessWidget {
             padding: const EdgeInsets.all(LumiSpacing.lg),
             decoration: BoxDecoration(
               color: LumiColors.surface,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(LumiRadii.xl),
             ),
             child: Column(
               children: [
@@ -585,7 +587,7 @@ class _MediumView extends StatelessWidget {
                 const Text(
                   '可能相似',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: LumiTypeScale.titleLg,
                     fontWeight: FontWeight.w600,
                     color: LumiColors.text,
                   ),
@@ -595,7 +597,7 @@ class _MediumView extends StatelessWidget {
                   '衣櫥中有 $pct% 相似的$matchedCategory，\n可以再比較看看。',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 14,
+                    fontSize: LumiTypeScale.labelMd,
                     color: LumiColors.subtext,
                     height: 1.6,
                   ),
@@ -631,7 +633,7 @@ class _NoneView extends StatelessWidget {
           const Text(
             '衣櫥中無相似款式',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: LumiTypeScale.titleLg,
               fontWeight: FontWeight.w600,
               color: LumiColors.text,
             ),
@@ -641,7 +643,7 @@ class _NoneView extends StatelessWidget {
             '這件衣物在妳的衣櫥裡找不到相似款，\n可以安心入手！',
             textAlign: TextAlign.center,
             style: TextStyle(
-                fontSize: 14, color: LumiColors.subtext, height: 1.6),
+                fontSize: LumiTypeScale.labelMd, color: LumiColors.subtext, height: 1.6),
           ),
           const Spacer(),
           _PrimaryButton(label: '再比一件', onTap: onReset),
@@ -671,13 +673,13 @@ class _ErrorView extends StatelessWidget {
             padding: const EdgeInsets.all(LumiSpacing.md),
             decoration: BoxDecoration(
               color: LumiColors.warning.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(LumiRadii.lg),
             ),
             child: Text(
               message,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: LumiTypeScale.labelMd,
                 color: LumiColors.warning,
                 height: 1.5,
               ),
@@ -708,13 +710,13 @@ class _PrimaryButton extends StatelessWidget {
         height: 56,
         decoration: BoxDecoration(
           gradient: LumiColors.buttonGradient,
-          borderRadius: BorderRadius.circular(9999),
+          borderRadius: BorderRadius.circular(LumiRadii.pill),
         ),
         child: Center(
           child: Text(
             label,
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: LumiTypeScale.titleSm,
               fontWeight: FontWeight.w600,
               color: LumiColors.onPrimary,
             ),

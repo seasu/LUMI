@@ -68,7 +68,10 @@ class CloudFunctionsService {
     _log('uploadToPhotos → file=$filename mime=$mimeType');
     final sw = Stopwatch()..start();
     try {
-      final callable = _functions.httpsCallable('uploadToPhotos');
+      final callable = _functions.httpsCallable(
+        'uploadToPhotos',
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 5)),
+      );
       final result = await callable.call<Map<dynamic, dynamic>>({
         'imageBase64': imageBase64,
         'mimeType': mimeType,
@@ -79,7 +82,9 @@ class CloudFunctionsService {
       final data = _asStringKeyedMap(result.data);
       final r = UploadToPhotosResult(
         mediaItemId: _requireString(data, 'mediaItemId'),
-        thumbnailUrl: _requireString(data, 'thumbnailUrl'),
+        // thumbnailUrl may be empty when Photos API omits baseUrl from
+        // batchCreate; the wardrobe thumbnail-refresh flow fills it in later.
+        thumbnailUrl: (data['thumbnailUrl'] as String?) ?? '',
       );
       _log('uploadToPhotos ← ok ${sw.elapsedMilliseconds}ms'
           ' mediaItemId=${r.mediaItemId}');

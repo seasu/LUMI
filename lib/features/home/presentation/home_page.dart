@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/providers/firebase_providers.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_spacing.dart';
+import '../../../shared/constants/lumi_type_scale.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 
 class HomePage extends ConsumerWidget {
@@ -21,7 +22,7 @@ class HomePage extends ConsumerWidget {
         title: const Text(
           'Lumi',
           style: TextStyle(
-            fontSize: 28,
+            fontSize: LumiTypeScale.headlineMd,
             fontWeight: FontWeight.w600,
             color: LumiColors.text,
             letterSpacing: -0.5,
@@ -43,7 +44,7 @@ class HomePage extends ConsumerWidget {
               const Text(
                 '衣櫥是空的',
                 style: TextStyle(
-                  fontSize: 22,
+                  fontSize: LumiTypeScale.titleLg,
                   fontWeight: FontWeight.w500,
                   color: LumiColors.text,
                 ),
@@ -53,7 +54,7 @@ class HomePage extends ConsumerWidget {
                 '歡迎 ${user?.displayName ?? ''}，點下方按鈕開始拍照入庫',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 15,
+                  fontSize: LumiTypeScale.body,
                   color: LumiColors.subtext,
                   height: 1.5,
                 ),

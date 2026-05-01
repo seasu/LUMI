@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/constants/lumi_colors.dart';
+import '../../../shared/constants/lumi_radii.dart';
+import '../../../shared/constants/lumi_spacing.dart';
+import '../../../shared/constants/lumi_type_scale.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../../user/data/user_repository.dart';
 
@@ -72,9 +75,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               ),
             ],
           ),
-          // 頁面指示器
+          // 頁面指示器 — 置於按鈕上方 lg+56 處
           Positioned(
-            bottom: 160,
+            bottom: LumiSpacing.xl + LumiSpacing.lg + 56, // ~112
             left: 0,
             right: 0,
             child: Row(
@@ -82,37 +85,37 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               children: List.generate(_stepCount, (i) {
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  margin: const EdgeInsets.symmetric(horizontal: LumiSpacing.xs),
                   width: _currentPage == i ? 20 : 6,
                   height: 6,
                   decoration: BoxDecoration(
                     color: _currentPage == i
                         ? LumiColors.primary
                         : LumiColors.subtext.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(3),
+                    borderRadius: BorderRadius.circular(LumiRadii.sm),
                   ),
                 );
               }),
             ),
           ),
-          // 底部按鈕
+          // 底部主按鈕
           Positioned(
-            bottom: 48,
-            left: 24,
-            right: 24,
+            bottom: LumiSpacing.xl + LumiSpacing.md,
+            left: LumiSpacing.lg,
+            right: LumiSpacing.lg,
             child: GestureDetector(
               onTap: _next,
               child: Container(
                 height: 56,
                 decoration: BoxDecoration(
                   gradient: LumiColors.buttonGradient,
-                  borderRadius: BorderRadius.circular(9999),
+                  borderRadius: BorderRadius.circular(LumiRadii.pill),
                 ),
                 child: Center(
                   child: Text(
                     _currentPage < _stepCount - 1 ? '下一步' : '開始使用',
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: LumiTypeScale.titleSm,
                       fontWeight: FontWeight.w600,
                       color: LumiColors.onPrimary,
                     ),
@@ -141,13 +144,13 @@ class _OnboardingStep extends StatelessWidget {
   final IconData icon;
   final String title;
   final String description;
+
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.sizeOf(context).height;
 
     return Column(
       children: [
-        // 上半部：情境漸層圖區
         Container(
           height: screenHeight * 0.48,
           decoration: BoxDecoration(
@@ -178,15 +181,21 @@ class _OnboardingStep extends StatelessWidget {
             ),
           ),
         ),
-        // 下半部：白色圓角卡片
         Expanded(
           child: Container(
             width: double.infinity,
             decoration: const BoxDecoration(
               color: LumiColors.surface,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(LumiRadii.xl),
+              ),
             ),
-            padding: const EdgeInsets.fromLTRB(28, 32, 28, 100),
+            padding: const EdgeInsets.fromLTRB(
+              LumiSpacing.lg + LumiSpacing.xs, // 28
+              LumiSpacing.xl,
+              LumiSpacing.lg + LumiSpacing.xs, // 28
+              100,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -194,17 +203,17 @@ class _OnboardingStep extends StatelessWidget {
                   title,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 32,
+                    fontSize: LumiTypeScale.headlineMd,
                     fontWeight: FontWeight.w700,
                     color: LumiColors.primary,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: LumiSpacing.md),
                 Text(
                   description,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: LumiTypeScale.body,
                     color: LumiColors.subtext,
                     height: 1.6,
                   ),

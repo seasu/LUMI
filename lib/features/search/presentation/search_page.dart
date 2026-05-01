@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/logging/web_console_log.dart';
 import '../../../shared/constants/lumi_colors.dart';
+import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
+import '../../../shared/constants/lumi_type_scale.dart';
 import '../../snap/data/cloud_functions_service.dart';
 import '../../wardrobe/data/wardrobe_item.dart';
 import '../../wardrobe/data/wardrobe_repository.dart';
@@ -24,7 +26,6 @@ class SearchPage extends ConsumerStatefulWidget {
 class _SearchPageState extends ConsumerState<SearchPage> {
   bool _syncBusy = false;
 
-  /// Syncs `Lumi_Wardrobe` album → Firestore, then refreshes list.
   Future<void> _runAlbumSync({
     required bool showSnackBar,
     bool showHeaderSpinner = true,
@@ -84,11 +85,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     if (uid == null) return;
 
     await ref.read(wardrobeRepositoryProvider).prefetchWardrobeFromServer(uid);
-    // Force stream resubscribe so UI pulls latest snapshot after server read updates cache.
     ref.invalidate(wardrobeStreamProvider);
 
-    // If items stay [analyzed]=false with no error, the Firestore trigger may have
-    // never run (e.g. created before deploy). Nudge analysis via callable per pending item.
     final snapshot = ref.read(wardrobeStreamProvider);
     final items = snapshot.valueOrNull;
     if (items != null && items.isNotEmpty) {
@@ -101,9 +99,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         retried++;
         try {
           await cf.retryAnalyzeWardrobeItem(mediaItemId: item.mediaItemId);
-        } catch (_) {
-          // Errors land in Firestore analyzeError; ignore network noise here.
-        }
+        } catch (_) {}
       }
       if (retried > 0) {
         ref.invalidate(wardrobeStreamProvider);
@@ -180,10 +176,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 ),
               ],
             ),
-            // 右下角 FAB
             Positioned(
-              bottom: 24,
-              right: 16,
+              bottom: LumiSpacing.lg,
+              right: LumiSpacing.md,
               child: _SnapFab(),
             ),
           ],
@@ -209,7 +204,12 @@ class _WardrobeHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+      padding: const EdgeInsets.fromLTRB(
+        LumiSpacing.md,
+        LumiSpacing.sm + LumiSpacing.xs, // 12 — visual top margin
+        LumiSpacing.md,
+        LumiSpacing.sm,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -220,13 +220,13 @@ class _WardrobeHeader extends ConsumerWidget {
                 const Text(
                   '我的衣櫥',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: LumiTypeScale.headlineMd,
                     fontWeight: FontWeight.w800,
                     color: LumiColors.text,
                   ),
                 ),
                 if (repairStatus.isVisible) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: LumiSpacing.xs),
                   _ThumbnailRepairStatusChip(status: repairStatus),
                 ],
               ],
@@ -249,7 +249,7 @@ class _WardrobeHeader extends ConsumerWidget {
           TextButton.icon(
             onPressed: () => context.push('/snap'),
             style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+              padding: EdgeInsets.zero,
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
@@ -257,7 +257,7 @@ class _WardrobeHeader extends ConsumerWidget {
             label: const Text(
               '加入新品',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: LumiTypeScale.labelMd,
                 fontWeight: FontWeight.w600,
                 color: LumiColors.primary,
               ),
@@ -289,18 +289,19 @@ class _ThumbnailRepairStatusChip extends StatelessWidget {
       opacity: status.isVisible ? 1 : 0,
       duration: const Duration(milliseconds: 180),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: const EdgeInsets.symmetric(
+          horizontal: LumiSpacing.sm + LumiSpacing.xs, // 12
+          vertical: LumiSpacing.xs,
+        ),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: color.withValues(alpha: 0.18),
-          ),
+          borderRadius: BorderRadius.circular(LumiRadii.pill),
+          border: Border.all(color: color.withValues(alpha: 0.18)),
         ),
         child: Text(
           status.label,
           style: TextStyle(
-            fontSize: 11,
+            fontSize: LumiTypeScale.labelSm,
             fontWeight: FontWeight.w600,
             color: color,
           ),
@@ -329,7 +330,7 @@ class _SnapFab extends StatelessWidget {
             '似',
             style: TextStyle(
               color: LumiColors.onPrimary,
-              fontSize: 16,
+              fontSize: LumiTypeScale.titleSm,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -349,11 +350,16 @@ class _WardrobeGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+      padding: const EdgeInsets.fromLTRB(
+        LumiSpacing.md,
+        0,
+        LumiSpacing.md,
+        96,
+      ),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 16,
+        crossAxisSpacing: LumiSpacing.sm,
+        mainAxisSpacing: LumiSpacing.md,
         childAspectRatio: 0.74,
       ),
       itemCount: items.length,
@@ -384,22 +390,22 @@ class _EmptyState extends StatelessWidget {
             size: 76,
             color: LumiColors.subtext.withValues(alpha: 0.35),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: LumiSpacing.md + LumiSpacing.xs), // 20
           const Text(
             '妳的衣櫥目前空空如也',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 17,
+              fontSize: LumiTypeScale.titleSm,
               fontWeight: FontWeight.w800,
               color: LumiColors.text,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: LumiSpacing.sm),
           const Text(
             '點擊右上角的「加入新品」按鈕，\n開始建立妳的數位衣櫥吧！',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: LumiTypeScale.labelMd,
               color: LumiColors.subtext,
               height: 1.7,
             ),
@@ -418,12 +424,17 @@ class _LoadingGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+      padding: const EdgeInsets.fromLTRB(
+        LumiSpacing.md,
+        0,
+        LumiSpacing.md,
+        96,
+      ),
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 16,
+        crossAxisSpacing: LumiSpacing.sm,
+        mainAxisSpacing: LumiSpacing.md,
         childAspectRatio: 0.74,
       ),
       itemCount: 6,
@@ -434,26 +445,26 @@ class _LoadingGrid extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 color: LumiColors.surface,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(LumiRadii.lg),
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: LumiSpacing.sm),
           Container(
             width: 72,
             height: 8,
             decoration: BoxDecoration(
               color: LumiColors.subtext.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: BorderRadius.circular(LumiRadii.pill),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: LumiSpacing.xs),
           Container(
             width: 88,
             height: 6,
             decoration: BoxDecoration(
               color: LumiColors.subtext.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: BorderRadius.circular(LumiRadii.pill),
             ),
           ),
         ],
@@ -478,7 +489,7 @@ class _ErrorState extends StatelessWidget {
           '載入失敗：$message',
           textAlign: TextAlign.center,
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: LumiTypeScale.labelMd,
             color: LumiColors.warning,
             height: 1.5,
           ),

@@ -163,7 +163,7 @@ async function createMediaItem(
         simpleMediaItem: { uploadToken, fileName: filename },
       },
     ],
-  })  ) as {
+  })) as {
     newMediaItemResults: {
       status: { message: string };
       mediaItem?: {
@@ -182,25 +182,13 @@ async function createMediaItem(
   }
 
   const { id, baseUrl } = result.mediaItem;
-  let thumbnailUrl = baseUrl ?? "";
-  if (!thumbnailUrl) {
-    const mediaItem = (await photosGet(
-      `/mediaItems/${encodeURIComponent(id)}`,
-      accessToken
-    )) as {
-      baseUrl?: string;
-    };
-    thumbnailUrl = mediaItem.baseUrl ?? "";
-  }
-  if (!thumbnailUrl) {
-    throw new Error(
-      `createMediaItem missing baseUrl for ${id} (Photos browser productUrl is not usable as an image source)`
-    );
-  }
-
+  // baseUrl is often absent in batchCreate responses (Google Photos API behaviour).
+  // Return empty string; the wardrobe thumbnail-refresh flow will fill it in later.
+  // Do NOT attempt a GET /mediaItems/{id} fallback here — that requires
+  // photoslibrary.readonly scope which the upload flow does not guarantee.
   return {
     mediaItemId: id,
-    thumbnailUrl,
+    thumbnailUrl: baseUrl ?? "",
   };
 }
 
@@ -235,14 +223,17 @@ export const uploadToPhotos = onCall(
       );
       return await createMediaItem(accessToken, uploadToken, albumId, filename);
     } catch (err) {
-      // Recovery path:
-      // If cached albumId became stale (e.g. user deleted the album manually),
-      // recreate album and retry once end-to-end.
       const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[uploadToPhotos] uid=${request.auth.uid} error: ${msg}`);
+
+      // Recovery path: if the cached albumId became stale (user deleted the
+      // album manually), recreate and retry once.  Only trigger for explicit
+      // Photos API "not found" or batchCreate status errors — NOT for auth
+      // or network failures, which would just fail again on retry.
       const albumGone =
         msg.includes("Album not found") ||
         msg.includes("NOT_FOUND") ||
-        msg.includes("createMediaItem failed");
+        msg.includes("createMediaItem failed:");
 
       if (albumGone) {
         try {
@@ -263,6 +254,7 @@ export const uploadToPhotos = onCall(
         } catch (retryErr) {
           const retryMsg =
             retryErr instanceof Error ? retryErr.message : String(retryErr);
+          console.error(`[uploadToPhotos] retry failed: ${retryMsg}`);
           throw new HttpsError("internal", `Upload failed after retry: ${retryMsg}`);
         }
       }

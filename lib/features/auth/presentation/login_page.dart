@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/constants/app_version.dart';
 import '../../../shared/constants/lumi_colors.dart';
+import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
+import '../../../shared/constants/lumi_type_scale.dart';
 import '../../../shared/widgets/lumi_logo_wordmark.dart';
 import 'providers/auth_provider.dart';
 
@@ -18,20 +20,15 @@ class LoginPage extends ConsumerWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // 歡迎頁使用柔和漸層背景，維持留白與質感層次。
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  LumiColors.base,
-                  LumiColors.baseAlt,
-                ],
+                colors: [LumiColors.base, LumiColors.baseAlt],
               ),
             ),
           ),
-          // 微暖色塊，讓歡迎區更聚焦。
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -44,7 +41,6 @@ class LoginPage extends ConsumerWidget {
               ),
             ),
           ),
-          // 內容層
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.lg),
@@ -53,12 +49,12 @@ class LoginPage extends ConsumerWidget {
                 children: [
                   const Spacer(flex: 2),
                   const LumiLogoWordmark(fontSize: 56),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: LumiSpacing.sm),
                   const Text(
                     '用 Google 相片點亮妳的衣櫥',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: LumiTypeScale.body,
                       fontWeight: FontWeight.w400,
                       color: LumiColors.subtext,
                       height: 1.5,
@@ -68,14 +64,14 @@ class LoginPage extends ConsumerWidget {
                   const Text(
                     appVersionLabel,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: LumiTypeScale.labelSm,
                       color: LumiColors.subtext,
                       letterSpacing: 0.2,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: LumiSpacing.sm),
                   _GoogleSignInButton(isLoading: isLoading, ref: ref),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: LumiSpacing.xl),
                 ],
               ),
             ),
@@ -121,7 +117,7 @@ class _GoogleSignInButton extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: isLoading ? null : LumiColors.buttonGradient,
           color: isLoading ? LumiColors.primary.withValues(alpha: 0.6) : null,
-          borderRadius: BorderRadius.circular(9999),
+          borderRadius: BorderRadius.circular(LumiRadii.pill),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -137,11 +133,11 @@ class _GoogleSignInButton extends StatelessWidget {
               )
             else ...[
               const _GoogleIcon(),
-              const SizedBox(width: 12),
+              const SizedBox(width: LumiSpacing.sm),
               const Text(
                 '使用 Google 帳號登入',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: LumiTypeScale.body,
                   fontWeight: FontWeight.w600,
                   color: LumiColors.onPrimary,
                 ),
@@ -170,7 +166,7 @@ class _GoogleIcon extends StatelessWidget {
         child: Text(
           'G',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: LumiTypeScale.labelMd,
             fontWeight: FontWeight.w700,
             color: LumiColors.text,
           ),

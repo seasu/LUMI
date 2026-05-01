@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/constants/app_version.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_spacing.dart';
+import '../../../shared/constants/lumi_type_scale.dart';
 import '../../../shared/widgets/lumi_logo_wordmark.dart';
 import '../../user/data/user_repository.dart';
 import 'providers/auth_provider.dart';
@@ -23,7 +24,6 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
   }
 
   Future<void> _navigate() async {
-    // 最短顯示時間（品牌動畫）
     await Future.delayed(const Duration(milliseconds: 2200));
     if (!mounted) return;
 
@@ -33,7 +33,6 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
       return;
     }
 
-    // 檢查 Onboarding 是否完成
     final profile = await ref
         .read(userRepositoryProvider)
         .watchProfile(user.uid)
@@ -59,16 +58,14 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: LumiSpacing.lg),
+                  padding: EdgeInsets.symmetric(horizontal: LumiSpacing.lg),
                   child: LumiLogoWordmark(fontSize: 56),
                 ),
-                SizedBox(height: 56),
-                // 說明文字
+                SizedBox(height: LumiSpacing.xl + LumiSpacing.lg), // 56 ≈ xl(32)+lg(24)
                 Text(
                   'Lumi 正在為妳點亮衣櫥...',
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: LumiTypeScale.body,
                     color: LumiColors.subtext,
                     letterSpacing: 0.5,
                   ),
@@ -77,12 +74,12 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
             ),
           ),
           Positioned(
-            bottom: 16,
-            right: 16,
+            bottom: LumiSpacing.md,
+            right: LumiSpacing.md,
             child: Text(
               appVersionLabel,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: LumiTypeScale.labelSm,
                 color: LumiColors.subtext.withValues(alpha: 0.75),
               ),
             ),

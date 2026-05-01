@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/constants/app_version.dart';
 import '../../../shared/constants/lumi_colors.dart';
+import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
+import '../../../shared/constants/lumi_type_scale.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../../debug/debug_log_page.dart';
 import '../../user/data/user_profile.dart';
@@ -36,18 +38,22 @@ class _ProfileContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(24, LumiSpacing.md, 16, LumiSpacing.lg),
+      padding: const EdgeInsets.fromLTRB(
+        LumiSpacing.lg,
+        LumiSpacing.md,
+        LumiSpacing.md,
+        LumiSpacing.lg,
+      ),
       children: [
         const Text(
           '個人檔案',
           style: TextStyle(
-            fontSize: 28,
+            fontSize: LumiTypeScale.headlineMd,
             fontWeight: FontWeight.w700,
             color: LumiColors.text,
           ),
         ),
         const SizedBox(height: LumiSpacing.lg),
-        // ── Avatar ─────────────────────────────────────────────────────────
         Center(
           child: CircleAvatar(
             radius: 48,
@@ -61,12 +67,11 @@ class _ProfileContent extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: LumiSpacing.md),
-        // ── Name ───────────────────────────────────────────────────────────
         Center(
           child: Text(
             profile.displayName.isEmpty ? profile.email : profile.displayName,
             style: const TextStyle(
-              fontSize: 22,
+              fontSize: LumiTypeScale.titleLg,
               fontWeight: FontWeight.w600,
               color: LumiColors.text,
             ),
@@ -77,12 +82,11 @@ class _ProfileContent extends ConsumerWidget {
         const SizedBox(height: LumiSpacing.xs),
         _InfoRow(label: 'UID', value: profile.uid),
         const SizedBox(height: LumiSpacing.lg),
-        // ── Measurements section ───────────────────────────────────────────
         const Text(
           '個人身材數據',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 15,
+            fontSize: LumiTypeScale.body,
             fontWeight: FontWeight.w500,
             color: LumiColors.subtext,
           ),
@@ -90,7 +94,6 @@ class _ProfileContent extends ConsumerWidget {
         const SizedBox(height: LumiSpacing.md),
         _MeasurementsGrid(profile: profile),
         const SizedBox(height: LumiSpacing.xl),
-        // ── Logout ─────────────────────────────────────────────────────────
         OutlinedButton(
           onPressed: () => signOut(ref),
           style: OutlinedButton.styleFrom(
@@ -98,7 +101,7 @@ class _ProfileContent extends ConsumerWidget {
             side: BorderSide(color: LumiColors.subtext.withValues(alpha: 0.55)),
             padding: const EdgeInsets.symmetric(vertical: LumiSpacing.md),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(9999),
+              borderRadius: BorderRadius.circular(LumiRadii.pill),
             ),
           ),
           child: const Text('登出'),
@@ -125,14 +128,14 @@ class _InfoRow extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: LumiColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(LumiRadii.lg),
       ),
       child: Row(
         children: [
           Text(
             label,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: LumiTypeScale.labelMd,
               color: LumiColors.subtext,
               fontWeight: FontWeight.w500,
             ),
@@ -145,7 +148,7 @@ class _InfoRow extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: LumiTypeScale.labelMd,
                 color: LumiColors.text,
                 fontWeight: FontWeight.w600,
               ),
@@ -227,7 +230,9 @@ class _MeasurementsGrid extends StatelessWidget {
           icon: Icons.accessibility_new_outlined,
           label: '身高',
           field: 'heightCm',
-          value: p.heightCm != null ? '${p.heightCm!.toStringAsFixed(0)} cm' : '—',
+          value: p.heightCm != null
+              ? '${p.heightCm!.toStringAsFixed(0)} cm'
+              : '—',
           unit: 'cm',
           currentValue: p.heightCm?.toString(),
         ),
@@ -235,7 +240,9 @@ class _MeasurementsGrid extends StatelessWidget {
           icon: Icons.monitor_weight_outlined,
           label: '體重',
           field: 'weightKg',
-          value: p.weightKg != null ? '${p.weightKg!.toStringAsFixed(0)} kg' : '—',
+          value: p.weightKg != null
+              ? '${p.weightKg!.toStringAsFixed(0)} kg'
+              : '—',
           unit: 'kg',
           currentValue: p.weightKg?.toString(),
         ),
@@ -262,7 +269,8 @@ class _MeasurementsGrid extends StatelessWidget {
           icon: Icons.favorite_border,
           label: '胸圍',
           field: 'chestCm',
-          value: p.chestCm != null ? '${p.chestCm!.toStringAsFixed(0)} cm' : '—',
+          value:
+              p.chestCm != null ? '${p.chestCm!.toStringAsFixed(0)} cm' : '—',
           unit: 'cm',
           currentValue: p.chestCm?.toString(),
         ),
@@ -270,7 +278,8 @@ class _MeasurementsGrid extends StatelessWidget {
           icon: Icons.straighten_outlined,
           label: '腰圍',
           field: 'waistCm',
-          value: p.waistCm != null ? '${p.waistCm!.toStringAsFixed(0)} cm' : '—',
+          value:
+              p.waistCm != null ? '${p.waistCm!.toStringAsFixed(0)} cm' : '—',
           unit: 'cm',
           currentValue: p.waistCm?.toString(),
         ),
@@ -295,7 +304,6 @@ class _MeasurementsGrid extends StatelessWidget {
       ];
 
   static String _formatBirthday(String iso) {
-    // Accepts "YYYY-MM-DD"
     final parts = iso.split('-');
     if (parts.length < 3) return iso;
     return '${parts[0]}年${parts[1].padLeft(2, '0')}月${parts[2].padLeft(2, '0')}日';
@@ -337,7 +345,7 @@ class _MeasurementCard extends ConsumerWidget {
         ),
         decoration: BoxDecoration(
           color: LumiColors.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(LumiRadii.lg),
         ),
         child: Row(
           children: [
@@ -351,14 +359,14 @@ class _MeasurementCard extends ConsumerWidget {
                   Text(
                     item.label,
                     style: const TextStyle(
-                      fontSize: 11,
+                      fontSize: LumiTypeScale.labelSm,
                       color: LumiColors.subtext,
                     ),
                   ),
                   Text(
                     item.value,
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: LumiTypeScale.labelMd,
                       fontWeight: FontWeight.w600,
                       color: LumiColors.text,
                     ),
@@ -366,8 +374,7 @@ class _MeasurementCard extends ConsumerWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right,
-                size: 16, color: LumiColors.subtext),
+            const Icon(Icons.chevron_right, size: 16, color: LumiColors.subtext),
           ],
         ),
       ),
@@ -386,7 +393,7 @@ class _MeasurementCard extends ConsumerWidget {
         onSave: (value) async {
           dynamic parsed;
           if (item.isDate) {
-            parsed = value; // store as string "YYYY-MM-DD"
+            parsed = value;
           } else {
             parsed = double.tryParse(value);
             if (parsed == null) return;
@@ -424,9 +431,7 @@ class _EditMeasurementDialogState extends State<_EditMeasurementDialog> {
   @override
   void initState() {
     super.initState();
-    _ctrl = TextEditingController(
-      text: widget.item.currentValue ?? '',
-    );
+    _ctrl = TextEditingController(text: widget.item.currentValue ?? '');
   }
 
   @override
@@ -451,23 +456,28 @@ class _EditMeasurementDialogState extends State<_EditMeasurementDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: LumiColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(LumiRadii.xl),
+      ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
-            LumiSpacing.lg, LumiSpacing.lg, LumiSpacing.lg, LumiSpacing.md),
+          LumiSpacing.lg,
+          LumiSpacing.lg,
+          LumiSpacing.lg,
+          LumiSpacing.md,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               '修改${widget.item.label}',
               style: const TextStyle(
-                fontSize: 17,
+                fontSize: LumiTypeScale.titleSm,
                 fontWeight: FontWeight.w600,
                 color: LumiColors.text,
               ),
             ),
             const SizedBox(height: LumiSpacing.lg),
-            // Large number input
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -480,28 +490,27 @@ class _EditMeasurementDialogState extends State<_EditMeasurementDialog> {
                     keyboardType: widget.item.isDate
                         ? TextInputType.datetime
                         : const TextInputType.numberWithOptions(decimal: true),
+                    // Large display-size for measurement input — intentionally
+                    // outside LumiTypeScale as this is a numpad-style UI element.
                     style: const TextStyle(
                       fontSize: 48,
                       fontWeight: FontWeight.w300,
                       color: LumiColors.text,
                     ),
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                    ),
+                    decoration: const InputDecoration(border: InputBorder.none),
                   ),
                 ),
                 if (widget.item.unit.isNotEmpty)
                   Text(
                     ' ${widget.item.unit}',
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: LumiTypeScale.titleLg,
                       color: LumiColors.subtext,
                     ),
                   ),
               ],
             ),
             const SizedBox(height: LumiSpacing.lg),
-            // Save button
             GestureDetector(
               onTap: _saving ? null : _save,
               child: Container(
@@ -512,7 +521,7 @@ class _EditMeasurementDialogState extends State<_EditMeasurementDialog> {
                   color: _saving
                       ? LumiColors.primary.withValues(alpha: 0.5)
                       : null,
-                  borderRadius: BorderRadius.circular(26),
+                  borderRadius: BorderRadius.circular(LumiRadii.pill),
                 ),
                 child: Center(
                   child: _saving
@@ -520,12 +529,14 @@ class _EditMeasurementDialogState extends State<_EditMeasurementDialog> {
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: LumiColors.onPrimary),
+                            strokeWidth: 2,
+                            color: LumiColors.onPrimary,
+                          ),
                         )
                       : const Text(
                           '儲存',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: LumiTypeScale.titleSm,
                             fontWeight: FontWeight.w600,
                             color: LumiColors.onPrimary,
                           ),
@@ -538,8 +549,10 @@ class _EditMeasurementDialogState extends State<_EditMeasurementDialog> {
               onPressed: () => Navigator.of(context).pop(),
               child: const Text(
                 '取消',
-                style:
-                    TextStyle(fontSize: 15, color: LumiColors.subtext),
+                style: TextStyle(
+                  fontSize: LumiTypeScale.body,
+                  color: LumiColors.subtext,
+                ),
               ),
             ),
           ],

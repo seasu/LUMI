@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../shared/constants/lumi_colors.dart';
+import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
+import '../../../shared/constants/lumi_type_scale.dart';
 import '../domain/ootd_state.dart';
 import 'providers/ootd_provider.dart';
 
@@ -154,14 +156,14 @@ class _EditView extends StatelessWidget {
             const Text(
               '今日穿搭',
               style: TextStyle(
-                fontSize: 17,
+                fontSize: LumiTypeScale.titleSm,
                 fontWeight: FontWeight.w700,
                 color: LumiColors.text,
               ),
             ),
             Text(
               dateStr,
-              style: const TextStyle(fontSize: 12, color: LumiColors.subtext),
+              style: const TextStyle(fontSize: LumiTypeScale.labelSm, color: LumiColors.subtext),
             ),
           ],
         ),
@@ -179,7 +181,7 @@ class _EditView extends StatelessWidget {
                 constraints: const BoxConstraints(maxHeight: 420),
                 decoration: BoxDecoration(
                   color: LumiColors.surface,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(LumiRadii.xl),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: Image.memory(photoBytes, fit: BoxFit.cover),
@@ -189,7 +191,7 @@ class _EditView extends StatelessWidget {
               const Text(
                 '穿搭備註',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: LumiTypeScale.labelMd,
                   color: LumiColors.subtext,
                   fontWeight: FontWeight.w500,
                 ),
@@ -201,10 +203,10 @@ class _EditView extends StatelessWidget {
                 decoration: const InputDecoration(
                   hintText: '記錄今天的穿搭心情...',
                   hintStyle:
-                      TextStyle(color: LumiColors.subtext, fontSize: 14),
+                      TextStyle(color: LumiColors.subtext, fontSize: LumiTypeScale.labelMd),
                   border: InputBorder.none,
                 ),
-                style: const TextStyle(fontSize: 15, color: LumiColors.text),
+                style: const TextStyle(fontSize: LumiTypeScale.body, color: LumiColors.text),
                 maxLines: 3,
               ),
               const SizedBox(height: LumiSpacing.lg),
@@ -214,7 +216,7 @@ class _EditView extends StatelessWidget {
                   child: const Text(
                     '重新拍攝',
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: LumiTypeScale.body,
                       color: LumiColors.primary,
                       fontWeight: FontWeight.w500,
                     ),
@@ -249,7 +251,7 @@ class _SavingView extends StatelessWidget {
             SizedBox(height: LumiSpacing.md),
             Text(
               '正在儲存穿搭...',
-              style: TextStyle(fontSize: 15, color: LumiColors.subtext),
+              style: TextStyle(fontSize: LumiTypeScale.body, color: LumiColors.subtext),
             ),
           ],
         ),
@@ -305,7 +307,7 @@ class _ResultView extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   color: LumiColors.surface,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(LumiRadii.xl),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: Stack(
@@ -324,7 +326,7 @@ class _ResultView extends StatelessWidget {
                           Text(
                             'Lumi',
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: LumiTypeScale.titleLg,
                               fontWeight: FontWeight.w300,
                               fontStyle: FontStyle.italic,
                               color: LumiColors.onPrimary,
@@ -340,7 +342,7 @@ class _ResultView extends StatelessWidget {
                           Text(
                             dateStr,
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: LumiTypeScale.labelSm,
                               color: LumiColors.onPrimary.withValues(alpha: 0.72),
                               shadows: [
                                 Shadow(
@@ -362,7 +364,7 @@ class _ResultView extends StatelessWidget {
             Text(
               '分享一段話吧...',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: LumiTypeScale.titleSm,
                 color: LumiColors.onPrimary.withValues(alpha: 0.72),
               ),
             ),
@@ -380,7 +382,7 @@ class _ResultView extends StatelessWidget {
               child: Text(
                 '回到我的穿搭',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: LumiTypeScale.body,
                   color: LumiColors.onPrimary.withValues(alpha: 0.56),
                 ),
               ),
@@ -414,13 +416,13 @@ class _ErrorView extends StatelessWidget {
                 padding: const EdgeInsets.all(LumiSpacing.md),
                 decoration: BoxDecoration(
                   color: LumiColors.warning.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(LumiRadii.lg),
                 ),
                 child: Text(
                   message,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                      fontSize: 14, color: LumiColors.warning, height: 1.5),
+                      fontSize: LumiTypeScale.labelMd, color: LumiColors.warning, height: 1.5),
                 ),
               ),
               const SizedBox(height: LumiSpacing.lg),
@@ -449,13 +451,13 @@ class _PrimaryButton extends StatelessWidget {
         height: 56,
         decoration: BoxDecoration(
           gradient: LumiColors.buttonGradient,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(LumiRadii.pill),
         ),
         child: Center(
           child: Text(
             label,
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: LumiTypeScale.titleSm,
               fontWeight: FontWeight.w600,
               color: LumiColors.onPrimary,
             ),

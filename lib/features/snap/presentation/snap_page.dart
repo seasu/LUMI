@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../shared/constants/lumi_colors.dart';
+import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
+import '../../../shared/constants/lumi_type_scale.dart';
 import '../../search/domain/wardrobe_filter.dart';
 import '../../search/presentation/providers/search_provider.dart';
 import '../domain/snap_state.dart';
@@ -86,7 +88,7 @@ class _SnapPageState extends ConsumerState<SnapPage>
         title: Text(
           _appBarTitle(snapState),
           style: const TextStyle(
-            fontSize: 17,
+            fontSize: LumiTypeScale.titleSm,
             fontWeight: FontWeight.w500,
             color: LumiColors.text,
           ),
@@ -169,7 +171,6 @@ class _ConfirmView extends StatelessWidget {
     final hasFiles = files.isNotEmpty;
 
     if (!hasFiles) {
-      // 空狀態：引導選取
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.md),
         child: Column(
@@ -184,7 +185,7 @@ class _ConfirmView extends StatelessWidget {
             const Text(
               '選取要加入衣櫥的照片',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: LumiTypeScale.titleLg,
                 fontWeight: FontWeight.w600,
                 color: LumiColors.text,
               ),
@@ -192,7 +193,10 @@ class _ConfirmView extends StatelessWidget {
             const SizedBox(height: LumiSpacing.sm),
             const Text(
               '一次最多 10 張，AI 會在背景自動分類',
-              style: TextStyle(fontSize: 14, color: LumiColors.subtext),
+              style: TextStyle(
+                fontSize: LumiTypeScale.labelMd,
+                color: LumiColors.subtext,
+              ),
             ),
             const Spacer(),
             _PrimaryButton(label: '選取照片', onTap: onPick),
@@ -202,7 +206,6 @@ class _ConfirmView extends StatelessWidget {
       );
     }
 
-    // 有照片：Grid 預覽 + 上傳按鈕
     return Column(
       children: [
         Expanded(
@@ -230,7 +233,7 @@ class _ConfirmView extends StatelessWidget {
             child: Text(
               '已選取 ${files.length} / 10',
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: LumiTypeScale.labelMd,
                 color: LumiColors.subtext,
               ),
             ),
@@ -243,17 +246,14 @@ class _ConfirmView extends StatelessWidget {
             LumiSpacing.md,
             LumiSpacing.xs,
           ),
-          child: _PrimaryButton(
-            label: '開始上傳',
-            onTap: onUpload,
-          ),
+          child: _PrimaryButton(label: '開始上傳', onTap: onUpload),
         ),
         TextButton(
           onPressed: onCancel,
           child: const Text(
             '取消',
             style: TextStyle(
-              fontSize: 15,
+              fontSize: LumiTypeScale.body,
               color: LumiColors.subtext,
             ),
           ),
@@ -286,7 +286,7 @@ class _PreviewTileState extends State<_PreviewTile> {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(LumiRadii.md),
       child: _bytes == null
           ? const ColoredBox(color: LumiColors.surface)
           : Image.memory(_bytes!, fit: BoxFit.cover),
@@ -317,7 +317,6 @@ class _UploadingView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 圓形進度條 + 光暈
           AnimatedBuilder(
             animation: animation,
             builder: (_, __) {
@@ -327,7 +326,6 @@ class _UploadingView extends StatelessWidget {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    // 光暈層
                     Container(
                       width: 140,
                       height: 140,
@@ -335,8 +333,8 @@ class _UploadingView extends StatelessWidget {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: LumiColors.glow.withValues(alpha: 
-                              0.25 + animation.value * 0.35,
+                            color: LumiColors.glow.withValues(
+                              alpha: 0.25 + animation.value * 0.35,
                             ),
                             blurRadius: 32,
                             spreadRadius: 8,
@@ -356,12 +354,11 @@ class _UploadingView extends StatelessWidget {
                         strokeWidth: 6,
                       ),
                     ),
-                    // 百分比文字
                     if (current > 0)
                       Text(
                         '${(progress * 100).toInt()}%',
                         style: const TextStyle(
-                          fontSize: 22,
+                          fontSize: LumiTypeScale.titleLg,
                           fontWeight: FontWeight.w600,
                           color: LumiColors.primary,
                         ),
@@ -375,7 +372,7 @@ class _UploadingView extends StatelessWidget {
           Text(
             current == 0 ? '正在取得授權...' : '正在為妳上傳衣物...',
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: LumiTypeScale.titleSm,
               fontWeight: FontWeight.w500,
               color: LumiColors.text,
             ),
@@ -387,7 +384,7 @@ class _UploadingView extends StatelessWidget {
                 : '第 $current / $total 張，上傳完成前請不要關閉此畫面',
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: LumiTypeScale.labelMd,
               color: LumiColors.subtext,
             ),
           ),
@@ -396,7 +393,10 @@ class _UploadingView extends StatelessWidget {
             onPressed: onCancel,
             child: const Text(
               '取消',
-              style: TextStyle(fontSize: 15, color: LumiColors.primary),
+              style: TextStyle(
+                fontSize: LumiTypeScale.body,
+                color: LumiColors.primary,
+              ),
             ),
           ),
         ],
@@ -420,7 +420,6 @@ class _DoneView extends StatelessWidget {
       child: Column(
         children: [
           const Spacer(flex: 2),
-          // 橘色大勾 + 光暈
           Container(
             width: 100,
             height: 100,
@@ -445,7 +444,7 @@ class _DoneView extends StatelessWidget {
           const Text(
             '上傳完成！',
             style: TextStyle(
-              fontSize: 24,
+              fontSize: LumiTypeScale.headlineMd,
               fontWeight: FontWeight.w700,
               color: LumiColors.text,
             ),
@@ -454,7 +453,7 @@ class _DoneView extends StatelessWidget {
           Text(
             '我們已經上傳完成 $count 張照片！',
             style: const TextStyle(
-              fontSize: 15,
+              fontSize: LumiTypeScale.body,
               color: LumiColors.text,
             ),
           ),
@@ -462,7 +461,11 @@ class _DoneView extends StatelessWidget {
           const Text(
             'AI 正在為未分類項目標註類別；即將帶妳前往「未分類」查看。',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: LumiColors.subtext, height: 1.5),
+            style: TextStyle(
+              fontSize: LumiTypeScale.labelMd,
+              color: LumiColors.subtext,
+              height: 1.5,
+            ),
           ),
           const Spacer(flex: 3),
           _PrimaryButton(label: '立即回到衣櫥', onTap: onBack),
@@ -493,13 +496,13 @@ class _ErrorView extends StatelessWidget {
             padding: const EdgeInsets.all(LumiSpacing.md),
             decoration: BoxDecoration(
               color: LumiColors.warning.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(LumiRadii.lg),
             ),
             child: Text(
               message,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: LumiTypeScale.labelMd,
                 color: LumiColors.warning,
                 height: 1.5,
               ),
@@ -529,17 +532,23 @@ class _CancelDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: LumiColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(LumiRadii.xl),
+      ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
-            LumiSpacing.lg, LumiSpacing.lg, LumiSpacing.lg, LumiSpacing.md),
+          LumiSpacing.lg,
+          LumiSpacing.lg,
+          LumiSpacing.lg,
+          LumiSpacing.md,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
               '確定要中斷上傳嗎？',
               style: TextStyle(
-                fontSize: 17,
+                fontSize: LumiTypeScale.titleSm,
                 fontWeight: FontWeight.w600,
                 color: LumiColors.text,
               ),
@@ -549,7 +558,7 @@ class _CancelDialog extends StatelessWidget {
               '已上傳的照片將會保留，未完成的照片不會加入衣櫥。',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: LumiTypeScale.labelMd,
                 color: LumiColors.subtext,
                 height: 1.5,
               ),
@@ -562,11 +571,15 @@ class _CancelDialog extends StatelessWidget {
                     onPressed: onCancel,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: LumiColors.subtext,
-                      side: BorderSide(color: LumiColors.subtext.withValues(alpha: 0.35)),
+                      side: BorderSide(
+                        color: LumiColors.subtext.withValues(alpha: 0.35),
+                      ),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(9999)),
+                        borderRadius: BorderRadius.circular(LumiRadii.pill),
+                      ),
                       padding: const EdgeInsets.symmetric(
-                          vertical: LumiSpacing.md),
+                        vertical: LumiSpacing.md,
+                      ),
                     ),
                     child: const Text('中斷並退出'),
                   ),
@@ -579,13 +592,13 @@ class _CancelDialog extends StatelessWidget {
                       height: 48,
                       decoration: BoxDecoration(
                         gradient: LumiColors.buttonGradient,
-                        borderRadius: BorderRadius.circular(9999),
+                        borderRadius: BorderRadius.circular(LumiRadii.pill),
                       ),
                       child: const Center(
                         child: Text(
                           '繼續上傳',
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: LumiTypeScale.body,
                             fontWeight: FontWeight.w600,
                             color: LumiColors.onPrimary,
                           ),
@@ -620,14 +633,15 @@ class _PrimaryButton extends StatelessWidget {
         height: 56,
         decoration: BoxDecoration(
           gradient: onTap != null ? LumiColors.buttonGradient : null,
-          color: onTap == null ? LumiColors.primary.withValues(alpha: 0.4) : null,
-          borderRadius: BorderRadius.circular(9999),
+          color:
+              onTap == null ? LumiColors.primary.withValues(alpha: 0.4) : null,
+          borderRadius: BorderRadius.circular(LumiRadii.pill),
         ),
         child: Center(
           child: Text(
             label,
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: LumiTypeScale.titleSm,
               fontWeight: FontWeight.w600,
               color: LumiColors.onPrimary,
             ),

@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.11+100
+**前端版本 (Flutter App)：** 1.0.12+101
 **後端版本 (Cloud Functions)：** 1.0.2
 **開發框架：** Flutter (Cross-platform)
 
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-05-01 | 1.0.12+101 | 1.0.2 | 全 App 設計 token 審查：所有畫面的 hardcode fontSize、BorderRadius、Padding 替換為 LumiTypeScale / LumiRadii / LumiSpacing token；修正 onboarding/check/ootd_add 缺少 lumi_radii & lumi_type_scale import；snap 上傳進度圓圈改為 116×116 顯式尺寸 | UI / Design System（所有頁面）|
 | 2026-04-30 | 1.0.11+100 | 1.0.2 | 修正 uploadToPhotos INTERNAL 錯誤：移除依賴 readonly scope 的 baseUrl fallback GET，batchCreate 無 baseUrl 時改回傳空字串（由縮圖刷新補填）；加 console.error 保留 CF log；客戶端設定 5 分鐘 timeout；thumbnailUrl 空字串不再觸發 FormatException | Snap / Upload / Cloud Functions |
 | 2026-04-30 | 1.0.11+99 | 1.0.1 | 上傳前偵測 JPEG magic bytes（FF D8），若 image_picker 已轉為 JPEG（HEIC/PNG 等），自動使用 image/jpeg MIME type 與 .jpg 副檔名，減少上傳大小並避免 Photos API HEIC 相容問題 | Snap / Upload |
 | 2026-04-30 | 1.0.11+98 | 1.0.1 | 修正衣櫥重新整理按鈕在 iOS 會彈出 Google 帳號選擇器的登入循環（改用 currentUser/signInSilently 取代 signIn()）；uploadToPhotos Cloud Function 加上 300s timeout 與 512MiB 記憶體，修正大圖上傳逾時導致的「伺服器忙碌中」錯誤 | Auth / Snap / iOS / Cloud Functions |

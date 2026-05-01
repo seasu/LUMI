@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/constants/lumi_colors.dart';
+import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
+import '../../../shared/constants/lumi_type_scale.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../../ootd/domain/ootd_item.dart';
 import '../../ootd/data/ootd_repository.dart';
@@ -40,10 +42,9 @@ class OutfitPage extends ConsumerWidget {
                 ),
               ],
             ),
-            // Camera FAB
             Positioned(
-              bottom: 24,
-              right: 16,
+              bottom: LumiSpacing.lg,
+              right: LumiSpacing.md,
               child: _CameraFab(),
             ),
           ],
@@ -62,15 +63,15 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Padding(
       padding: EdgeInsets.fromLTRB(
-        24,
+        LumiSpacing.lg,
         LumiSpacing.md,
-        16,
+        LumiSpacing.md,
         LumiSpacing.sm,
       ),
       child: Text(
         '我的穿搭',
         style: TextStyle(
-          fontSize: 28,
+          fontSize: LumiTypeScale.headlineMd,
           fontWeight: FontWeight.w700,
           color: LumiColors.text,
         ),
@@ -147,7 +148,7 @@ class _OotdCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: LumiColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(LumiRadii.lg),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -155,13 +156,11 @@ class _OotdCard extends StatelessWidget {
         children: [
           Expanded(
             child: bytes != null
-                ? Image.memory(bytes,
-                    fit: BoxFit.cover, width: double.infinity)
+                ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity)
                 : Container(color: LumiColors.base),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-                LumiSpacing.sm, LumiSpacing.sm, LumiSpacing.sm, LumiSpacing.sm),
+            padding: const EdgeInsets.all(LumiSpacing.sm),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -170,15 +169,18 @@ class _OotdCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: LumiTypeScale.labelMd,
                     fontWeight: FontWeight.w500,
                     color: LumiColors.text,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: LumiSpacing.xs),
                 Text(
                   dateStr,
-                  style: const TextStyle(fontSize: 11, color: LumiColors.subtext),
+                  style: const TextStyle(
+                    fontSize: LumiTypeScale.labelSm,
+                    color: LumiColors.subtext,
+                  ),
                 ),
               ],
             ),
@@ -224,7 +226,7 @@ class _EmptyState extends StatelessWidget {
             const Text(
               '尚未記錄任何穿搭',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: LumiTypeScale.titleLg,
                 fontWeight: FontWeight.w600,
                 color: LumiColors.text,
               ),
@@ -234,7 +236,10 @@ class _EmptyState extends StatelessWidget {
               '點擊右下角的按鈕，\n開始記錄妳的每日時尚風格吧！',
               textAlign: TextAlign.center,
               style: TextStyle(
-                  fontSize: 14, color: LumiColors.subtext, height: 1.6),
+                fontSize: LumiTypeScale.labelMd,
+                color: LumiColors.subtext,
+                height: 1.6,
+              ),
             ),
           ],
         ),
@@ -263,7 +268,7 @@ class _LoadingSkeleton extends StatelessWidget {
       itemBuilder: (_, __) => Container(
         decoration: BoxDecoration(
           color: LumiColors.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(LumiRadii.lg),
         ),
       ),
     );
@@ -282,7 +287,10 @@ class _ErrorState extends StatelessWidget {
       child: Text(
         '載入失敗：$message',
         textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 14, color: LumiColors.warning),
+        style: const TextStyle(
+          fontSize: LumiTypeScale.labelMd,
+          color: LumiColors.warning,
+        ),
       ),
     );
   }

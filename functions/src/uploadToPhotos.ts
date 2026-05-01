@@ -39,20 +39,6 @@ async function photosPost(
   return res.json();
 }
 
-async function photosGet(path: string, accessToken: string): Promise<unknown> {
-  const res = await fetch(`${PHOTOS_BASE_URL}${path}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`GET ${path} failed: ${res.status} – ${err}`);
-  }
-  return res.json();
-}
-
 // ── Album management ──────────────────────────────────────────────────────────
 
 async function createAlbum(accessToken: string): Promise<string> {

@@ -1,3 +1,4 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -64,7 +65,7 @@ Future<SyncWardrobeFromPhotosResult> syncWardrobeAlbumFromGooglePhotos(
   }
 
   // Manual sync button = explicit user action, so interactive OAuth is allowed.
-  final token = await ensureGooglePhotosAccessToken(
+  var token = await ensureGooglePhotosAccessToken(
     googleSignIn,
     account,
     scopes: const [
@@ -76,19 +77,55 @@ Future<SyncWardrobeFromPhotosResult> syncWardrobeAlbumFromGooglePhotos(
   );
 
   if (token == null) {
-    throw StateError(
-      '需要讀取 Google 相簿的權限才能同步。瀏覽器可能阻擋了 Google 授權視窗；'
-      '請允許此網站開啟 popup 後，再按一次「同步」並完成授權。',
-    );
+    throw StateError('需要讀取 Google 相簿的授權才能同步。請完成授權後重新按一次「同步」。');
   }
 
   // Callable runs as Firebase Auth user — refresh ID token after OAuth so it is not stale.
-  final firebaseUser = FirebaseAuth.instance.currentUser;
-  if (firebaseUser != null) {
-    await firebaseUser.getIdToken(true);
-  }
+  await FirebaseAuth.instance.currentUser?.getIdToken(true);
 
-  return ref.read(cloudFunctionsServiceProvider).syncWardrobeFromPhotos(
-        accessToken: token,
+  try {
+    return await ref.read(cloudFunctionsServiceProvider).syncWardrobeFromPhotos(
+          accessToken: token,
+        );
+  } on FirebaseFunctionsException catch (e) {
+    if (!_isMissingReadonlyScope(e)) rethrow;
+
+    // The API confirmed the token lacks photoslibrary.readonly.
+    // canAccessScopes often throws on iOS so we cannot check scopes pre-call;
+    // use the 403 response as the definitive signal to force requestScopes.
+    token = await ensureGooglePhotosAccessToken(
+      googleSignIn,
+      account,
+      scopes: const [
+        kGooglePhotosAppendOnlyScope,
+        kGooglePhotosReadonlyScope,
+      ],
+      interactive: true,
+      clearCacheFirst: true,
+      forceRequestScopes: true,
+    );
+
+    if (token == null) {
+      throw StateError(
+        '需要「讀取相簿」的 Google 授權才能同步。'
+        '請在授權視窗勾選相關選項後，再按一次「同步」。',
       );
+    }
+
+    await FirebaseAuth.instance.currentUser?.getIdToken(true);
+    return ref.read(cloudFunctionsServiceProvider).syncWardrobeFromPhotos(
+          accessToken: token,
+        );
+  }
+}
+
+/// Returns true when [e] signals that the Photos API rejected the token due
+/// to a missing photoslibrary.readonly scope (HTTP 403 PERMISSION_DENIED).
+bool _isMissingReadonlyScope(FirebaseFunctionsException e) {
+  final code = e.code.toLowerCase();
+  final raw = '${e.message ?? ''} ${e.details ?? ''}'.toLowerCase();
+  return code == 'permission-denied' &&
+      (raw.contains('insufficient authentication scopes') ||
+          raw.contains('photoslibrary.readonly') ||
+          raw.contains('request had insufficient authentication scopes'));
 }

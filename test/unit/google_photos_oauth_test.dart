@@ -259,4 +259,31 @@ void main() {
     expect(clearCalls, 1);
     expect(googleSignIn.requestScopesCalls, 0);
   });
+
+  // forceRequestScopes: skip the "trust pre-available token" check and jump
+  // straight to requestScopes — used after a caller receives a 403 and knows
+  // the token is missing a scope (even when canAccessScopes would throw).
+  test('forceRequestScopes skips canAccessScopes and calls requestScopes '
+      'even when a token already exists', () async {
+    var clearCalls = 0;
+    // canAccess=true: if we checked canAccessScopes it would report all scopes
+    // present — forceRequestScopes must override this and still call requestScopes.
+    final googleSignIn = _FakeGoogleSignIn(granted: true, canAccess: true);
+    final account = _FakeGoogleSignInAccount(() => clearCalls++);
+
+    final token = await ensureGooglePhotosAccessToken(
+      googleSignIn,
+      account,
+      scopes: testScopes,
+      interactive: true,
+      forceRequestScopes: true,
+    );
+
+    expect(token, 'token-123');
+    // Pre-check skipped (forceRequestScopes bypasses it).
+    // Post-grant hasRequiredScopes calls canAccessScopes once to verify.
+    expect(googleSignIn.canAccessScopesCalls, 1);
+    expect(googleSignIn.requestScopesCalls, 1);
+    expect(clearCalls, 1); // clearAuthCache after grant
+  });
 }

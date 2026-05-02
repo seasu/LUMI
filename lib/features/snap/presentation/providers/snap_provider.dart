@@ -7,7 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/auth/google_photos_oauth.dart';
 import '../../../../core/providers/firebase_providers.dart'
     show firebaseAuthProvider, googleSignInProvider,
-        kGooglePhotosAppendOnlyScope;
+        kGooglePhotosAppendOnlyScope, kGooglePhotosReadonlyScope;
 import '../../../wardrobe/data/wardrobe_item.dart';
 import '../../../wardrobe/data/wardrobe_repository.dart';
 import '../../data/cloud_functions_service.dart';
@@ -169,7 +169,7 @@ class SnapNotifier extends Notifier<SnapState> {
       var token = await ensureGooglePhotosAccessToken(
         googleSignIn,
         googleUser,
-        scopes: const [kGooglePhotosAppendOnlyScope],
+        scopes: const [kGooglePhotosAppendOnlyScope, kGooglePhotosReadonlyScope],
       );
       if (token != null) {
         _cachedPhotosToken = token;
@@ -181,7 +181,7 @@ class SnapNotifier extends Notifier<SnapState> {
       token = await ensureGooglePhotosAccessToken(
         googleSignIn,
         googleUser,
-        scopes: const [kGooglePhotosAppendOnlyScope],
+        scopes: const [kGooglePhotosAppendOnlyScope, kGooglePhotosReadonlyScope],
       );
       if (token != null) {
         _cachedPhotosToken = token;

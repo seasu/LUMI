@@ -120,6 +120,19 @@ void main() {
       expect(updated!.thumbnailUrl, equals(freshUrl));
     });
 
+    test('deleteItem removes document from Firestore', () async {
+      final item = makeItem();
+      await repo.addItem(userId, item);
+
+      final before = await repo.getItem(userId, item.mediaItemId);
+      expect(before, isNotNull);
+
+      await repo.deleteItem(userId, item.mediaItemId);
+
+      final after = await repo.getItem(userId, item.mediaItemId);
+      expect(after, isNull);
+    });
+
     test('refreshThumbnailUrl rejects productUrl-only responses', () async {
       final item = makeItem(mediaItemId: 'item-product-url');
       await repo.addItem(userId, item);

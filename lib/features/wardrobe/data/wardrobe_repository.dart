@@ -31,6 +31,11 @@ class WardrobeRepository {
     return _col(userId).doc(item.mediaItemId).set(item.toFirestore());
   }
 
+  Future<void> deleteItem(String userId, String mediaItemId) {
+    _log('deleteItem → uid=$userId mediaItemId=$mediaItemId');
+    return _col(userId).doc(mediaItemId).delete();
+  }
+
   Future<WardrobeItem?> getItem(String userId, String mediaItemId) async {
     _log('getItem → uid=$userId mediaItemId=$mediaItemId');
     final doc = await _col(userId).doc(mediaItemId).get();

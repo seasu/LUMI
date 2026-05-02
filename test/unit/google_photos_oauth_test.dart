@@ -135,11 +135,11 @@ void main() {
     expect(googleSignIn.requestScopesCalls, 0);
   });
 
-  // Interactive path: skip requestScopes when a token already exists (iOS
-  // signIn() already obtained consent; a second requestScopes call would show
-  // a redundant authorization dialog).
-  test('interactive mode returns existing token without calling requestScopes',
-      () async {
+  // Interactive path: skip requestScopes when canAccessScopes confirms all
+  // required scopes are already present (iOS signIn() already obtained
+  // consent; a second requestScopes call would show a redundant dialog).
+  test('interactive mode returns existing token without calling requestScopes '
+      'when canAccessScopes confirms all scopes', () async {
     final googleSignIn = _FakeGoogleSignIn(granted: true, canAccess: true);
     var clearCalls = 0;
     final account = _FakeGoogleSignInAccount(() => clearCalls++);
@@ -152,9 +152,34 @@ void main() {
     );
 
     expect(token, 'token-123');
+    expect(googleSignIn.canAccessScopesCalls, 1); // checked on pre-available token
     expect(googleSignIn.requestScopesCalls, 0);
-    expect(googleSignIn.canAccessScopesCalls, 0);
     expect(clearCalls, 0);
+  });
+
+  // Interactive path: call requestScopes when token exists but canAccessScopes
+  // reports missing scopes (e.g. only appendonly was previously granted, not
+  // readonly — happens on existing accounts after a scope upgrade).
+  test('interactive mode calls requestScopes when token has insufficient scopes',
+      () async {
+    var clearCalls = 0;
+    final googleSignIn = _FakeGoogleSignIn(granted: true, canAccess: false);
+    final account = _FakeGoogleSignInAccount(() => clearCalls++);
+
+    final token = await ensureGooglePhotosAccessToken(
+      googleSignIn,
+      account,
+      scopes: testScopes,
+      interactive: true,
+    );
+
+    // canAccess starts false → requestScopes called (sets canAccess=true) →
+    // signInSilently returns null → resolvedAccount=account → clearAuthCache →
+    // extractToken → hasRequiredScopes (canAccess now true) → ok.
+    expect(token, 'token-123');
+    expect(googleSignIn.canAccessScopesCalls, 2); // pre-check + post-requestScopes check
+    expect(googleSignIn.requestScopesCalls, 1);
+    expect(clearCalls, 1);
   });
 
   // Interactive path: calls requestScopes when no initial token exists, then

@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import '../../../core/auth/google_photos_oauth.dart';
 import '../../../core/debug/debug_log.dart';
 import '../../../core/providers/firebase_providers.dart'
     show
@@ -44,18 +43,11 @@ class AuthRepository {
 
         _log('signInWithGoogle: Google account=${googleUser.email}');
 
-        // Login is an explicit user gesture; complete the Photos incremental grant
-        // while the browser still considers this flow interactive.
-        await ensureGooglePhotosAccessToken(
-          _googleSignIn,
-          googleUser,
-          scopes: const [
-            kGooglePhotosAppendOnlyScope,
-            kGooglePhotosReadonlyScope,
-          ],
-          interactive: true,
-        );
-
+        // NOTE: Photos scope consent is handled lazily by each feature
+        // (snap, sync, thumbnail refresh) via ensureGooglePhotosAccessToken.
+        // Calling it here immediately after signIn() caused a spurious second
+        // consent dialog on iOS — canAccessScopes throws right after signIn()
+        // and the catch path triggered requestScopes unnecessarily.
         final googleAuth = await googleUser.authentication;
         final credential = GoogleAuthProvider.credential(
           accessToken: googleAuth.accessToken,

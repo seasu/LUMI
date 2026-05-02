@@ -79,15 +79,16 @@ Future<String?> ensureGooglePhotosAccessToken(
 
   // 2) Interactive path — explicit user action.
   //
-  // On iOS, signIn() already presents a consent screen for all scopes in the
-  // GoogleSignIn constructor. If the resulting token already covers every
-  // required scope we can return it immediately — no duplicate dialog.
+  // On iOS, signIn() presents a consent screen for all constructor scopes, so
+  // the returned token may already have everything we need. We check with
+  // canAccessScopes before calling requestScopes to avoid showing a redundant
+  // consent dialog.
   //
-  // We verify with canAccessScopes (server-side token-info check). If the
-  // check confirms all scopes are present we skip requestScopes. If the check
-  // returns false OR throws (e.g. network error, platform unsupported), we
-  // fall through to requestScopes so we don't silently hand back a token that
-  // lacks required scopes.
+  // canAccessScopes can throw on some iOS versions/states (e.g. right after
+  // signIn() when the underlying GIDSignIn object isn't fully settled). In
+  // that case we trust the pre-available token — the caller's downstream 403
+  // handling will surface any real scope gaps. Only call requestScopes when
+  // canAccessScopes explicitly returns false.
   final existingToken = await extractToken(account);
   if (existingToken != null) {
     bool tokenHasAllScopes = false;
@@ -97,13 +98,15 @@ Future<String?> ensureGooglePhotosAccessToken(
         accessToken: existingToken,
       );
     } catch (_) {
-      // Cannot verify — proceed to requestScopes as a safe fallback.
+      // canAccessScopes threw — trust the pre-available token.
+      _log('ensureAccessToken ← ok (interactive, token pre-available, scope check n/a)');
+      return existingToken;
     }
     if (tokenHasAllScopes) {
       _log('ensureAccessToken ← ok (interactive, token pre-available)');
       return existingToken;
     }
-    _log('ensureAccessToken: token pre-available but scopes unconfirmed, requesting…');
+    _log('ensureAccessToken: token pre-available but missing scopes, requesting…');
   }
 
   _log('ensureAccessToken: requesting scopes interactively…');

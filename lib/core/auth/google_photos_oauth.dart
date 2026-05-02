@@ -14,6 +14,11 @@ void _log(String msg) => DebugLogService.instance.log('[token] $msg');
 /// When user explicitly triggers an action (e.g. Login / manual Sync), set
 /// `interactive: true` to allow [GoogleSignIn.requestScopes].
 ///
+/// Set `forceRequestScopes: true` when a previous API call returned 403 for
+/// insufficient scopes — we then KNOW the cached token is missing a scope, so
+/// we skip the "trust pre-available token" logic and call requestScopes directly.
+/// Never set this on the login path (it would show a redundant consent dialog).
+///
 /// Returns `null` if the user denies incremental scope or no token can be resolved.
 Future<String?> ensureGooglePhotosAccessToken(
   GoogleSignIn googleSignIn,
@@ -21,6 +26,7 @@ Future<String?> ensureGooglePhotosAccessToken(
   List<String>? scopes,
   bool interactive = false,
   bool clearCacheFirst = false,
+  bool forceRequestScopes = false,
 }) async {
   if (account == null) {
     _log('ensureAccessToken → account=null, skip');
@@ -31,7 +37,8 @@ Future<String?> ensureGooglePhotosAccessToken(
       const [kGooglePhotosAppendOnlyScope];
 
   _log('ensureAccessToken → interactive=$interactive'
-      ' scopes=${scopeList.length} clearCache=$clearCacheFirst');
+      ' scopes=${scopeList.length} clearCache=$clearCacheFirst'
+      ' forceRequest=$forceRequestScopes');
 
   Future<bool> hasRequiredScopes(String accessToken) async {
     try {
@@ -89,24 +96,29 @@ Future<String?> ensureGooglePhotosAccessToken(
   // that case we trust the pre-available token — the caller's downstream 403
   // handling will surface any real scope gaps. Only call requestScopes when
   // canAccessScopes explicitly returns false.
-  final existingToken = await extractToken(account);
-  if (existingToken != null) {
-    bool tokenHasAllScopes = false;
-    try {
-      tokenHasAllScopes = await googleSignIn.canAccessScopes(
-        scopeList,
-        accessToken: existingToken,
-      );
-    } catch (_) {
-      // canAccessScopes threw — trust the pre-available token.
-      _log('ensureAccessToken ← ok (interactive, token pre-available, scope check n/a)');
-      return existingToken;
+  //
+  // Exception: when forceRequestScopes is true (caller already got a 403 and
+  // KNOWS the token is missing a scope), skip straight to requestScopes.
+  if (!forceRequestScopes) {
+    final existingToken = await extractToken(account);
+    if (existingToken != null) {
+      bool tokenHasAllScopes = false;
+      try {
+        tokenHasAllScopes = await googleSignIn.canAccessScopes(
+          scopeList,
+          accessToken: existingToken,
+        );
+      } catch (_) {
+        // canAccessScopes threw — trust the pre-available token.
+        _log('ensureAccessToken ← ok (interactive, token pre-available, scope check n/a)');
+        return existingToken;
+      }
+      if (tokenHasAllScopes) {
+        _log('ensureAccessToken ← ok (interactive, token pre-available)');
+        return existingToken;
+      }
+      _log('ensureAccessToken: token pre-available but missing scopes, requesting…');
     }
-    if (tokenHasAllScopes) {
-      _log('ensureAccessToken ← ok (interactive, token pre-available)');
-      return existingToken;
-    }
-    _log('ensureAccessToken: token pre-available but missing scopes, requesting…');
   }
 
   _log('ensureAccessToken: requesting scopes interactively…');

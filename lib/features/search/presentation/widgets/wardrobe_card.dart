@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/providers/firebase_providers.dart'
+    show firebaseAuthProvider;
 import '../../../../shared/constants/lumi_colors.dart';
 import '../../../wardrobe/data/wardrobe_item.dart';
+import '../../../wardrobe/data/wardrobe_repository.dart';
 import '../../../wardrobe/utils/wardrobe_thumbnail_url.dart';
 
 class WardrobeCard extends ConsumerWidget {
@@ -16,75 +19,119 @@ class WardrobeCard extends ConsumerWidget {
     final title = _displayTitle(item);
     final subtitle = _displaySubtitle(item);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              color: LumiColors.surface,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                _ThumbnailImage(url: thumbnailUrl),
-                if (!item.analyzed) _PendingOverlay(item: item),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onLongPress: () => _showDeleteConfirmation(context, ref),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: LumiColors.surface,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: LumiColors.text,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    maxLines:
-                        item.analyzeError != null &&
-                                item.analyzeError!.isNotEmpty &&
-                                !item.isQuotaExceeded
-                            ? 3
-                            : 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 9,
-                      color: LumiColors.subtext,
-                      height: 1.35,
-                    ),
-                  ),
+                  _ThumbnailImage(url: thumbnailUrl),
+                  if (!item.analyzed) _PendingOverlay(item: item),
                 ],
               ),
             ),
-            const SizedBox(width: 4),
-            Padding(
-              padding: const EdgeInsets.only(top: 1),
-              child: Icon(
-                Icons.favorite_border,
-                size: 13,
-                color: LumiColors.subtext.withValues(alpha: 0.65),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: LumiColors.text,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines:
+                          item.analyzeError != null &&
+                                  item.analyzeError!.isNotEmpty &&
+                                  !item.isQuotaExceeded
+                              ? 3
+                              : 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 9,
+                        color: LumiColors.subtext,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ],
+              const SizedBox(width: 4),
+              Padding(
+                padding: const EdgeInsets.only(top: 1),
+                child: Icon(
+                  Icons.favorite_border,
+                  size: 13,
+                  color: LumiColors.subtext.withValues(alpha: 0.65),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
+  }
+
+  Future<void> _showDeleteConfirmation(
+      BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('刪除衣物'),
+        content: const Text('確定要從衣櫥中刪除這件衣物嗎？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text(
+              '刪除',
+              style: TextStyle(color: LumiColors.warning),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final user = ref.read(firebaseAuthProvider).currentUser;
+    if (user == null) return;
+
+    try {
+      await ref
+          .read(wardrobeRepositoryProvider)
+          .deleteItem(user.uid, item.mediaItemId);
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('刪除失敗，請再試一次')),
+        );
+      }
+    }
   }
 }
 

@@ -216,8 +216,26 @@ class ThumbnailRepairCoordinator {
         _recordSuccess(mediaItemId);
       } on FirebaseFunctionsException catch (error) {
         if (_isMissingReadonlyScope(error)) {
-          _startAuthBackoff(item, reason: 'readonly_scope_required');
-          return;
+          // The cached token may pre-date the readonly scope grant.
+          // Clear the cache so Google returns a fresh token that reflects
+          // the full grant (GoogleSignIn constructor includes both scopes).
+          token = await _readToken(clearCacheFirst: true);
+          if (token == null) {
+            _startAuthBackoff(item, reason: 'readonly_scope_required');
+            return;
+          }
+          try {
+            await _refreshThumbnail(user.uid, mediaItemId, token);
+            _recordSuccess(mediaItemId);
+            return;
+          } on FirebaseFunctionsException catch (retryError) {
+            if (_isMissingReadonlyScope(retryError) ||
+                _isInvalidAuth(retryError)) {
+              _startAuthBackoff(item, reason: 'readonly_scope_required');
+              return;
+            }
+            rethrow;
+          }
         }
         if (!_isInvalidAuth(error)) rethrow;
 

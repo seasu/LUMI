@@ -40,10 +40,8 @@ Future<String?> ensureGooglePhotosAccessToken(
         accessToken: accessToken,
       );
     } catch (_) {
-      // canAccessScopes unsupported or threw unexpectedly.
-      // Interactive: requestScopes() just succeeded — trust the grant.
-      // Silent/background: be conservative; skip rather than risk a 403.
-      return interactive;
+      // canAccessScopes unsupported on this platform; trust the grant.
+      return true;
     }
   }
 
@@ -71,7 +69,7 @@ Future<String?> ensureGooglePhotosAccessToken(
   // 1) Silent path — used by passive/background flows.
   if (!interactive) {
     final token = await extractToken(account);
-    if (token != null && await hasRequiredScopes(token)) {
+    if (token != null) {
       _log('ensureAccessToken ← ok (silent)');
       return token;
     }

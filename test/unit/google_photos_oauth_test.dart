@@ -8,10 +8,12 @@ class _FakeGoogleSignIn extends Fake implements GoogleSignIn {
     required this.granted,
     this.canAccess = true,
     this.silentAccount,
+    this.throwOnCanAccessScopes = false,
   });
   final bool granted;
   bool canAccess;
   GoogleSignInAccount? silentAccount;
+  final bool throwOnCanAccessScopes;
   int requestScopesCalls = 0;
   int canAccessScopesCalls = 0;
   List<String>? lastScopes;
@@ -23,6 +25,7 @@ class _FakeGoogleSignIn extends Fake implements GoogleSignIn {
   }) async {
     canAccessScopesCalls++;
     lastScopes = scopes;
+    if (throwOnCanAccessScopes) throw Exception('platform not supported');
     return canAccess;
   }
 
@@ -180,6 +183,31 @@ void main() {
     expect(googleSignIn.canAccessScopesCalls, 2); // pre-check + post-requestScopes check
     expect(googleSignIn.requestScopesCalls, 1);
     expect(clearCalls, 1);
+  });
+
+  // Interactive path: when canAccessScopes throws (e.g. on iOS right after
+  // signIn()), trust the pre-available token instead of calling requestScopes.
+  // This prevents the spurious second consent dialog observed on iOS.
+  test('interactive mode trusts pre-available token when canAccessScopes throws',
+      () async {
+    final googleSignIn = _FakeGoogleSignIn(
+      granted: true,
+      throwOnCanAccessScopes: true,
+    );
+    var clearCalls = 0;
+    final account = _FakeGoogleSignInAccount(() => clearCalls++);
+
+    final token = await ensureGooglePhotosAccessToken(
+      googleSignIn,
+      account,
+      scopes: testScopes,
+      interactive: true,
+    );
+
+    expect(token, 'token-123');
+    expect(googleSignIn.canAccessScopesCalls, 1); // called but threw
+    expect(googleSignIn.requestScopesCalls, 0);   // NOT called — trust the token
+    expect(clearCalls, 0);
   });
 
   // Interactive path: calls requestScopes when no initial token exists, then

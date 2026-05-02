@@ -40,10 +40,8 @@ Future<String?> ensureGooglePhotosAccessToken(
         accessToken: accessToken,
       );
     } catch (_) {
-      // canAccessScopes unsupported or threw unexpectedly.
-      // Interactive: requestScopes() just succeeded — trust the grant.
-      // Silent/background: be conservative; skip rather than risk a 403.
-      return interactive;
+      // canAccessScopes unsupported on this platform; trust the grant.
+      return true;
     }
   }
 
@@ -71,7 +69,7 @@ Future<String?> ensureGooglePhotosAccessToken(
   // 1) Silent path — used by passive/background flows.
   if (!interactive) {
     final token = await extractToken(account);
-    if (token != null && await hasRequiredScopes(token)) {
+    if (token != null) {
       _log('ensureAccessToken ← ok (silent)');
       return token;
     }
@@ -80,6 +78,21 @@ Future<String?> ensureGooglePhotosAccessToken(
   }
 
   // 2) Interactive path — explicit user action.
+  //
+  // On iOS, signIn() already presents a consent screen that includes all
+  // scopes from the GoogleSignIn constructor. Calling requestScopes()
+  // immediately after signIn() triggers a second, redundant consent dialog.
+  //
+  // Strategy: try to extract the token that signIn() just produced. If one
+  // exists, return it — the scopes were already granted. Only fall through to
+  // requestScopes() when no token is available (e.g. token genuinely missing
+  // or this is a scope-upgrade flow after the initial session).
+  final existingToken = await extractToken(account);
+  if (existingToken != null) {
+    _log('ensureAccessToken ← ok (interactive, token pre-available)');
+    return existingToken;
+  }
+
   _log('ensureAccessToken: requesting scopes interactively…');
   final granted = await googleSignIn.requestScopes(scopeList);
   if (!granted) {

@@ -79,18 +79,31 @@ Future<String?> ensureGooglePhotosAccessToken(
 
   // 2) Interactive path — explicit user action.
   //
-  // On iOS, signIn() already presents a consent screen that includes all
-  // scopes from the GoogleSignIn constructor. Calling requestScopes()
-  // immediately after signIn() triggers a second, redundant consent dialog.
+  // On iOS, signIn() already presents a consent screen for all scopes in the
+  // GoogleSignIn constructor. If the resulting token already covers every
+  // required scope we can return it immediately — no duplicate dialog.
   //
-  // Strategy: try to extract the token that signIn() just produced. If one
-  // exists, return it — the scopes were already granted. Only fall through to
-  // requestScopes() when no token is available (e.g. token genuinely missing
-  // or this is a scope-upgrade flow after the initial session).
+  // We verify with canAccessScopes (server-side token-info check). If the
+  // check confirms all scopes are present we skip requestScopes. If the check
+  // returns false OR throws (e.g. network error, platform unsupported), we
+  // fall through to requestScopes so we don't silently hand back a token that
+  // lacks required scopes.
   final existingToken = await extractToken(account);
   if (existingToken != null) {
-    _log('ensureAccessToken ← ok (interactive, token pre-available)');
-    return existingToken;
+    bool tokenHasAllScopes = false;
+    try {
+      tokenHasAllScopes = await googleSignIn.canAccessScopes(
+        scopeList,
+        accessToken: existingToken,
+      );
+    } catch (_) {
+      // Cannot verify — proceed to requestScopes as a safe fallback.
+    }
+    if (tokenHasAllScopes) {
+      _log('ensureAccessToken ← ok (interactive, token pre-available)');
+      return existingToken;
+    }
+    _log('ensureAccessToken: token pre-available but scopes unconfirmed, requesting…');
   }
 
   _log('ensureAccessToken: requesting scopes interactively…');

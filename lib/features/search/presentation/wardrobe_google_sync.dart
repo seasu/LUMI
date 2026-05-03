@@ -107,8 +107,10 @@ Future<SyncWardrobeFromPhotosResult> syncWardrobeAlbumFromGooglePhotos(
 
     if (token == null) {
       throw StateError(
-        '需要「讀取相簿」的 Google 授權才能同步。'
-        '請在授權視窗勾選相關選項後，再按一次「同步」。',
+        '讀取 Google 相簿的授權失敗（requestScopes 未成功）。'
+        '請登出後重新登入，並在登入時完整允許相簿存取；'
+        '若問題持續，請確認 Google Cloud Console → OAuth 同意畫面已加入 '
+        'photoslibrary.readonly 範圍，且此帳號已列為測試用戶。',
       );
     }
 

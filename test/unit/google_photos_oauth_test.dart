@@ -286,4 +286,34 @@ void main() {
     expect(googleSignIn.requestScopesCalls, 1);
     expect(clearCalls, 1); // clearAuthCache after grant
   });
+
+  // iOS WKWebView workaround: requestScopes returns false even when the user
+  // successfully approved the consent sheet (a known timing issue in the
+  // google_sign_in iOS plugin). We must NOT return null in this case —
+  // instead we extract a fresh token and let the API call be the real check.
+  test('returns token even when requestScopes returns false '
+      '(iOS WKWebView completion unreliability workaround)', () async {
+    var clearCalls = 0;
+    // granted=false simulates iOS where the completion fires before the SDK
+    // updates the token, causing requestScopes to report false despite the
+    // user having approved the scopes.
+    final googleSignIn = _FakeGoogleSignIn(granted: false, canAccess: true);
+    final account = _FakeGoogleSignInAccount(() => clearCalls++);
+
+    final token = await ensureGooglePhotosAccessToken(
+      googleSignIn,
+      account,
+      scopes: testScopes,
+      interactive: true,
+      forceRequestScopes: true,
+    );
+
+    // Token must be returned despite granted=false, because the underlying
+    // scope may have been granted and the API call will confirm.
+    expect(token, 'token-123');
+    expect(googleSignIn.requestScopesCalls, 1);
+    // hasRequiredScopes calls canAccessScopes once after extraction.
+    expect(googleSignIn.canAccessScopesCalls, 1);
+    expect(clearCalls, 1);
+  });
 }

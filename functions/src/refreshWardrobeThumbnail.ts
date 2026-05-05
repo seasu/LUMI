@@ -52,9 +52,33 @@ export const refreshWardrobeThumbnail = onCall(
           `Photos API GET mediaItems failed: ${res.status} ${body}`
         );
       }
+      // For 403 scope errors: fetch tokeninfo to diagnose which scopes the
+      // client actually sent. Logged server-side and returned in details so
+      // the Flutter debug log also shows the scope string.
+      let tokenScopes = "unknown";
+      if (res.status === 403) {
+        try {
+          const infoRes = await fetch(
+            `https://oauth2.googleapis.com/tokeninfo?access_token=${accessToken}`
+          );
+          const info = (await infoRes.json()) as {
+            scope?: string;
+            error?: string;
+          };
+          tokenScopes = info.scope ?? info.error ?? "empty";
+          console.log(
+            `[refreshWardrobeThumbnail] 403 token scopes: ${tokenScopes}`
+          );
+        } catch (e) {
+          console.log(
+            `[refreshWardrobeThumbnail] tokeninfo fetch failed: ${e}`
+          );
+        }
+      }
       throw new HttpsError(
         "permission-denied",
-        `Photos API GET mediaItems failed: ${res.status} ${body}`
+        `Photos API GET mediaItems failed: ${res.status} ${body}`,
+        { tokenScopes }
       );
     }
 

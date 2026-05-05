@@ -123,11 +123,15 @@ Future<String?> ensureGooglePhotosAccessToken(
 
   _log('ensureAccessToken: requesting scopes interactively…');
   final granted = await googleSignIn.requestScopes(scopeList);
-  if (!granted) {
-    _log('ensureAccessToken ← null (user denied scopes)');
-    return null;
-  }
+  _log('ensureAccessToken: requestScopes → granted=$granted');
 
+  // On iOS, requestScopes may return false even when the user successfully
+  // granted the scopes via the WKWebView consent sheet (a known timing issue
+  // in the google_sign_in iOS plugin where the completion callback fires
+  // before the token is updated). We therefore do NOT treat !granted as a
+  // definitive denial — instead we always attempt to extract a fresh token
+  // and let the downstream API call serve as the authoritative check.
+  //
   // On Android, requestScopes does not update the token on the existing
   // account object. Call signInSilently() to obtain a fresh account whose
   // authentication reflects the newly granted scopes.
@@ -146,13 +150,13 @@ Future<String?> ensureGooglePhotosAccessToken(
 
   final token = await extractToken(resolvedAccount);
   if (token == null) {
-    _log('ensureAccessToken ← null (no token after grant)');
+    _log('ensureAccessToken ← null (no token after requestScopes, granted=$granted)');
     return null;
   }
   if (await hasRequiredScopes(token)) {
-    _log('ensureAccessToken ← ok (interactive)');
+    _log('ensureAccessToken ← ok (interactive, granted=$granted)');
     return token;
   }
-  _log('ensureAccessToken ← null (token lacks required scopes)');
+  _log('ensureAccessToken ← null (token lacks required scopes, granted=$granted)');
   return null;
 }

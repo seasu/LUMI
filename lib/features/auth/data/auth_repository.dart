@@ -43,11 +43,7 @@ class AuthRepository {
 
         _log('signInWithGoogle: Google account=${googleUser.email}');
 
-        // NOTE: Photos scope consent is handled lazily by each feature
-        // (snap, sync, thumbnail refresh) via ensureGooglePhotosAccessToken.
-        // Calling it here immediately after signIn() caused a spurious second
-        // consent dialog on iOS — canAccessScopes throws right after signIn()
-        // and the catch path triggered requestScopes unnecessarily.
+        // Build Firebase credential from the idToken (unchanged by scope grants).
         final googleAuth = await googleUser.authentication;
         final credential = GoogleAuthProvider.credential(
           accessToken: googleAuth.accessToken,
@@ -55,6 +51,27 @@ class AuthRepository {
         );
 
         userCredential = await _auth.signInWithCredential(credential);
+
+        // Proactively request Photos scopes at login time (explicit user action).
+        // - If scopes are already granted, Google returns silently with no UI.
+        // - If not yet granted, the incremental consent sheet is shown here,
+        //   which is the natural place for permission dialogs.
+        // - We do NOT check the return value: on iOS the WKWebView completion
+        //   callback may fire before the token is updated, returning false even
+        //   when the user approved. We clear the auth cache afterwards so the
+        //   next token fetch picks up the newly granted scope.
+        _log('signInWithGoogle: requesting Photos scopes…');
+        try {
+          await _googleSignIn.requestScopes([
+            kGooglePhotosAppendOnlyScope,
+            kGooglePhotosReadonlyScope,
+          ]);
+          await _googleSignIn.currentUser?.clearAuthCache();
+          _log('signInWithGoogle: Photos scopes requested, cache cleared');
+        } catch (e) {
+          _log('signInWithGoogle: requestScopes failed (non-fatal) $e');
+        }
+
         // Upsert Firestore profile — creates on first login, refreshes name/email later.
         await _userRepository.ensureProfile(userCredential.user!);
       }

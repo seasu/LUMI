@@ -85,16 +85,30 @@ class AuthRepository {
     }
   }
 
-  /// Firebase first, then Google; `GoogleSignIn.signOut` is given a timeout on Web
-  /// it can otherwise hang and block returning to the login screen.
+  /// Firebase first, then Google.
+  ///
+  /// Uses `disconnect()` (not `signOut()`) for the Google side so that the
+  /// iOS Keychain refresh token is revoked on Google's servers. This forces
+  /// a full OAuth re-authorization on the next sign-in, ensuring the new
+  /// refresh token always includes all scopes currently on the consent screen.
+  /// Without this, a stale refresh token from a previous session (issued
+  /// before a new scope was added) would be silently reused, causing 403s.
   Future<void> signOut() async {
     _log('signOut →');
     try {
       await _auth.signOut();
       try {
-        await _googleSignIn
-            .signOut()
-            .timeout(const Duration(seconds: 10));
+        // disconnect() revokes tokens server-side AND clears local Keychain state.
+        // Falls back to signOut() on Web where disconnect() may hang.
+        if (kIsWeb) {
+          await _googleSignIn
+              .signOut()
+              .timeout(const Duration(seconds: 10));
+        } else {
+          await _googleSignIn
+              .disconnect()
+              .timeout(const Duration(seconds: 10));
+        }
       } catch (_) {
         // Best-effort: user is already signed out of Firebase; continue
       }

@@ -101,6 +101,19 @@ class WardrobeRepository {
         return url;
       }
 
+      // Diagnostic: log actual token scopes so we can confirm
+      // photoslibrary.readonly is present when the Photos API call is made.
+      try {
+        final infoRes = await _http.get(Uri.parse(
+          'https://oauth2.googleapis.com/tokeninfo?access_token=$accessToken',
+        ));
+        final info = jsonDecode(infoRes.body) as Map<String, dynamic>;
+        _log('refreshThumbnailUrl: token scopes='
+            '${info['scope'] ?? info['error'] ?? 'unknown'}');
+      } catch (e) {
+        _log('refreshThumbnailUrl: tokeninfo failed: $e');
+      }
+
       final uri = Uri.parse(
         'https://photoslibrary.googleapis.com/v1/mediaItems/$mediaItemId',
       );

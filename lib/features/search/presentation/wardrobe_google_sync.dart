@@ -133,6 +133,12 @@ Future<SyncWardrobeFromPhotosResult> _nativeSync(WidgetRef ref) async {
 /// Performs the actual Photos API calls and Firestore batch write.
 Future<SyncWardrobeFromPhotosResult> _doNativeSync(
     String accessToken, WidgetRef ref) async {
+  // Log the client ID this binary was compiled with so it can be compared
+  // against the token's `aud` field logged by GooglePhotosApiClient.logTokenInfo.
+  const compiledClientId = String.fromEnvironment('GOOGLE_CLIENT_ID');
+  _log('nativeSync: compiledClientId='
+      '${compiledClientId.isEmpty ? "(empty — using GIDClientID from Info.plist)" : "${compiledClientId.substring(0, compiledClientId.length.clamp(0, 28))}…"}');
+
   final firestore = ref.read(firestoreProvider);
   final userId = FirebaseAuth.instance.currentUser!.uid;
   final photosClient = GooglePhotosApiClient();

@@ -101,15 +101,35 @@ class WardrobeRepository {
         return url;
       }
 
-      // Diagnostic: log actual token scopes so we can confirm
-      // photoslibrary.readonly is present when the Photos API call is made.
+      // Diagnostic: log token identity and scopes.
+      // Compare `aud` with the GOOGLE_CLIENT_ID dart-define to confirm
+      // the correct OAuth client issued this token.
       try {
         final infoRes = await _http.get(Uri.parse(
           'https://oauth2.googleapis.com/tokeninfo?access_token=$accessToken',
         ));
         final info = jsonDecode(infoRes.body) as Map<String, dynamic>;
-        _log('refreshThumbnailUrl: token scopes='
-            '${info['scope'] ?? info['error'] ?? 'unknown'}');
+        if (info.containsKey('error')) {
+          _log('refreshThumbnailUrl: tokeninfo error=${info['error']}');
+        } else {
+          final scope = info['scope'] as String? ?? '';
+          final aud = info['aud'] as String? ?? 'unknown';
+          final azp = info['azp'] as String? ?? '-';
+          final email = info['email'] as String? ?? '-';
+          final expSec = int.tryParse(info['exp'] as String? ?? '');
+          final expUtc = expSec != null
+              ? DateTime.fromMillisecondsSinceEpoch(expSec * 1000, isUtc: true)
+                  .toIso8601String()
+              : '-';
+          final hasReadonly = scope.contains('photoslibrary.readonly');
+          _log('refreshThumbnailUrl: tokeninfo'
+              ' aud=$aud'
+              ' azp=$azp'
+              ' email=$email'
+              ' exp=$expUtc'
+              ' hasReadonly=$hasReadonly'
+              ' scopes=$scope');
+        }
       } catch (e) {
         _log('refreshThumbnailUrl: tokeninfo failed: $e');
       }

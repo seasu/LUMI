@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.20+109
+**前端版本 (Flutter App)：** 1.0.21+110
 **後端版本 (Cloud Functions)：** 1.0.2
 **開發框架：** Flutter (Cross-platform)
 
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-05-06 | 1.0.21+110 | 1.0.2 | 新增 OAuth client ID 診斷 log：GoogleSignIn 初始化時印 GOOGLE_CLIENT_ID dart-define；Photos API 呼叫前（refreshThumbnailUrl、sync）呼叫 tokeninfo 並印 aud（哪個 client 簽出 token）、azp、email、exp、hasReadonly，讓 aud vs GOOGLE_CLIENT_ID 比對可見 | Auth / Diagnostics |
 | 2026-05-06 | 1.0.20+109 | 1.0.2 | native 衣櫥同步（syncWardrobeAlbumFromGooglePhotos）從 Cloud Function 轉移至 Flutter client 端：新建 `GooglePhotosApiClient`（GET /albums、POST /mediaItems:search）；native 路徑直接呼叫 Photos API 並以 Firestore batch write 寫入衣物 doc，不再把 access token 轉發給 CF（Google 拒絕 server-side token forwarding）；Web 路徑保持使用 CF（瀏覽器 CORS 限制） | Wardrobe Sync / Architecture |
 | 2026-05-06 | 1.0.19+108 | 1.0.2 | CI 注入 `GIDClientID` 到 `Info.plist`（google_sign_in_ios 的 `requestScopes()` 需要此 plist key，純靠 Dart constructor `clientId` 不足）；`google_photos_oauth.dart` 對 `requestScopes` 加 `PlatformException` catch，避免 "No active configuration" crash 直接崩潰，改為回傳 null 讓 caller 顯示重新登入提示 | Auth / OAuth / CI |
 | 2026-05-06 | 1.0.18+107 | 1.0.2 | 修正 Google OAuth「Unbundled Consent」政策違規：移除 GoogleSignIn constructor 及 signInWithPopup 中的 Photos scopes，改為僅在使用者明確觸發 Photos 相關功能時增量授權；這是導致 photoslibrary.readonly 即使使用者同意仍未寫入 token 的根本原因 | Auth / OAuth |

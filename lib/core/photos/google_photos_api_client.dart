@@ -2,6 +2,10 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../debug/debug_log.dart';
+
+void _log(String msg) => DebugLogService.instance.log('[photos] $msg');
+
 const _photosBase = 'https://photoslibrary.googleapis.com/v1';
 
 /// Album title Lumi creates and syncs from.
@@ -35,10 +39,46 @@ class GooglePhotosApiClient {
   Map<String, String> _authHeaders(String accessToken) =>
       {'Authorization': 'Bearer $accessToken'};
 
+  /// Logs token identity fields from tokeninfo so we can confirm:
+  ///   - `aud`  = which OAuth client issued the token (compare with GOOGLE_CLIENT_ID)
+  ///   - `azp`  = authorized party
+  ///   - `email` = whose account
+  ///   - `hasReadonly` = whether photoslibrary.readonly is in scope
+  Future<void> logTokenInfo(String accessToken, {String tag = ''}) async {
+    try {
+      final res = await _http.get(Uri.parse(
+        'https://oauth2.googleapis.com/tokeninfo?access_token=$accessToken',
+      ));
+      final info = jsonDecode(res.body) as Map<String, dynamic>;
+      if (info.containsKey('error')) {
+        _log('tokeninfo${tag.isEmpty ? "" : "[$tag]"} error=${info['error']}');
+        return;
+      }
+      final scope = info['scope'] as String? ?? '';
+      final aud = info['aud'] as String? ?? 'unknown';
+      final azp = info['azp'] as String? ?? '-';
+      final email = info['email'] as String? ?? '-';
+      final expSec = int.tryParse(info['exp'] as String? ?? '');
+      final expUtc = expSec != null
+          ? DateTime.fromMillisecondsSinceEpoch(expSec * 1000, isUtc: true)
+              .toIso8601String()
+          : '-';
+      _log('tokeninfo${tag.isEmpty ? "" : "[$tag]"}'
+          ' aud=$aud'
+          ' azp=$azp'
+          ' email=$email'
+          ' exp=$expUtc'
+          ' hasReadonly=${scope.contains("photoslibrary.readonly")}');
+    } catch (e) {
+      _log('tokeninfo${tag.isEmpty ? "" : "[$tag]"} failed: $e');
+    }
+  }
+
   /// Finds the album matching [title] in the user's Google Photos library.
   /// Paginates through all albums (50 per page) until found.
   /// Returns `null` when no matching album exists.
   Future<String?> findAlbumId(String accessToken, String title) async {
+    await logTokenInfo(accessToken, tag: 'sync');
     String? pageToken;
     do {
       final q = <String, String>{'pageSize': '50'};

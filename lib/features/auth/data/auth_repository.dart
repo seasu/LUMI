@@ -43,34 +43,52 @@ class AuthRepository {
 
         _log('signInWithGoogle: Google account=${googleUser.email}');
 
-        // Build Firebase credential from the idToken (unchanged by scope grants).
-        final googleAuth = await googleUser.authentication;
-        final credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
-        );
-
-        userCredential = await _auth.signInWithCredential(credential);
-
-        // Proactively request Photos scopes at login time (explicit user action).
-        // - If scopes are already granted, Google returns silently with no UI.
-        // - If not yet granted, the incremental consent sheet is shown here,
-        //   which is the natural place for permission dialogs.
-        // - We do NOT check the return value: on iOS the WKWebView completion
-        //   callback may fire before the token is updated, returning false even
-        //   when the user approved. We clear the auth cache afterwards so the
-        //   next token fetch picks up the newly granted scope.
+        // Request Photos scopes BEFORE signInWithCredential so the Firebase
+        // auth-state change (and wardrobe load + background thumbnail refresh)
+        // only fires after the token already carries photoslibrary.readonly.
+        //
+        // Old order — signInWithCredential first, requestScopes second — caused
+        // a race: the wardrobe started loading while the consent sheet was still
+        // on screen, background thumbnail refresh grabbed a scope-less token and
+        // immediately returned 403. Moving the scope request first eliminates
+        // that window entirely.
         _log('signInWithGoogle: requesting Photos scopes…');
         try {
           await _googleSignIn.requestScopes([
             kGooglePhotosAppendOnlyScope,
             kGooglePhotosReadonlyScope,
           ]);
-          await _googleSignIn.currentUser?.clearAuthCache();
-          _log('signInWithGoogle: Photos scopes requested, cache cleared');
+          _log('signInWithGoogle: Photos scopes requested');
         } catch (e) {
           _log('signInWithGoogle: requestScopes failed (non-fatal) $e');
         }
+
+        // On Android, requestScopes does not update the token on the existing
+        // account object. Call signInSilently() to obtain a fresh account that
+        // reflects the newly granted scopes, then clear the auth cache so the
+        // next authentication call fetches a fresh access token from Google.
+        GoogleSignInAccount? refreshedAccount;
+        try {
+          refreshedAccount = await _googleSignIn.signInSilently();
+        } catch (_) {}
+        final signingAccount =
+            refreshedAccount ?? _googleSignIn.currentUser ?? googleUser;
+        try {
+          await signingAccount.clearAuthCache();
+          _log('signInWithGoogle: auth cache cleared');
+        } catch (e) {
+          _log('signInWithGoogle: clearAuthCache failed (non-fatal) $e');
+        }
+
+        // Build Firebase credential from the fresh post-scope-grant token.
+        final googleAuth = await signingAccount.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        // Firebase sign-in — auth state change fires HERE, after scopes are ready.
+        userCredential = await _auth.signInWithCredential(credential);
 
         // Upsert Firestore profile — creates on first login, refreshes name/email later.
         await _userRepository.ensureProfile(userCredential.user!);

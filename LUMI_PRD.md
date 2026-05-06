@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.15+104
+**前端版本 (Flutter App)：** 1.0.16+105
 **後端版本 (Cloud Functions)：** 1.0.2
 **開發框架：** Flutter (Cross-platform)
 
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-05-06 | 1.0.16+105 | 1.0.2 | 架構修正：iOS 縮圖刷新改為直接呼叫 Photos API（`kIsWeb` 判斷），不再經由 Cloud Function 轉發 token — Google 會拒絕 server-side token forwarding 並回 403，即使 token 確實帶有 `photoslibrary.readonly`；Web 仍走 Cloud Function（CORS 限制） | Wardrobe Thumbnail / Architecture |
 | 2026-05-02 | 1.0.15+104 | 1.0.2 | 修正 iOS 上 photoslibrary.readonly scope 永遠無法取得的根本原因：`ensureGooglePhotosAccessToken` 新增 `forceRequestScopes` 參數；sync 流程在收到 403 後以 `forceRequestScopes: true` 重試，強制顯示授權同意畫面讓使用者補授 readonly scope；補對應單元測試 | Auth / OAuth / Wardrobe Sync / Tests |
 | 2026-05-02 | 1.0.14+103 | 1.0.2 | 修正縮圖 403 永久 loop：`_repairOne` 收到 readonly scope 不足時先嘗試 clearCacheFirst 取新 token，不再直接進入 backoff；snap_provider 上傳 token 同時申請 appendonly+readonly scope；新增衣物刪除功能（Repository `deleteItem` + 衣物卡片長按確認刪除）；補 `deleteItem` 單元測試 | Auth / Wardrobe Thumbnail / Snap / UI / Tests |
 | 2026-05-01 | 1.0.13+102 | 1.0.2 | 底部導航改為浮動 Glassmorphic pill：LumiColors.base 70% opacity + BackdropFilter blur、xl 圓角、primaryFixed 圓形光暈指示 active tab、text/subtext icon 色，符合 DESIGN.md Bottom Navigation 規範 | UI / Navigation |

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
@@ -71,22 +72,27 @@ class WardrobeRepository {
   /// Fetches a fresh thumbnailUrl from Google Photos and updates Firestore.
   /// Should be called when [WardrobeItem.isThumbnailStale] is true.
   ///
-  /// Prefer [CloudFunctionsService.refreshWardrobeThumbnail]: the Photos Library
-  /// REST API is not callable from Flutter **Web** browsers (no CORS); direct
-  /// `GET photoslibrary.googleapis.com` surfaces as **403** in DevTools even when
-  /// OAuth scopes are correct. When [cloudFunctions] is injected (production app),
-  /// always proxy via Cloud Functions.
+  /// On **Web**: always proxy via [CloudFunctionsService.refreshWardrobeThumbnail]
+  /// because browsers block direct `GET photoslibrary.googleapis.com` with CORS
+  /// errors (surfaces as 403 in DevTools regardless of OAuth scopes).
+  ///
+  /// On **native iOS/Android**: call the Photos API directly with the access token.
+  /// Forwarding the token through a Cloud Function causes Google to reject it with
+  /// 403 "insufficient authentication scopes" even when the token genuinely has the
+  /// required scopes — Google's token security policy blocks server-side forwarding
+  /// of mobile-obtained OAuth tokens to the Photos Library REST API.
   Future<String> refreshThumbnailUrl({
     required String userId,
     required String mediaItemId,
     required String accessToken,
   }) async {
-    final via = _cloudFunctions != null ? 'functions' : 'http';
+    final cf = _cloudFunctions;
+    final useCloudFunctions = cf != null && kIsWeb;
+    final via = useCloudFunctions ? 'functions' : 'http';
     _log('refreshThumbnailUrl → via=$via mediaItemId=$mediaItemId');
     final sw = Stopwatch()..start();
     try {
-      final cf = _cloudFunctions;
-      if (cf != null) {
+      if (useCloudFunctions) {
         final url = await cf.refreshWardrobeThumbnail(
           accessToken: accessToken,
           mediaItemId: mediaItemId,

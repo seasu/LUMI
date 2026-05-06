@@ -27,12 +27,14 @@ final cloudFunctionsProvider = Provider<FirebaseFunctions>((ref) {
 
 final googleSignInProvider = Provider<GoogleSignIn>((ref) {
   const clientId = String.fromEnvironment('GOOGLE_CLIENT_ID');
+  // Only request 'email' at sign-in time. Photos scopes (appendonly, readonly)
+  // are requested incrementally via ensureGooglePhotosAccessToken() at the
+  // point where the user explicitly triggers a Photos-dependent action (sync,
+  // thumbnail refresh). Bundling them in the constructor violates Google's
+  // "Unbundled Consent" OAuth policy and causes the consent screen to not
+  // properly grant the sensitive photoslibrary.readonly scope.
   return GoogleSignIn(
     clientId: clientId.isEmpty ? null : clientId,
-    scopes: [
-      'email',
-      kGooglePhotosAppendOnlyScope,
-      kGooglePhotosReadonlyScope,
-    ],
+    scopes: const ['email'],
   );
 });

@@ -4,11 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../core/debug/debug_log.dart';
 import '../../../core/providers/firebase_providers.dart'
-    show
-        firebaseAuthProvider,
-        googleSignInProvider,
-        kGooglePhotosAppendOnlyScope,
-        kGooglePhotosReadonlyScope;
+    show firebaseAuthProvider, googleSignInProvider;
 import '../../user/data/user_repository.dart';
 
 void _log(String msg) => DebugLogService.instance.log('[auth] $msg');
@@ -30,9 +26,9 @@ class AuthRepository {
       UserCredential userCredential;
 
       if (kIsWeb) {
+        // Web: sign in with email only. Photos scopes are added incrementally
+        // when the user explicitly triggers a Photos-dependent action.
         final provider = GoogleAuthProvider()
-          ..addScope(kGooglePhotosAppendOnlyScope)
-          ..addScope(kGooglePhotosReadonlyScope)
           ..setCustomParameters({'prompt': 'select_account'});
 
         userCredential = await _auth.signInWithPopup(provider);
@@ -43,20 +39,15 @@ class AuthRepository {
 
         _log('signInWithGoogle: Google account=${googleUser.email}');
 
-        // The GoogleSignIn constructor already declares [email, appendonly,
-        // readonly] as scopes. On iOS, signIn() includes all of them in the
-        // initial consent page — the user sees and approves everything at once.
+        // Sign in with email only. Photos scopes (appendonly, readonly) are
+        // NOT requested here — they are obtained incrementally via
+        // ensureGooglePhotosAccessToken(interactive: true) at the point where
+        // the user explicitly triggers a Photos-dependent action (sync button,
+        // first wardrobe load with stale thumbnails).
         //
-        // Do NOT call requestScopes() here. On iOS the requestScopes API uses
-        // WKWebView; its completion fires before the SDK updates the access
-        // token, so any token obtained immediately after requestScopes() still
-        // lacks the newly granted scope. Calling it again after signIn() also
-        // triggers a redundant second consent dialog that confuses users and
-        // can corrupt the SDK's cached token state.
-        //
-        // If Photos scopes were denied during signIn(), the wardrobe sync error
-        // handler re-prompts via ensureGooglePhotosAccessToken(interactive:true)
-        // which is tied to an explicit user action rather than a background race.
+        // Bundling Photos scopes in signIn() violates Google's "Unbundled
+        // Consent" policy and prevents the sensitive photoslibrary.readonly
+        // scope from being properly granted even when the user approves.
         try {
           await googleUser.clearAuthCache();
           _log('signInWithGoogle: auth cache cleared');

@@ -122,10 +122,12 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 64),
       padding: const EdgeInsets.symmetric(
         horizontal: LumiSpacing.md,
         vertical: LumiSpacing.sm,
       ),
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: LumiColors.surface,
         borderRadius: BorderRadius.circular(LumiRadii.lg),

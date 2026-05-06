@@ -125,6 +125,23 @@ jobs:
             -c "Set :CFBundleURLTypes:0:CFBundleURLSchemes:0 $REVERSED_CLIENT_ID" \
             ios/Runner/Info.plist
           echo "✅ CFBundleURLTypes injected"
+          # GIDClientID is required by google_sign_in_ios for requestScopes().
+          # The plugin reads this key from Info.plist; passing clientId only via
+          # the Dart constructor is insufficient for the requestScopes() code path.
+          CLIENT_ID=$(/usr/libexec/PlistBuddy \
+            -c "Print :CLIENT_ID" \
+            ios/Runner/GoogleService-Info.plist 2>/dev/null || echo "")
+          if [ -n "$CLIENT_ID" ]; then
+            /usr/libexec/PlistBuddy \
+              -c "Add :GIDClientID string $CLIENT_ID" \
+              ios/Runner/Info.plist 2>/dev/null || \
+            /usr/libexec/PlistBuddy \
+              -c "Set :GIDClientID $CLIENT_ID" \
+              ios/Runner/Info.plist
+            echo "✅ GIDClientID injected"
+          else
+            echo "⚠️  CLIENT_ID not found — skipping GIDClientID injection"
+          fi
 
       - name: Import signing certificate
         uses: apple-actions/import-codesign-certs@v3

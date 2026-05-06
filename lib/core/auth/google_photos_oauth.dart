@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../debug/debug_log.dart';
@@ -122,7 +123,17 @@ Future<String?> ensureGooglePhotosAccessToken(
   }
 
   _log('ensureAccessToken: requesting scopes interactively…');
-  final granted = await googleSignIn.requestScopes(scopeList);
+  bool granted = false;
+  try {
+    granted = await googleSignIn.requestScopes(scopeList);
+  } on PlatformException catch (e) {
+    // On iOS, requestScopes() throws NSInvalidArgumentException if GIDClientID
+    // is missing from Info.plist or the GIDSignIn shared instance has no
+    // active configuration. Treat as a non-fatal denial so the caller can
+    // surface a sign-out/sign-in prompt instead of crashing.
+    _log('ensureAccessToken: requestScopes threw PlatformException: $e');
+    return null;
+  }
   _log('ensureAccessToken: requestScopes → granted=$granted');
 
   // On iOS, requestScopes may return false even when the user successfully

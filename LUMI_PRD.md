@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.18+107
+**前端版本 (Flutter App)：** 1.0.19+108
 **後端版本 (Cloud Functions)：** 1.0.2
 **開發框架：** Flutter (Cross-platform)
 
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-05-06 | 1.0.19+108 | 1.0.2 | CI 注入 `GIDClientID` 到 `Info.plist`（google_sign_in_ios 的 `requestScopes()` 需要此 plist key，純靠 Dart constructor `clientId` 不足）；`google_photos_oauth.dart` 對 `requestScopes` 加 `PlatformException` catch，避免 "No active configuration" crash 直接崩潰，改為回傳 null 讓 caller 顯示重新登入提示 | Auth / OAuth / CI |
 | 2026-05-06 | 1.0.18+107 | 1.0.2 | 修正 Google OAuth「Unbundled Consent」政策違規：移除 GoogleSignIn constructor 及 signInWithPopup 中的 Photos scopes，改為僅在使用者明確觸發 Photos 相關功能時增量授權；這是導致 photoslibrary.readonly 即使使用者同意仍未寫入 token 的根本原因 | Auth / OAuth |
 | 2026-05-06 | 1.0.17+106 | 1.0.2 | 移除 signInWithGoogle 中的 requestScopes 呼叫（iOS WKWebView completion timing 導致 token 未正確取得 photoslibrary.readonly）；改由 signIn() 一次取得所有 constructor scopes；wardrobe refreshThumbnailUrl 加入 tokeninfo 診斷 log，確認 token 實際帶的 scope | Auth / Wardrobe Thumbnail / Diagnostics |
 | 2026-05-06 | 1.0.16+105 | 1.0.2 | 架構修正：iOS 縮圖刷新改為直接呼叫 Photos API（`kIsWeb` 判斷），不再經由 Cloud Function 轉發 token — Google 會拒絕 server-side token forwarding 並回 403，即使 token 確實帶有 `photoslibrary.readonly`；Web 仍走 Cloud Function（CORS 限制） | Wardrobe Thumbnail / Architecture |

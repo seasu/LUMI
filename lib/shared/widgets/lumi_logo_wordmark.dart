@@ -25,31 +25,33 @@ class LumiLogoWordmark extends StatelessWidget {
 
         return Semantics(
           label: 'Lumi',
-          child: SizedBox(
-            width: maxW,
-            child: FittedBox(
-              fit: BoxFit.contain,
-              alignment: Alignment.center,
-              child: Text(
-                'Lumi',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: _fontFamily,
-                  fontSize: fontSize,
-                  fontWeight: FontWeight.w600,
-                  height: 1.05,
-                  letterSpacing: 0.02,
-                  color: onSurface,
-                  shadows: [
-                    Shadow(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.22),
-                      blurRadius: 16,
-                      offset: Offset.zero,
-                    ),
-                  ],
+          child: Center(
+            child: SizedBox(
+              width: maxW * 0.8,
+              child: FittedBox(
+                fit: BoxFit.contain,
+                alignment: Alignment.center,
+                child: Text(
+                  'Lumi',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: _fontFamily,
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w600,
+                    height: 1.05,
+                    letterSpacing: 0.02,
+                    color: onSurface,
+                    shadows: [
+                      Shadow(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.22),
+                        blurRadius: 16,
+                        offset: Offset.zero,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

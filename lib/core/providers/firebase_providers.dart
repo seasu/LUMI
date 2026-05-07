@@ -10,9 +10,14 @@ import '../debug/debug_log.dart';
 const kGooglePhotosAppendOnlyScope =
     'https://www.googleapis.com/auth/photoslibrary.appendonly';
 
-/// Google Photos Library API — list albums / media (wardrobe sync from cloud).
+/// Google Photos Library API — list albums / media created by this app.
+///
+/// photoslibrary.readonly was deprecated for third-party apps in 2024 and is
+/// no longer granted by Google OAuth (silently downgraded or rejected). The
+/// narrower appcreateddata scope covers everything Lumi needs: the
+/// Lumi_Wardrobe album and all items were uploaded by this app.
 const kGooglePhotosReadonlyScope =
-    'https://www.googleapis.com/auth/photoslibrary.readonly';
+    'https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata';
 
 final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
   return FirebaseAuth.instance;
@@ -37,12 +42,11 @@ final googleSignInProvider = Provider<GoogleSignIn>((ref) {
   DebugLogService.instance
       .log('[auth] GoogleSignIn init: GOOGLE_CLIENT_ID=$clientIdDisplay');
 
-  // Only request 'email' at sign-in time. Photos scopes (appendonly, readonly)
-  // are requested incrementally via ensureGooglePhotosAccessToken() at the
-  // point where the user explicitly triggers a Photos-dependent action (sync,
-  // thumbnail refresh). Bundling them in the constructor violates Google's
-  // "Unbundled Consent" OAuth policy and causes the consent screen to not
-  // properly grant the sensitive photoslibrary.readonly scope.
+  // Only request 'email' at sign-in time. Photos scopes (appendonly,
+  // readonly.appcreateddata) are requested incrementally via
+  // ensureGooglePhotosAccessToken() at the point where the user explicitly
+  // triggers a Photos-dependent action. Bundling them in the constructor
+  // violates Google's "Unbundled Consent" OAuth policy.
   return GoogleSignIn(
     clientId: clientId.isEmpty ? null : clientId,
     scopes: const ['email'],

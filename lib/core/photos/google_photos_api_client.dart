@@ -63,12 +63,18 @@ class GooglePhotosApiClient {
           ? DateTime.fromMillisecondsSinceEpoch(expSec * 1000, isUtc: true)
               .toIso8601String()
           : '-';
+      final hasReadonly = scope.contains(
+        'https://www.googleapis.com/auth/photoslibrary.readonly',
+      );
+      final hasAppCreated = scope.contains('photoslibrary.readonly.appcreateddata');
       _log('tokeninfo${tag.isEmpty ? "" : "[$tag]"}'
           ' aud=$aud'
           ' azp=$azp'
           ' email=$email'
           ' exp=$expUtc'
-          ' hasReadonly=${scope.contains("photoslibrary.readonly")}');
+          ' hasReadonly=$hasReadonly'
+          ' hasAppCreated=$hasAppCreated'
+          ' scopes=$scope');
     } catch (e) {
       _log('tokeninfo${tag.isEmpty ? "" : "[$tag]"} failed: $e');
     }

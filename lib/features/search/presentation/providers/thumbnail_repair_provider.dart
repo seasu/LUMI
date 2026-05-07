@@ -235,6 +235,12 @@ class ThumbnailRepairCoordinator {
               return;
             }
             rethrow;
+          } catch (retryError) {
+            if (_isPhotos403(retryError)) {
+              _startAuthBackoff(item, reason: 'readonly_scope_required');
+              return;
+            }
+            rethrow;
           }
         }
         if (!_isInvalidAuth(error)) rethrow;
@@ -259,6 +265,15 @@ class ThumbnailRepairCoordinator {
           }
           rethrow;
         }
+      } catch (error) {
+        // Direct HTTP Photos API call (native iOS) throws plain Exception on 403.
+        // Treat missing-scope 403 as an auth backoff, not a per-item failure,
+        // so we stop hammering the API until the user grants photoslibrary.readonly.
+        if (_isPhotos403(error)) {
+          _startAuthBackoff(item, reason: 'readonly_scope_required');
+          return;
+        }
+        rethrow;
       }
     } catch (error) {
       _cooldownUntil[mediaItemId] =
@@ -306,6 +321,14 @@ class ThumbnailRepairCoordinator {
         raw.contains('401') ||
         raw.contains('unauthenticated') ||
         raw.contains('invalid authentication credentials');
+  }
+
+  bool _isPhotos403(Object error) {
+    final msg = error.toString().toLowerCase();
+    return msg.contains('403') &&
+        (msg.contains('insufficient') ||
+            msg.contains('permission_denied') ||
+            msg.contains('photos api'));
   }
 
   bool _isMissingReadonlyScope(FirebaseFunctionsException error) {

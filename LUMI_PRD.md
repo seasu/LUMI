@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.21+110
+**前端版本 (Flutter App)：** 1.0.22+111
 **後端版本 (Cloud Functions)：** 1.0.2
 **開發框架：** Flutter (Cross-platform)
 
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-05-07 | 1.0.22+111 | 1.0.2 | 修正 nativeSync 在 Photos API 連續兩次 403 時顯示 raw exception 的問題：第二次重試亦加 try/catch，403 → 友善的 StateError 引導使用者登出重新登入；重試前先 `signOut()` 以清除 in-memory 過時 session；`thumbnail_repair_provider` 新增 `_isPhotos403()` helper，讓背景縮圖修復對 native iOS 直接呼叫 Photos API 拋出的 `Exception` 403 正確觸發 auth backoff | Auth / OAuth / Wardrobe Sync / Thumbnail Repair |
 | 2026-05-06 | 1.0.21+110 | 1.0.2 | 新增 OAuth client ID 診斷 log：GoogleSignIn 初始化時印 GOOGLE_CLIENT_ID dart-define；Photos API 呼叫前（refreshThumbnailUrl、sync）呼叫 tokeninfo 並印 aud（哪個 client 簽出 token）、azp、email、exp、hasReadonly，讓 aud vs GOOGLE_CLIENT_ID 比對可見 | Auth / Diagnostics |
 | 2026-05-06 | 1.0.20+109 | 1.0.2 | native 衣櫥同步（syncWardrobeAlbumFromGooglePhotos）從 Cloud Function 轉移至 Flutter client 端：新建 `GooglePhotosApiClient`（GET /albums、POST /mediaItems:search）；native 路徑直接呼叫 Photos API 並以 Firestore batch write 寫入衣物 doc，不再把 access token 轉發給 CF（Google 拒絕 server-side token forwarding）；Web 路徑保持使用 CF（瀏覽器 CORS 限制） | Wardrobe Sync / Architecture |
 | 2026-05-06 | 1.0.19+108 | 1.0.2 | CI 注入 `GIDClientID` 到 `Info.plist`（google_sign_in_ios 的 `requestScopes()` 需要此 plist key，純靠 Dart constructor `clientId` 不足）；`google_photos_oauth.dart` 對 `requestScopes` 加 `PlatformException` catch，避免 "No active configuration" crash 直接崩潰，改為回傳 null 讓 caller 顯示重新登入提示 | Auth / OAuth / CI |

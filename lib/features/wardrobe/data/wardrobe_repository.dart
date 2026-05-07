@@ -121,13 +121,18 @@ class WardrobeRepository {
               ? DateTime.fromMillisecondsSinceEpoch(expSec * 1000, isUtc: true)
                   .toIso8601String()
               : '-';
-          final hasReadonly = scope.contains('photoslibrary.readonly');
+          final hasReadonly = scope.contains(
+            'https://www.googleapis.com/auth/photoslibrary.readonly',
+          );
+          final hasAppCreated =
+              scope.contains('photoslibrary.readonly.appcreateddata');
           _log('refreshThumbnailUrl: tokeninfo'
               ' aud=$aud'
               ' azp=$azp'
               ' email=$email'
               ' exp=$expUtc'
               ' hasReadonly=$hasReadonly'
+              ' hasAppCreated=$hasAppCreated'
               ' scopes=$scope');
         }
       } catch (e) {

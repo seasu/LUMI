@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../debug/debug_log.dart';
+
 /// Google Photos Library API — upload/create (Lumi Snap).
 const kGooglePhotosAppendOnlyScope =
     'https://www.googleapis.com/auth/photoslibrary.appendonly';
@@ -27,6 +29,14 @@ final cloudFunctionsProvider = Provider<FirebaseFunctions>((ref) {
 
 final googleSignInProvider = Provider<GoogleSignIn>((ref) {
   const clientId = String.fromEnvironment('GOOGLE_CLIENT_ID');
+  // Log which client ID the app was compiled with so we can compare against
+  // the token's `aud` field in tokeninfo diagnostics.
+  final clientIdDisplay = clientId.isEmpty
+      ? '(empty — GIDClientID read from Info.plist)'
+      : '${clientId.substring(0, clientId.length.clamp(0, 28))}…';
+  DebugLogService.instance
+      .log('[auth] GoogleSignIn init: GOOGLE_CLIENT_ID=$clientIdDisplay');
+
   // Only request 'email' at sign-in time. Photos scopes (appendonly, readonly)
   // are requested incrementally via ensureGooglePhotosAccessToken() at the
   // point where the user explicitly triggers a Photos-dependent action (sync,

@@ -13,16 +13,15 @@ WardrobeItem _item({
   List<String> colors = const [],
   List<String> materials = const [],
 }) {
-  final now = DateTime.now();
   return WardrobeItem(
-    mediaItemId: id,
+    docId: id,
+    localFileName: '$id.jpg',
     category: category,
     colors: colors,
     materials: materials,
     embedding: [],
-    thumbnailUrl: 'https://example.com/$id',
-    createdAt: now,
-    thumbnailRefreshedAt: now,
+    createdAt: DateTime.now(),
+    analyzed: true,
   );
 }
 
@@ -108,28 +107,28 @@ void main() {
         const WardrobeFilter(category: WardrobeFilter.uncategorizedOnly),
       );
       expect(result, hasLength(1));
-      expect(result.first.mediaItemId, equals('4'));
+      expect(result.first.docId, equals('4'));
     });
 
     test('category filter returns only matching items', () {
       final result =
           _apply(items, const WardrobeFilter(category: '上衣'));
       expect(result, hasLength(1));
-      expect(result.first.mediaItemId, equals('1'));
+      expect(result.first.docId, equals('1'));
     });
 
     test('keyword matches category', () {
       final result =
           _apply(items, const WardrobeFilter(keyword: '外套'));
       expect(result, hasLength(1));
-      expect(result.first.mediaItemId, equals('3'));
+      expect(result.first.docId, equals('3'));
     });
 
     test('keyword matches material', () {
       final result =
           _apply(items, const WardrobeFilter(keyword: '棉'));
       expect(result, hasLength(1));
-      expect(result.first.mediaItemId, equals('1'));
+      expect(result.first.docId, equals('1'));
     });
 
     test('color filter returns items containing the selected color', () {
@@ -137,7 +136,7 @@ void main() {
         items,
         const WardrobeFilter(colors: ['#3B5BDB']),
       );
-      expect(result.map((i) => i.mediaItemId), containsAll(['1', '3']));
+      expect(result.map((i) => i.docId), containsAll(['1', '3']));
       expect(result, hasLength(2));
     });
 
@@ -147,14 +146,14 @@ void main() {
         const WardrobeFilter(category: '上衣', colors: ['#3B5BDB']),
       );
       expect(result, hasLength(1));
-      expect(result.first.mediaItemId, equals('1'));
+      expect(result.first.docId, equals('1'));
     });
 
     test('material filter returns correct items', () {
       final result =
           _apply(items, const WardrobeFilter(materials: ['羊毛']));
       expect(result, hasLength(1));
-      expect(result.first.mediaItemId, equals('3'));
+      expect(result.first.docId, equals('3'));
     });
 
     test('no match returns empty list', () {

@@ -1,12 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers/firebase_providers.dart'
     show firebaseAuthProvider;
+import '../../../../core/storage/local_image_storage.dart';
 import '../../../../shared/constants/lumi_colors.dart';
 import '../../../wardrobe/data/wardrobe_item.dart';
 import '../../../wardrobe/data/wardrobe_repository.dart';
-import '../../../wardrobe/utils/wardrobe_thumbnail_url.dart';
 
 class WardrobeCard extends ConsumerWidget {
   const WardrobeCard({super.key, required this.item});
@@ -15,7 +17,6 @@ class WardrobeCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final thumbnailUrl = ref.watch(_thumbnailUrlProvider(item));
     final title = _displayTitle(item);
     final subtitle = _displaySubtitle(item);
 
@@ -35,7 +36,7 @@ class WardrobeCard extends ConsumerWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  _ThumbnailImage(url: thumbnailUrl),
+                  _ThumbnailImage(localFileName: item.localFileName),
                   if (!item.analyzed) _PendingOverlay(item: item),
                 ],
               ),
@@ -124,7 +125,7 @@ class WardrobeCard extends ConsumerWidget {
     try {
       await ref
           .read(wardrobeRepositoryProvider)
-          .deleteItem(user.uid, item.mediaItemId);
+          .deleteItem(user.uid, item.docId, localFileName: item.localFileName);
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -160,49 +161,50 @@ String _displaySubtitle(WardrobeItem item) {
     return '請至 Firebase 後台查看紀錄';
   }
   final category = item.category.isEmpty ? '未分類' : item.category;
-  final code = item.mediaItemId.length > 6
-      ? item.mediaItemId.substring(0, 6).toUpperCase()
-      : item.mediaItemId.toUpperCase();
+  final id = item.docId;
+  final code = id.length > 6 ? id.substring(0, 6).toUpperCase() : id.toUpperCase();
   return '$category | $code';
 }
 
 // ── Thumbnail display ─────────────────────────────────────────────────────────
 
-final _thumbnailUrlProvider =
-    Provider.family<String, WardrobeItem>((ref, item) {
-  return item.thumbnailUrl;
-});
-
 class _ThumbnailImage extends StatelessWidget {
-  const _ThumbnailImage({required this.url});
+  const _ThumbnailImage({required this.localFileName});
 
-  final String url;
+  final String? localFileName;
 
   @override
   Widget build(BuildContext context) {
-    if (url.trim().isEmpty || wardrobeThumbnailNeedsApiRefresh(url)) {
-      return const ColoredBox(
-        color: LumiColors.base,
-        child: Center(
-          child: Icon(Icons.checkroom_outlined, color: LumiColors.subtext, size: 32),
-        ),
-      );
+    if (localFileName == null || localFileName!.isEmpty) {
+      return const _ImagePlaceholder();
     }
-    return Image.network(
-      url,
-      fit: BoxFit.cover,
-      width: double.infinity,
-      height: double.infinity,
-      errorBuilder: (_, __, ___) => const ColoredBox(
-        color: LumiColors.base,
-        child: Center(
-          child: Icon(Icons.checkroom_outlined, color: LumiColors.subtext, size: 32),
-        ),
-      ),
-      loadingBuilder: (_, child, progress) {
-        if (progress == null) return child;
-        return const ColoredBox(color: LumiColors.base);
+    return FutureBuilder<File?>(
+      future: LocalImageStorage.getFile(localFileName),
+      builder: (context, snapshot) {
+        final file = snapshot.data;
+        if (file == null) return const _ImagePlaceholder();
+        return Image.file(
+          file,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          errorBuilder: (_, __, ___) => const _ImagePlaceholder(),
+        );
       },
+    );
+  }
+}
+
+class _ImagePlaceholder extends StatelessWidget {
+  const _ImagePlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(
+      color: LumiColors.base,
+      child: Center(
+        child: Icon(Icons.checkroom_outlined, color: LumiColors.subtext, size: 32),
+      ),
     );
   }
 }
@@ -293,7 +295,7 @@ class _PendingOverlay extends StatelessWidget {
   }
 }
 
-/// Maps [analyzeWardrobeItem] error codes to short UI copy (full value stays in Firestore).
+/// Maps analyzeError codes to short UI copy.
 String _analyzeErrorTitle(String analyzeError) {
   if (analyzeError == 'missing_url') return '缺少預覽連結';
   if (analyzeError == 'quota_exceeded') return '配額已用完';

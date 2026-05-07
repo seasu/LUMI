@@ -1,49 +1,94 @@
-import 'dart:convert';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
 
 import '../../../core/debug/debug_log.dart';
 import '../../../core/providers/firebase_providers.dart';
-import '../../snap/data/cloud_functions_service.dart';
+import '../../../core/storage/local_image_storage.dart';
 import 'wardrobe_item.dart';
 
 void _log(String msg) => DebugLogService.instance.log('[fs:wardrobe] $msg');
 
 class WardrobeRepository {
-  WardrobeRepository(
-    this._firestore, {
-    http.Client? httpClient,
-    CloudFunctionsService? cloudFunctions,
-  })  : _http = httpClient ?? http.Client(),
-        _cloudFunctions = cloudFunctions;
+  WardrobeRepository(this._firestore);
 
   final FirebaseFirestore _firestore;
-  final http.Client _http;
-  final CloudFunctionsService? _cloudFunctions;
 
   CollectionReference<Map<String, dynamic>> _col(String userId) =>
       _firestore.collection('users').doc(userId).collection('wardrobe');
 
-  Future<void> addItem(String userId, WardrobeItem item) {
-    _log('addItem → uid=$userId mediaItemId=${item.mediaItemId}');
-    return _col(userId).doc(item.mediaItemId).set(item.toFirestore());
+  /// Creates a wardrobe doc for a locally saved image.
+  /// [localFileName] is the file name returned by [LocalImageStorage.saveImage].
+  /// The doc ID is the UUID portion of the file name (without extension).
+  Future<String> addItemLocal(
+    String userId, {
+    required String localFileName,
+    required DateTime createdAt,
+  }) {
+    final docId = localFileName.contains('.')
+        ? localFileName.substring(0, localFileName.lastIndexOf('.'))
+        : localFileName;
+    _log('addItemLocal → uid=$userId docId=$docId');
+    final item = WardrobeItem(
+      docId: docId,
+      localFileName: localFileName,
+      category: '',
+      colors: const [],
+      materials: const [],
+      embedding: const [],
+      createdAt: createdAt,
+      analyzed: false,
+    );
+    return _col(userId).doc(docId).set(item.toFirestore()).then((_) => docId);
   }
 
-  Future<void> deleteItem(String userId, String mediaItemId) {
-    _log('deleteItem → uid=$userId mediaItemId=$mediaItemId');
-    return _col(userId).doc(mediaItemId).delete();
+  /// Updates a wardrobe doc with Gemini analysis results.
+  Future<void> updateAnalysis(
+    String userId,
+    String docId, {
+    required String category,
+    required List<String> colors,
+    required List<String> materials,
+    required List<double> embedding,
+  }) {
+    _log('updateAnalysis → uid=$userId docId=$docId category=$category');
+    return _col(userId).doc(docId).update({
+      'category': category,
+      'colors': colors,
+      'materials': materials,
+      'embedding': embedding,
+      'analyzed': true,
+      'analyzeError': FieldValue.delete(),
+    });
   }
 
-  Future<WardrobeItem?> getItem(String userId, String mediaItemId) async {
-    _log('getItem → uid=$userId mediaItemId=$mediaItemId');
-    final doc = await _col(userId).doc(mediaItemId).get();
-    if (!doc.exists) {
-      _log('getItem ← null (not found)');
-      return null;
-    }
+  /// Marks a wardrobe doc as failed analysis.
+  Future<void> markAnalyzeFailed(
+    String userId,
+    String docId,
+    String error,
+  ) {
+    _log('markAnalyzeFailed → uid=$userId docId=$docId');
+    return _col(userId).doc(docId).update({
+      'analyzed': false,
+      'analyzeError': error.length > 500 ? '${error.substring(0, 500)}…' : error,
+    });
+  }
+
+  /// Deletes a wardrobe item and its local image file (if any).
+  Future<void> deleteItem(
+    String userId,
+    String docId, {
+    String? localFileName,
+  }) async {
+    _log('deleteItem → uid=$userId docId=$docId');
+    await LocalImageStorage.deleteFile(localFileName);
+    return _col(userId).doc(docId).delete();
+  }
+
+  Future<WardrobeItem?> getItem(String userId, String docId) async {
+    _log('getItem → uid=$userId docId=$docId');
+    final doc = await _col(userId).doc(docId).get();
+    if (!doc.exists) return null;
     return WardrobeItem.fromFirestore(doc);
   }
 
@@ -52,8 +97,6 @@ class WardrobeRepository {
             (snap) => snap.docs.map(WardrobeItem.fromFirestore).toList(),
           );
 
-  /// One-shot read from the Firestore server so local cache and listeners catch up.
-  /// Use after pull-to-refresh when the UI feels stale.
   Future<void> prefetchWardrobeFromServer(String userId) async {
     _log('prefetchFromServer → uid=$userId');
     final sw = Stopwatch()..start();
@@ -68,114 +111,8 @@ class WardrobeRepository {
       rethrow;
     }
   }
-
-  /// Fetches a fresh thumbnailUrl from Google Photos and updates Firestore.
-  /// Should be called when [WardrobeItem.isThumbnailStale] is true.
-  ///
-  /// On **Web**: always proxy via [CloudFunctionsService.refreshWardrobeThumbnail]
-  /// because browsers block direct `GET photoslibrary.googleapis.com` with CORS
-  /// errors (surfaces as 403 in DevTools regardless of OAuth scopes).
-  ///
-  /// On **native iOS/Android**: call the Photos API directly with the access token.
-  /// Forwarding the token through a Cloud Function causes Google to reject it with
-  /// 403 "insufficient authentication scopes" even when the token genuinely has the
-  /// required scopes — Google's token security policy blocks server-side forwarding
-  /// of mobile-obtained OAuth tokens to the Photos Library REST API.
-  Future<String> refreshThumbnailUrl({
-    required String userId,
-    required String mediaItemId,
-    required String accessToken,
-  }) async {
-    final cf = _cloudFunctions;
-    final useCloudFunctions = cf != null && kIsWeb;
-    final via = useCloudFunctions ? 'functions' : 'http';
-    _log('refreshThumbnailUrl → via=$via mediaItemId=$mediaItemId');
-    final sw = Stopwatch()..start();
-    try {
-      if (useCloudFunctions) {
-        final url = await cf.refreshWardrobeThumbnail(
-          accessToken: accessToken,
-          mediaItemId: mediaItemId,
-        );
-        _log('refreshThumbnailUrl ← ok ${sw.elapsedMilliseconds}ms (functions)');
-        return url;
-      }
-
-      // Diagnostic: log token identity and scopes.
-      // Compare `aud` with the GOOGLE_CLIENT_ID dart-define to confirm
-      // the correct OAuth client issued this token.
-      try {
-        final infoRes = await _http.get(Uri.parse(
-          'https://oauth2.googleapis.com/tokeninfo?access_token=$accessToken',
-        ));
-        final info = jsonDecode(infoRes.body) as Map<String, dynamic>;
-        if (info.containsKey('error')) {
-          _log('refreshThumbnailUrl: tokeninfo error=${info['error']}');
-        } else {
-          final scope = info['scope'] as String? ?? '';
-          final aud = info['aud'] as String? ?? 'unknown';
-          final azp = info['azp'] as String? ?? '-';
-          final email = info['email'] as String? ?? '-';
-          final expSec = int.tryParse(info['exp'] as String? ?? '');
-          final expUtc = expSec != null
-              ? DateTime.fromMillisecondsSinceEpoch(expSec * 1000, isUtc: true)
-                  .toIso8601String()
-              : '-';
-          final hasReadonly = scope.contains(
-            'https://www.googleapis.com/auth/photoslibrary.readonly',
-          );
-          final hasAppCreated =
-              scope.contains('photoslibrary.readonly.appcreateddata');
-          _log('refreshThumbnailUrl: tokeninfo'
-              ' aud=$aud'
-              ' azp=$azp'
-              ' email=$email'
-              ' exp=$expUtc'
-              ' hasReadonly=$hasReadonly'
-              ' hasAppCreated=$hasAppCreated'
-              ' scopes=$scope');
-        }
-      } catch (e) {
-        _log('refreshThumbnailUrl: tokeninfo failed: $e');
-      }
-
-      final uri = Uri.parse(
-        'https://photoslibrary.googleapis.com/v1/mediaItems/$mediaItemId',
-      );
-      final response = await _http.get(
-        uri,
-        headers: {'Authorization': 'Bearer $accessToken'},
-      );
-
-      if (response.statusCode != 200) {
-        throw Exception('Photos API ${response.statusCode}: ${response.body}');
-      }
-
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final baseUrl = data['baseUrl'] as String?;
-      final freshUrl = baseUrl;
-      if (freshUrl == null || freshUrl.isEmpty) {
-        throw Exception('Photos API: no baseUrl for media item');
-      }
-      final now = DateTime.now();
-
-      await _col(userId).doc(mediaItemId).update({
-        'thumbnailUrl': freshUrl,
-        'thumbnailRefreshedAt': Timestamp.fromDate(now),
-      });
-
-      _log('refreshThumbnailUrl ← ok ${sw.elapsedMilliseconds}ms (http)');
-      return freshUrl;
-    } catch (e) {
-      _log('refreshThumbnailUrl ✗ ${sw.elapsedMilliseconds}ms $e');
-      rethrow;
-    }
-  }
 }
 
 final wardrobeRepositoryProvider = Provider<WardrobeRepository>((ref) {
-  return WardrobeRepository(
-    ref.watch(firestoreProvider),
-    cloudFunctions: ref.watch(cloudFunctionsServiceProvider),
-  );
+  return WardrobeRepository(ref.watch(firestoreProvider));
 });

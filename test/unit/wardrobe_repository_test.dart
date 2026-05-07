@@ -1,29 +1,11 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
-import 'package:lumi/features/wardrobe/data/wardrobe_item.dart';
 import 'package:lumi/features/wardrobe/data/wardrobe_repository.dart';
 
 void main() {
   const userId = 'test-user-123';
-
-  WardrobeItem makeItem({
-    String mediaItemId = 'item-001',
-    DateTime? thumbnailRefreshedAt,
-  }) {
-    final now = DateTime.now();
-    return WardrobeItem(
-      mediaItemId: mediaItemId,
-      category: '上衣',
-      colors: const ['#FFFFFF', '#3B5BDB'],
-      materials: const ['棉'],
-      embedding: List.generate(10, (i) => i.toDouble()),
-      thumbnailUrl: 'https://photos.example.com/thumb',
-      createdAt: now,
-      thumbnailRefreshedAt: thumbnailRefreshedAt ?? now,
-    );
-  }
+  const localFileName = 'abc123.jpg';
+  const docId = 'abc123';
 
   group('WardrobeRepository', () {
     late FakeFirebaseFirestore fakeFirestore;
@@ -34,156 +16,123 @@ void main() {
       repo = WardrobeRepository(fakeFirestore);
     });
 
-    test('addItem writes correct data to Firestore', () async {
-      final item = makeItem();
-      await repo.addItem(userId, item);
+    test('addItemLocal creates Firestore doc with analyzed=false', () async {
+      final id = await repo.addItemLocal(
+        userId,
+        localFileName: localFileName,
+        createdAt: DateTime(2024, 1, 15),
+      );
+
+      expect(id, equals(docId));
 
       final doc = await fakeFirestore
           .collection('users')
           .doc(userId)
           .collection('wardrobe')
-          .doc(item.mediaItemId)
+          .doc(docId)
           .get();
 
       expect(doc.exists, isTrue);
-      expect(doc['category'], equals('上衣'));
-      expect(doc['colors'], equals(['#FFFFFF', '#3B5BDB']));
-      expect(doc['materials'], equals(['棉']));
-      expect(doc['embedding'], hasLength(10));
+      expect(doc['localFileName'], equals(localFileName));
+      expect(doc['analyzed'], isFalse);
     });
 
-    test('getItem returns null for non-existent mediaItemId', () async {
+    test('updateAnalysis sets analyzed=true and populates fields', () async {
+      await repo.addItemLocal(
+        userId,
+        localFileName: localFileName,
+        createdAt: DateTime(2024, 1, 15),
+      );
+
+      await repo.updateAnalysis(
+        userId,
+        docId,
+        category: '上衣',
+        colors: ['#FFFFFF'],
+        materials: ['棉'],
+        embedding: [0.1, 0.2, 0.3],
+      );
+
+      final item = await repo.getItem(userId, docId);
+      expect(item, isNotNull);
+      expect(item!.analyzed, isTrue);
+      expect(item.category, equals('上衣'));
+      expect(item.colors, equals(['#FFFFFF']));
+      expect(item.materials, equals(['棉']));
+      expect(item.embedding, equals([0.1, 0.2, 0.3]));
+    });
+
+    test('markAnalyzeFailed sets analyzeError and keeps analyzed=false', () async {
+      await repo.addItemLocal(
+        userId,
+        localFileName: localFileName,
+        createdAt: DateTime.now(),
+      );
+
+      await repo.markAnalyzeFailed(userId, docId, 'analysis_failed:timeout');
+
+      final item = await repo.getItem(userId, docId);
+      expect(item!.analyzed, isFalse);
+      expect(item.analyzeError, contains('analysis_failed'));
+    });
+
+    test('getItem returns null for non-existent docId', () async {
       final result = await repo.getItem(userId, 'does-not-exist');
       expect(result, isNull);
     });
 
-    test('getItem returns correct item after addItem', () async {
-      final item = makeItem();
-      await repo.addItem(userId, item);
+    test('getItem returns correct item after addItemLocal', () async {
+      await repo.addItemLocal(
+        userId,
+        localFileName: localFileName,
+        createdAt: DateTime.now(),
+      );
 
-      final result = await repo.getItem(userId, item.mediaItemId);
+      final result = await repo.getItem(userId, docId);
       expect(result, isNotNull);
-      expect(result!.category, equals('上衣'));
-      expect(result.colors, equals(['#FFFFFF', '#3B5BDB']));
-    });
-
-    test('prefetchWardrobeFromServer completes after data exists', () async {
-      await repo.addItem(userId, makeItem());
-      await expectLater(repo.prefetchWardrobeFromServer(userId), completes);
-      final item = await repo.getItem(userId, 'item-001');
-      expect(item, isNotNull);
-    });
-
-    test('watchWardrobe emits items in descending createdAt order', () async {
-      final older = makeItem(
-        mediaItemId: 'item-old',
-      );
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-      final newer = makeItem(
-        mediaItemId: 'item-new',
-      );
-
-      await repo.addItem(userId, older);
-      await repo.addItem(userId, newer);
-
-      final items = await repo.watchWardrobe(userId).first;
-      expect(items.first.mediaItemId, equals('item-new'));
-      expect(items.last.mediaItemId, equals('item-old'));
-    });
-
-    test('refreshThumbnailUrl updates Firestore with fresh URL', () async {
-      final item = makeItem();
-      await repo.addItem(userId, item);
-
-      const freshUrl = 'https://photos.example.com/fresh-thumb';
-      final mockClient = MockClient((request) async {
-        expect(
-          request.headers['Authorization'],
-          equals('Bearer test-access-token'),
-        );
-        return http.Response(
-          '{"baseUrl": "$freshUrl"}',
-          200,
-        );
-      });
-
-      final repoWithMock = WardrobeRepository(fakeFirestore, httpClient: mockClient);
-      final result = await repoWithMock.refreshThumbnailUrl(
-        userId: userId,
-        mediaItemId: item.mediaItemId,
-        accessToken: 'test-access-token',
-      );
-
-      expect(result, equals(freshUrl));
-
-      final updated = await repo.getItem(userId, item.mediaItemId);
-      expect(updated!.thumbnailUrl, equals(freshUrl));
+      expect(result!.localFileName, equals(localFileName));
     });
 
     test('deleteItem removes document from Firestore', () async {
-      final item = makeItem();
-      await repo.addItem(userId, item);
+      await repo.addItemLocal(
+        userId,
+        localFileName: localFileName,
+        createdAt: DateTime.now(),
+      );
 
-      final before = await repo.getItem(userId, item.mediaItemId);
+      final before = await repo.getItem(userId, docId);
       expect(before, isNotNull);
 
-      await repo.deleteItem(userId, item.mediaItemId);
+      await repo.deleteItem(userId, docId, localFileName: localFileName);
 
-      final after = await repo.getItem(userId, item.mediaItemId);
+      final after = await repo.getItem(userId, docId);
       expect(after, isNull);
     });
 
-    test('refreshThumbnailUrl rejects productUrl-only responses', () async {
-      final item = makeItem(mediaItemId: 'item-product-url');
-      await repo.addItem(userId, item);
-
-      final mockClient = MockClient((request) async {
-        expect(
-          request.headers['Authorization'],
-          equals('Bearer test-access-token'),
-        );
-        return http.Response(
-          '{"productUrl": "https://photos.google.com/lr/album/x/photo/y"}',
-          200,
-        );
-      });
-
-      final repoWithMock = WardrobeRepository(
-        fakeFirestore,
-        httpClient: mockClient,
+    test('watchWardrobe emits items in descending createdAt order', () async {
+      await repo.addItemLocal(
+        userId,
+        localFileName: 'old.jpg',
+        createdAt: DateTime(2024, 1, 1),
+      );
+      await repo.addItemLocal(
+        userId,
+        localFileName: 'new.jpg',
+        createdAt: DateTime(2024, 6, 1),
       );
 
-      await expectLater(
-        () => repoWithMock.refreshThumbnailUrl(
-          userId: userId,
-          mediaItemId: item.mediaItemId,
-          accessToken: 'test-access-token',
-        ),
-        throwsA(isA<Exception>()),
-      );
-    });
-  });
-
-  group('WardrobeItem.isThumbnailStale', () {
-    test('returns false when refreshed less than 55 minutes ago', () {
-      final item = makeItem(
-        thumbnailRefreshedAt: DateTime.now().subtract(const Duration(minutes: 30)),
-      );
-      expect(item.isThumbnailStale, isFalse);
+      final items = await repo.watchWardrobe(userId).first;
+      expect(items.first.localFileName, equals('new.jpg'));
+      expect(items.last.localFileName, equals('old.jpg'));
     });
 
-    test('returns true when refreshed exactly 55 minutes ago', () {
-      final item = makeItem(
-        thumbnailRefreshedAt: DateTime.now().subtract(const Duration(minutes: 55)),
+    test('prefetchWardrobeFromServer completes without error', () async {
+      await repo.addItemLocal(
+        userId,
+        localFileName: localFileName,
+        createdAt: DateTime.now(),
       );
-      expect(item.isThumbnailStale, isTrue);
-    });
-
-    test('returns true when refreshed more than 55 minutes ago', () {
-      final item = makeItem(
-        thumbnailRefreshedAt: DateTime.now().subtract(const Duration(hours: 2)),
-      );
-      expect(item.isThumbnailStale, isTrue);
+      await expectLater(repo.prefetchWardrobeFromServer(userId), completes);
     });
   });
 }

@@ -2,8 +2,8 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.24+113
-**後端版本 (Cloud Functions)：** 1.0.2
+**前端版本 (Flutter App)：** 1.0.25+114
+**後端版本 (Cloud Functions)：** 1.0.3
 **開發框架：** Flutter (Cross-platform)
 
 ---
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-05-07 | 1.0.25+114 | 1.0.3 | 架構遷移至本地儲存（Local-First）：圖片存於手機 `lumi_wardrobe/` 目錄，iOS 由 iCloud Backup 自動備份，Android 新增 `backup_rules.xml` 及 `data_extraction_rules.xml` 設定 Google Auto Backup。移除所有 Google Photos OAuth / Drive 依賴（`google_photos_oauth.dart`、`google_photos_api_client.dart`、`wardrobe_google_sync.dart`、`thumbnail_repair_provider.dart`）；新增 `LocalImageStorage`；Snap 改為本地存圖 → Firestore doc（`analyzed: false`）→ 背景呼叫 `analyzeClothing` CF 寫回分析結果；顯示層改用 `Image.file`；`compareClothing` CF 回傳 `docId` + `localFileName`（移除 `mediaItemId` + `thumbnailUrl`）；刪除 CF：`uploadToPhotos`、`syncWardrobeFromPhotos`、`refreshWardrobeThumbnail`、`analyzeWardrobeItemOnCreate`、`retryAnalyzeWardrobeItem` | Architecture / Auth / Snap / Wardrobe / Search / Check / Cloud Functions / Android Backup |
 | 2026-05-07 | 1.0.24+113 | 1.0.2 | 修正 Photos API 403 根本原因：`photoslibrary.readonly` scope 已於 2024 年底對未審核 app 停止授予；Google OAuth 實際回傳 `photoslibrary.readonly.appcreateddata`（子字串 match 造成 `hasReadonly=true` 偽陽性）。將 `kGooglePhotosReadonlyScope` 改為 `photoslibrary.readonly.appcreateddata`；`logTokenInfo` 及 `refreshThumbnailUrl` 新增 `hasAppCreated` flag 與完整 scopes 欄位以便後續診斷 | Auth / OAuth / Wardrobe Sync / Diagnostics |
 | 2026-05-07 | 1.0.23+112 | 1.0.2 | 修正 nativeSync 403 retry 中 `signOut()` 導致的連環崩潰：`signOut()` 後 iOS `GIDSignIn.currentUser` 變 nil，`requestScopes` 拋出 `sign_in_required`，後續 sync 因 `account=null` 顯示「尚未登入 Google」；移除 retry 中的 `signOut()` 呼叫，直接對現有 session 執行 `forceRequestScopes: true`，讓 iOS consent dialog 正常彈出 | Auth / OAuth / Wardrobe Sync |
 | 2026-05-07 | 1.0.22+111 | 1.0.2 | 修正 nativeSync 在 Photos API 連續兩次 403 時顯示 raw exception 的問題：第二次重試亦加 try/catch，403 → 友善的 StateError 引導使用者登出重新登入；重試前先 `signOut()` 以清除 in-memory 過時 session；`thumbnail_repair_provider` 新增 `_isPhotos403()` helper，讓背景縮圖修復對 native iOS 直接呼叫 Photos API 拋出的 `Exception` 403 正確觸發 auth backoff | Auth / OAuth / Wardrobe Sync / Thumbnail Repair |

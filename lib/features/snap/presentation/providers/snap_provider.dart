@@ -22,13 +22,36 @@ class SnapNotifier extends Notifier<SnapState> {
 
   Future<void> pickImages() async {
     final picker = ImagePicker();
+    final current = state;
+    final existing = current is SnapPreviewing ? current.files : <XFile>[];
+    final remaining = _maxPhotos - existing.length;
+    if (remaining <= 0) return;
+
     final files = await picker.pickMultiImage(
       maxWidth: 1920,
       maxHeight: 1920,
       imageQuality: 85,
     );
     if (files.isEmpty) return;
-    state = SnapPreviewing(files: files.take(_maxPhotos).toList());
+    final merged = [...existing, ...files.take(remaining)];
+    state = SnapPreviewing(files: merged);
+  }
+
+  Future<void> takePhoto() async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(
+      source: ImageSource.camera,
+      maxWidth: 1920,
+      maxHeight: 1920,
+      imageQuality: 85,
+    );
+    if (file == null) return;
+    final current = state;
+    if (current is SnapPreviewing && current.files.length < _maxPhotos) {
+      state = SnapPreviewing(files: [...current.files, file]);
+    } else {
+      state = SnapPreviewing(files: [file]);
+    }
   }
 
   void removeFile(int index) {
@@ -44,8 +67,6 @@ class SnapNotifier extends Notifier<SnapState> {
 
     final files = current.files;
     final total = files.length;
-
-    state = SnapUploading(current: 0, total: total);
 
     for (var i = 0; i < total; i++) {
       state = SnapUploading(current: i + 1, total: total);

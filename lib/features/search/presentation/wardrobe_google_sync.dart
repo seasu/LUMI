@@ -102,20 +102,20 @@ Future<SyncWardrobeFromPhotosResult> _nativeSync(WidgetRef ref) async {
   } catch (e) {
     if (!_is403Error(e)) rethrow;
 
-    _log('nativeSync: Photos API 403 — signing out and forcing requestScopes');
+    _log('nativeSync: Photos API 403 — forcing requestScopes and retrying');
 
-    // The cached token either lacks photoslibrary.readonly or is from a
-    // stale bundled-consent session that Photos API internally rejects.
-    // Sign out first so that requestScopes triggers a fresh consent flow
-    // instead of silently re-using the stale token from the iOS Keychain.
-    try {
-      await googleSignIn.signOut();
-    } catch (_) {}
-    final freshAccount = await googleSignIn.signInSilently() ?? account;
-
+    // The token either lacks photoslibrary.readonly or was obtained without
+    // explicit interactive consent (e.g. canAccessScopes threw and we trusted
+    // the pre-available token). Force requestScopes so the user completes the
+    // consent dialog and the resulting token is properly authorized.
+    //
+    // Do NOT call signOut() here: after signOut() the iOS
+    // GIDSignIn.currentUser becomes nil, causing requestScopes to throw
+    // PlatformException(sign_in_required) and leaving the app unauthenticated
+    // for all subsequent sync attempts.
     token = await ensureGooglePhotosAccessToken(
       googleSignIn,
-      freshAccount,
+      account,
       scopes: const [
         kGooglePhotosAppendOnlyScope,
         kGooglePhotosReadonlyScope,

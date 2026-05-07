@@ -11,9 +11,10 @@ import '../../../wardrobe/data/wardrobe_item.dart';
 import '../../../wardrobe/data/wardrobe_repository.dart';
 
 class WardrobeCard extends ConsumerWidget {
-  const WardrobeCard({super.key, required this.item});
+  const WardrobeCard({super.key, required this.item, this.onTap});
 
   final WardrobeItem item;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -22,6 +23,7 @@ class WardrobeCard extends ConsumerWidget {
 
     return InkWell(
       borderRadius: BorderRadius.circular(20),
+      onTap: onTap,
       onLongPress: () => _showDeleteConfirmation(context, ref),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

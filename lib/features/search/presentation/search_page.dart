@@ -194,9 +194,9 @@ class _WardrobeGrid extends StatelessWidget {
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
-        return GestureDetector(
+        return WardrobeCard(
+          item: item,
           onTap: () => showItemDetailModal(context, item),
-          child: WardrobeCard(item: item),
         );
       },
     );

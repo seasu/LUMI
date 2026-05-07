@@ -26,8 +26,6 @@ class AuthRepository {
       UserCredential userCredential;
 
       if (kIsWeb) {
-        // Web: sign in with email only. Photos scopes are added incrementally
-        // when the user explicitly triggers a Photos-dependent action.
         final provider = GoogleAuthProvider()
           ..setCustomParameters({'prompt': 'select_account'});
 
@@ -39,15 +37,6 @@ class AuthRepository {
 
         _log('signInWithGoogle: Google account=${googleUser.email}');
 
-        // Sign in with email only. Photos scopes (appendonly, readonly) are
-        // NOT requested here — they are obtained incrementally via
-        // ensureGooglePhotosAccessToken(interactive: true) at the point where
-        // the user explicitly triggers a Photos-dependent action (sync button,
-        // first wardrobe load with stale thumbnails).
-        //
-        // Bundling Photos scopes in signIn() violates Google's "Unbundled
-        // Consent" policy and prevents the sensitive photoslibrary.readonly
-        // scope from being properly granted even when the user approves.
         try {
           await googleUser.clearAuthCache();
           _log('signInWithGoogle: auth cache cleared');
@@ -77,14 +66,9 @@ class AuthRepository {
     }
   }
 
-  /// Firebase first, then Google.
-  ///
-  /// Uses `disconnect()` (not `signOut()`) for the Google side so that the
-  /// iOS Keychain refresh token is revoked on Google's servers. This forces
-  /// a full OAuth re-authorization on the next sign-in, ensuring the new
-  /// refresh token always includes all scopes currently on the consent screen.
-  /// Without this, a stale refresh token from a previous session (issued
-  /// before a new scope was added) would be silently reused, causing 403s.
+  /// Signs out of Firebase first, then revokes the Google token server-side
+  /// via `disconnect()` so the iOS Keychain entry is fully cleared and the
+  /// next sign-in always triggers a fresh OAuth consent screen.
   Future<void> signOut() async {
     _log('signOut →');
     try {

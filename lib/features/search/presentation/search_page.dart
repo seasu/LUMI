@@ -1,124 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/logging/web_console_log.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
 import '../../../shared/constants/lumi_type_scale.dart';
-import '../../snap/data/cloud_functions_service.dart';
 import '../../wardrobe/data/wardrobe_item.dart';
 import '../../wardrobe/data/wardrobe_repository.dart';
 import 'providers/search_provider.dart';
-import 'providers/thumbnail_repair_provider.dart';
 import 'widgets/filter_bar.dart';
 import 'widgets/wardrobe_card.dart';
 import 'widgets/item_detail_modal.dart';
-import 'wardrobe_google_sync.dart';
 
-class SearchPage extends ConsumerStatefulWidget {
+class SearchPage extends ConsumerWidget {
   const SearchPage({super.key});
 
   @override
-  ConsumerState<SearchPage> createState() => _SearchPageState();
-}
-
-class _SearchPageState extends ConsumerState<SearchPage> {
-  bool _syncBusy = false;
-
-  Future<void> _runAlbumSync({
-    required bool showSnackBar,
-    bool showHeaderSpinner = true,
-  }) async {
-    if (_syncBusy) return;
-    if (showHeaderSpinner) setState(() => _syncBusy = true);
-    webConsoleInfo('sync', 'wardrobe_album_sync_start');
-    try {
-      final r = await syncWardrobeAlbumFromGooglePhotos(ref);
-      webConsoleInfo(
-        'sync',
-        'wardrobe_album_sync_ok',
-        {
-          'created': r.created,
-          'skipped': r.skipped,
-          'skippedNoPreview': r.skippedNoPreview,
-          'totalInAlbum': r.totalInAlbum,
-          'albumId': r.albumId,
-        },
-      );
-      ref.invalidate(wardrobeStreamProvider);
-      if (showSnackBar && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              r.created > 0
-                  ? '已從 Google 相簿同步：新增 ${r.created} 件（相簿共 ${r.totalInAlbum} 張）'
-                  : '已與 Google 相簿比對：無需新增（相簿 ${r.totalInAlbum} 張，衣櫥已有對應紀錄）',
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      webConsoleInfo(
-        'sync',
-        'wardrobe_album_sync_error',
-        {'detail': formatWardrobeSyncErrorForUser(e)},
-      );
-      if (showSnackBar && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              formatWardrobeSyncErrorForUser(e),
-              maxLines: 8,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted && showHeaderSpinner) setState(() => _syncBusy = false);
-    }
-  }
-
-  Future<void> _onRefresh() async {
-    final uid = ref.read(currentUserProvider)?.uid;
-    if (uid == null) return;
-
-    await ref.read(wardrobeRepositoryProvider).prefetchWardrobeFromServer(uid);
-    ref.invalidate(wardrobeStreamProvider);
-
-    final snapshot = ref.read(wardrobeStreamProvider);
-    final items = snapshot.valueOrNull;
-    if (items != null && items.isNotEmpty) {
-      final cf = ref.read(cloudFunctionsServiceProvider);
-      var retried = 0;
-      const maxRetriesPerPull = 20;
-      for (final item in items) {
-        if (!item.isPending) continue;
-        if (retried >= maxRetriesPerPull) break;
-        retried++;
-        try {
-          await cf.retryAnalyzeWardrobeItem(mediaItemId: item.mediaItemId);
-        } catch (_) {}
-      }
-      if (retried > 0) {
-        ref.invalidate(wardrobeStreamProvider);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final filtered = ref.watch(filteredWardrobeProvider);
-    final rawWardrobe = ref.watch(wardrobeStreamProvider);
-    final repairStatus = ref.watch(thumbnailRepairStatusProvider);
-    ref.watch(thumbnailRepairCoordinatorProvider);
-    rawWardrobe.whenData((items) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        ref.read(thumbnailRepairCoordinatorProvider).scheduleRepair(items);
-      });
-    });
 
     return Scaffold(
       backgroundColor: LumiColors.base,
@@ -128,16 +27,12 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _WardrobeHeader(
-                  syncBusy: _syncBusy,
-                  onSyncPressed: () => _runAlbumSync(showSnackBar: true),
-                  repairStatus: repairStatus,
-                ),
+                const _WardrobeHeader(),
                 const FilterBar(),
                 Expanded(
                   child: RefreshIndicator(
                     color: LumiColors.primary,
-                    onRefresh: _onRefresh,
+                    onRefresh: () => _onRefresh(ref),
                     child: filtered.when(
                       data: (items) {
                         if (items.isEmpty) {
@@ -186,23 +81,22 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       ),
     );
   }
+
+  Future<void> _onRefresh(WidgetRef ref) async {
+    final uid = ref.read(currentUserProvider)?.uid;
+    if (uid == null) return;
+    await ref.read(wardrobeRepositoryProvider).prefetchWardrobeFromServer(uid);
+    ref.invalidate(wardrobeStreamProvider);
+  }
 }
 
 // ── Header ─────────────────────────────────────────────────────────────────────
 
-class _WardrobeHeader extends ConsumerWidget {
-  const _WardrobeHeader({
-    required this.syncBusy,
-    required this.onSyncPressed,
-    required this.repairStatus,
-  });
-
-  final bool syncBusy;
-  final VoidCallback onSyncPressed;
-  final ThumbnailRepairStatus repairStatus;
+class _WardrobeHeader extends StatelessWidget {
+  const _WardrobeHeader();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         LumiSpacing.md,
@@ -211,40 +105,17 @@ class _WardrobeHeader extends ConsumerWidget {
         LumiSpacing.sm,
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '我的衣櫥',
-                  style: TextStyle(
-                    fontSize: LumiTypeScale.headlineMd,
-                    fontWeight: FontWeight.w800,
-                    color: LumiColors.text,
-                  ),
-                ),
-                if (repairStatus.isVisible) ...[
-                  const SizedBox(height: LumiSpacing.xs),
-                  _ThumbnailRepairStatusChip(status: repairStatus),
-                ],
-              ],
+          const Expanded(
+            child: Text(
+              '我的衣櫥',
+              style: TextStyle(
+                fontSize: LumiTypeScale.headlineMd,
+                fontWeight: FontWeight.w800,
+                color: LumiColors.text,
+              ),
             ),
-          ),
-          IconButton(
-            tooltip: '與 Google 相簿同步',
-            onPressed: syncBusy ? null : onSyncPressed,
-            icon: syncBusy
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: LumiColors.primary,
-                    ),
-                  )
-                : const Icon(Icons.sync, color: LumiColors.primary, size: 22),
           ),
           TextButton.icon(
             onPressed: () => context.push('/snap'),
@@ -264,48 +135,6 @@ class _WardrobeHeader extends ConsumerWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ThumbnailRepairStatusChip extends StatelessWidget {
-  const _ThumbnailRepairStatusChip({required this.status});
-
-  final ThumbnailRepairStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = switch (status.phase) {
-      ThumbnailRepairPhase.idle => LumiColors.subtext,
-      ThumbnailRepairPhase.repairing => LumiColors.primary,
-      ThumbnailRepairPhase.waitingForAuth => LumiColors.warning,
-      ThumbnailRepairPhase.coolingDown => LumiColors.warning,
-      ThumbnailRepairPhase.recentlyCompleted => LumiColors.primary,
-      ThumbnailRepairPhase.recentlyFailed => LumiColors.warning,
-    };
-
-    return AnimatedOpacity(
-      opacity: status.isVisible ? 1 : 0,
-      duration: const Duration(milliseconds: 180),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: LumiSpacing.sm + LumiSpacing.xs, // 12
-          vertical: LumiSpacing.xs,
-        ),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(LumiRadii.pill),
-          border: Border.all(color: color.withValues(alpha: 0.18)),
-        ),
-        child: Text(
-          status.label,
-          style: TextStyle(
-            fontSize: LumiTypeScale.labelSm,
-            fontWeight: FontWeight.w600,
-            color: color,
-          ),
-        ),
       ),
     );
   }

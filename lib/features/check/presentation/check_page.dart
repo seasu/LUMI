@@ -1,14 +1,15 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/storage/local_image_storage.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
 import '../../../shared/constants/lumi_type_scale.dart';
 import '../../../features/snap/data/cloud_functions_service.dart';
-import '../../wardrobe/utils/wardrobe_thumbnail_url.dart';
 import '../domain/check_state.dart';
 import 'providers/check_provider.dart';
 
@@ -474,25 +475,7 @@ class _SimilarCard extends StatelessWidget {
             children: [
               // 衣物圖片
               Expanded(
-                child: wardrobeThumbnailNeedsApiRefresh(item.thumbnailUrl)
-                    ? const Center(
-                        child: Icon(
-                          Icons.checkroom_outlined,
-                          color: LumiColors.subtext,
-                          size: 36,
-                        ),
-                      )
-                    : Image.network(
-                        item.thumbnailUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Center(
-                          child: Icon(
-                            Icons.checkroom_outlined,
-                            color: LumiColors.subtext,
-                            size: 36,
-                          ),
-                        ),
-                      ),
+                child: _SimilarCardImage(localFileName: item.localFileName),
               ),
               // 衣物資訊
               Padding(
@@ -546,6 +529,39 @@ class _SimilarCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SimilarCardImage extends StatelessWidget {
+  const _SimilarCardImage({required this.localFileName});
+
+  final String? localFileName;
+
+  @override
+  Widget build(BuildContext context) {
+    if (localFileName == null || localFileName!.isEmpty) {
+      return const Center(
+        child: Icon(Icons.checkroom_outlined, color: LumiColors.subtext, size: 36),
+      );
+    }
+    return FutureBuilder<File?>(
+      future: LocalImageStorage.getFile(localFileName),
+      builder: (context, snapshot) {
+        final file = snapshot.data;
+        if (file == null) {
+          return const Center(
+            child: Icon(Icons.checkroom_outlined, color: LumiColors.subtext, size: 36),
+          );
+        }
+        return Image.file(
+          file,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const Center(
+            child: Icon(Icons.checkroom_outlined, color: LumiColors.subtext, size: 36),
+          ),
+        );
+      },
     );
   }
 }

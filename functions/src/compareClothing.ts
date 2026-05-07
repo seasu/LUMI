@@ -8,8 +8,8 @@ const geminiApiKey = defineSecret("GEMINI_API_KEY");
 
 interface MatchedItem {
   similarity: number;
-  mediaItemId: string;
-  thumbnailUrl: string;
+  docId: string;
+  localFileName: string | null;
   category: string;
   colors: string[];
 }
@@ -19,9 +19,8 @@ interface CompareClothingResult {
 }
 
 interface WardrobeDoc {
-  mediaItemId: string;
+  localFileName?: string;
   embedding: number[];
-  thumbnailUrl: string;
   category: string;
   colors: string[];
 }
@@ -80,7 +79,7 @@ export const compareClothing = onCall(
         .collection("users")
         .doc(userId)
         .collection("wardrobe")
-        .select("mediaItemId", "embedding", "thumbnailUrl", "category", "colors")
+        .select("localFileName", "embedding", "category", "colors")
         .get();
 
       if (snapshot.empty) {
@@ -88,22 +87,22 @@ export const compareClothing = onCall(
       }
 
       // Step 3: Brute-force cosine similarity (ADR-004)
-      const scored: Array<{ sim: number; doc: WardrobeDoc }> = [];
+      const scored: Array<{ sim: number; docId: string; doc: WardrobeDoc }> = [];
 
       for (const doc of snapshot.docs) {
         const data = doc.data() as WardrobeDoc;
         if (!data.embedding?.length) continue;
 
         const sim = cosineSimilarity(queryEmbedding, data.embedding);
-        scored.push({ sim, doc: data });
+        scored.push({ sim, docId: doc.id, doc: data });
       }
 
       // Sort descending by similarity, return top 5
       scored.sort((a, b) => b.sim - a.sim);
-      const topMatches: MatchedItem[] = scored.slice(0, 5).map(({ sim, doc }) => ({
+      const topMatches: MatchedItem[] = scored.slice(0, 5).map(({ sim, docId, doc }) => ({
         similarity: sim,
-        mediaItemId: doc.mediaItemId,
-        thumbnailUrl: doc.thumbnailUrl,
+        docId: docId,
+        localFileName: doc.localFileName ?? null,
         category: doc.category ?? "",
         colors: doc.colors ?? [],
       }));

@@ -102,13 +102,20 @@ Future<SyncWardrobeFromPhotosResult> _nativeSync(WidgetRef ref) async {
   } catch (e) {
     if (!_is403Error(e)) rethrow;
 
-    _log('nativeSync: Photos API 403 — forcing requestScopes and retrying');
+    _log('nativeSync: Photos API 403 — signing out and forcing requestScopes');
 
-    // The token lacks photoslibrary.readonly despite prior consent.
-    // Force requestScopes so the user can re-grant the scope.
+    // The cached token either lacks photoslibrary.readonly or is from a
+    // stale bundled-consent session that Photos API internally rejects.
+    // Sign out first so that requestScopes triggers a fresh consent flow
+    // instead of silently re-using the stale token from the iOS Keychain.
+    try {
+      await googleSignIn.signOut();
+    } catch (_) {}
+    final freshAccount = await googleSignIn.signInSilently() ?? account;
+
     token = await ensureGooglePhotosAccessToken(
       googleSignIn,
-      account,
+      freshAccount,
       scopes: const [
         kGooglePhotosAppendOnlyScope,
         kGooglePhotosReadonlyScope,
@@ -126,7 +133,18 @@ Future<SyncWardrobeFromPhotosResult> _nativeSync(WidgetRef ref) async {
     }
 
     await FirebaseAuth.instance.currentUser?.getIdToken(true);
-    return _doNativeSync(token, ref);
+
+    try {
+      return await _doNativeSync(token, ref);
+    } catch (retryError) {
+      if (!_is403Error(retryError)) rethrow;
+      // Two consecutive 403s mean the OAuth consent is permanently stale
+      // and cannot be refreshed without a full sign-out / sign-in cycle.
+      throw StateError(
+        'Google 相簿存取授權已失效。\n'
+        '請從「個人檔案」頁登出後重新登入 Google，然後再試一次同步。',
+      );
+    }
   }
 }
 

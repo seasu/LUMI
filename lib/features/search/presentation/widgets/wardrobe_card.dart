@@ -173,11 +173,11 @@ String _displaySubtitle(WardrobeItem item) {
 class _ThumbnailImage extends StatelessWidget {
   const _ThumbnailImage({required this.localFileName});
 
-  final String? localFileName;
+  final String localFileName;
 
   @override
   Widget build(BuildContext context) {
-    if (localFileName == null || localFileName!.isEmpty) {
+    if (localFileName.isEmpty) {
       return const _ImagePlaceholder();
     }
     return FutureBuilder<File?>(

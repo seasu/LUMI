@@ -86,11 +86,11 @@ class _ItemDetailModal extends StatelessWidget {
 class _ModalImage extends StatelessWidget {
   const _ModalImage({required this.localFileName});
 
-  final String? localFileName;
+  final String localFileName;
 
   @override
   Widget build(BuildContext context) {
-    if (localFileName == null || localFileName!.isEmpty) {
+    if (localFileName.isEmpty) {
       return const Center(
         child: Icon(
           Icons.checkroom_outlined,

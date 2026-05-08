@@ -13,7 +13,7 @@ class LoginPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isLoading = ref.watch(signInLoadingProvider);
+    final loading = ref.watch(signInLoadingProvider);
 
     return Scaffold(
       backgroundColor: LumiColors.base,
@@ -51,7 +51,7 @@ class LoginPage extends ConsumerWidget {
                   const LumiLogoWordmark(fontSize: 56),
                   const SizedBox(height: LumiSpacing.sm),
                   const Text(
-                    '用 Google 相片點亮妳的衣櫥',
+                    '用 AI 點亮妳的衣櫥',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: LumiTypeScale.body,
@@ -70,7 +70,21 @@ class LoginPage extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: LumiSpacing.sm),
-                  _GoogleSignInButton(isLoading: isLoading, ref: ref),
+                  _SignInButton(
+                    label: '使用 Apple 帳號登入',
+                    icon: const _AppleIcon(),
+                    isLoading: loading == SignInMethod.apple,
+                    isDisabled: loading != SignInMethod.none,
+                    onTap: () => _handleSignIn(context, ref, SignInMethod.apple),
+                  ),
+                  const SizedBox(height: LumiSpacing.sm),
+                  _SignInButton(
+                    label: '使用 Google 帳號登入',
+                    icon: const _GoogleIcon(),
+                    isLoading: loading == SignInMethod.google,
+                    isDisabled: loading != SignInMethod.none,
+                    onTap: () => _handleSignIn(context, ref, SignInMethod.google),
+                  ),
                   const SizedBox(height: LumiSpacing.xl),
                 ],
               ),
@@ -80,70 +94,117 @@ class LoginPage extends ConsumerWidget {
       ),
     );
   }
+
+  Future<void> _handleSignIn(
+    BuildContext context,
+    WidgetRef ref,
+    SignInMethod method,
+  ) async {
+    try {
+      if (method == SignInMethod.apple) {
+        await signInWithApple(ref);
+      } else {
+        await signInWithGoogle(ref);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: LumiColors.warning,
+          ),
+        );
+      }
+    }
+  }
 }
 
-// ── Google Sign-In Button ─────────────────────────────────────────────────────
+// ── Shared button ─────────────────────────────────────────────────────────────
 
-class _GoogleSignInButton extends StatelessWidget {
-  const _GoogleSignInButton({required this.isLoading, required this.ref});
+class _SignInButton extends StatelessWidget {
+  const _SignInButton({
+    required this.label,
+    required this.icon,
+    required this.isLoading,
+    required this.isDisabled,
+    required this.onTap,
+  });
 
+  final String label;
+  final Widget icon;
   final bool isLoading;
-  final WidgetRef ref;
+  final bool isDisabled;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: isLoading
-          ? null
-          : () async {
-              try {
-                await signInWithGoogle(ref);
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        e.toString().replaceFirst('Exception: ', ''),
-                      ),
-                      backgroundColor: LumiColors.warning,
-                    ),
-                  );
-                }
-              }
-            },
-      child: Container(
-        width: double.infinity,
-        height: 56,
-        decoration: BoxDecoration(
-          gradient: isLoading ? null : LumiColors.buttonGradient,
-          color: isLoading ? LumiColors.primary.withValues(alpha: 0.6) : null,
-          borderRadius: BorderRadius.circular(LumiRadii.pill),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (isLoading)
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: LumiColors.onPrimary,
+      onTap: isDisabled ? null : onTap,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 150),
+        opacity: isDisabled && !isLoading ? 0.5 : 1.0,
+        child: Container(
+          width: double.infinity,
+          height: 56,
+          decoration: BoxDecoration(
+            gradient: isLoading ? null : LumiColors.buttonGradient,
+            color: isLoading ? LumiColors.primary.withValues(alpha: 0.6) : null,
+            borderRadius: BorderRadius.circular(LumiRadii.pill),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isLoading)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: LumiColors.onPrimary,
+                  ),
+                )
+              else ...[
+                icon,
+                const SizedBox(width: LumiSpacing.sm),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: LumiTypeScale.body,
+                    fontWeight: FontWeight.w600,
+                    color: LumiColors.onPrimary,
+                  ),
                 ),
-              )
-            else ...[
-              const _GoogleIcon(),
-              const SizedBox(width: LumiSpacing.sm),
-              const Text(
-                '使用 Google 帳號登入',
-                style: TextStyle(
-                  fontSize: LumiTypeScale.body,
-                  fontWeight: FontWeight.w600,
-                  color: LumiColors.onPrimary,
-                ),
-              ),
+              ],
             ],
-          ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Icons ─────────────────────────────────────────────────────────────────────
+
+class _AppleIcon extends StatelessWidget {
+  const _AppleIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: const BoxDecoration(
+        color: LumiColors.surface,
+        shape: BoxShape.circle,
+      ),
+      child: const Center(
+        child: Text(
+          '',
+          style: TextStyle(
+            fontSize: 14,
+            color: LumiColors.text,
+            height: 1.1,
+          ),
         ),
       ),
     );

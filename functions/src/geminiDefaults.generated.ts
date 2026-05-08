@@ -6,7 +6,7 @@ export const geminiGeneratedDefaults = {
   defaultVisionModel: "gemini-2.5-flash",
   defaultEmbeddingModel: "text-embedding-004",
   deprecatedVisionModelIds: ["gemini-1.5-flash","gemini-1.5-flash-8b","gemini-1.5-pro","gemini-2.0-flash"],
-  deprecatedEmbeddingModelIds: [],
+  deprecatedEmbeddingModelIds: ["text-embedding-001","embedding-001"],
   visionFallbackChain: ["gemini-2.5-flash","gemini-2.0-flash"],
-  embeddingFallbackChain: ["text-embedding-004","text-embedding-001"],
+  embeddingFallbackChain: ["text-embedding-004"],
 } as const;

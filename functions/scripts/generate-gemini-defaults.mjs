@@ -28,7 +28,8 @@ const deprecatedVisionRaw =
   "gemini-1.5-flash,gemini-1.5-flash-8b,gemini-1.5-pro,gemini-2.0-flash";
 
 const deprecatedEmbeddingRaw =
-  process.env.GEMINI_DEPRECATED_EMBEDDING_MODELS?.trim() || "";
+  process.env.GEMINI_DEPRECATED_EMBEDDING_MODELS?.trim() ||
+  "text-embedding-001,embedding-001";
 
 const fallbackVisionRaw =
   process.env.GEMINI_VISION_FALLBACK_CHAIN?.trim() ||
@@ -36,7 +37,7 @@ const fallbackVisionRaw =
 
 const fallbackEmbeddingRaw =
   process.env.GEMINI_EMBEDDING_FALLBACK_CHAIN?.trim() ||
-  "text-embedding-004,text-embedding-001";
+  "text-embedding-004";
 
 function splitCsv(s) {
   return s

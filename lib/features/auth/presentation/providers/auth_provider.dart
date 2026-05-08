@@ -12,29 +12,38 @@ final signInLoadingProvider =
     StateProvider<SignInMethod>((ref) => SignInMethod.none);
 
 Future<void> signInWithGoogle(WidgetRef ref) async {
-  ref.read(signInLoadingProvider.notifier).state = SignInMethod.google;
+  final loading = ref.read(signInLoadingProvider.notifier);
+  final auth = ref.read(authRepositoryProvider);
+  loading.state = SignInMethod.google;
   try {
-    await ref.read(authRepositoryProvider).signInWithGoogle();
+    await auth.signInWithGoogle();
   } finally {
-    ref.read(signInLoadingProvider.notifier).state = SignInMethod.none;
+    loading.state = SignInMethod.none;
   }
 }
 
 Future<void> signInWithApple(WidgetRef ref) async {
-  ref.read(signInLoadingProvider.notifier).state = SignInMethod.apple;
+  final loading = ref.read(signInLoadingProvider.notifier);
+  final auth = ref.read(authRepositoryProvider);
+  loading.state = SignInMethod.apple;
   try {
-    await ref.read(authRepositoryProvider).signInWithApple();
+    await auth.signInWithApple();
   } finally {
-    ref.read(signInLoadingProvider.notifier).state = SignInMethod.none;
+    loading.state = SignInMethod.none;
   }
 }
 
 /// Clears [signInLoadingProvider] so the login button never stays stuck after logout.
 Future<void> signOut(WidgetRef ref) async {
-  ref.read(signInLoadingProvider.notifier).state = SignInMethod.none;
+  // Read providers before the first await: Firebase signOut fires auth-state changes
+  // synchronously on iOS, causing GoRouter to pop the calling widget before the
+  // finally block runs — any ref.read() after the await would throw "ref disposed".
+  final loading = ref.read(signInLoadingProvider.notifier);
+  final auth = ref.read(authRepositoryProvider);
+  loading.state = SignInMethod.none;
   try {
-    await ref.read(authRepositoryProvider).signOut();
+    await auth.signOut();
   } finally {
-    ref.read(signInLoadingProvider.notifier).state = SignInMethod.none;
+    loading.state = SignInMethod.none;
   }
 }

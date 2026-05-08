@@ -3,7 +3,7 @@
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
 **前端版本 (Flutter App)：** 1.0.30+119
-**後端版本 (Cloud Functions)：** 1.0.4
+**後端版本 (Cloud Functions)：** 1.0.5
 **開發框架：** Flutter (Cross-platform)
 
 ---
@@ -309,7 +309,8 @@ users/{userId}/
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
 | 2026-05-08 | 1.0.30+119 | 1.0.4 | 修正 `signOut` / `signInWithGoogle` / `signInWithApple` 在 iOS 上觸發 `Bad state: Cannot use "ref" after the widget was disposed` 崩潰：Firebase 在 iOS 同步觸發 auth state change，GoRouter 在 `finally` 執行前就銷毀 ProfilePage，導致後續 `ref.read()` 拋出；修正方式：在第一個 `await` 前先讀取所有 providers，`finally` 只使用直接物件參考 | Auth / iOS |
-| 2026-05-08 | 1.0.29+118 | 1.0.4 | 修正 `analyzeClothing` Cloud Function 每次回傳 HTTP 500 的根本原因：`@google/generative-ai` `^0.15.0` 的 semver 0.x 語意鎖定在 0.15.x，舊 SDK 無法解析 `gemini-2.5-flash`（2025）回應格式，導致 Cloud Run 返回未封裝的 HTTP 500；升級至 `^0.24.0`（已安裝 0.24.1）。同時修正 fallback chain 中無效的模型名稱 `gemini-flash-latest` → `gemini-2.0-flash`；在 `analyzeClothing.ts` 與 `gemini.ts` catch block 加入 `console.error` 以利後續 Cloud Logging 診斷 | Cloud Functions / Gemini / analyzeClothing |
+| 2026-05-08 | 1.0.30+119 | 1.0.5 | 修正 embedding 步驟 404 錯誤：`text-embedding-004` 只存在於 v1 stable API，SDK 預設為 v1beta，導致 `embedContent` 每次回傳 404；修正方式：`getGenerativeModel` 嵌入時傳入 `{ apiVersion: "v1" }`。同時將 `text-embedding-001`/`embedding-001` 加入 deprecated 清單並從 fallback chain 移除，新增 fallback 警告日誌 | Cloud Functions / Gemini / Embedding |
+| 2026-05-08 | 1.0.30+119 | 1.0.4 | 修正 `analyzeClothing` Cloud Function 每次回傳 HTTP 500 的根本原因：`@google/generative-ai` `^0.15.0` 的 semver 0.x 語意鎖定在 0.15.x，舊 SDK 無法解析 `gemini-2.5-flash`（2025）回應格式，導致 Cloud Run 返回未封裝的 HTTP 500；升級至 `^0.24.0`（已安裝 0.24.1）。同時修正 fallback chain 中無效的模型名稱 `gemini-flash-latest` → `gemini-2.0-flash`；在 `analyzeClothing.ts` 與 `gemini.ts` catch block 加入 `console.error` 以利後續 Cloud Logging 診斷 | Cloud Functions / Gemini / analyzeClothing |
 | 2026-05-08 | 1.0.29+118 | 1.0.3 | 新增 Apple ID 登入：`sign_in_with_apple` + `crypto` 套件；`signInWithApple()` 含 SHA-256 nonce 防重放；iOS `Runner.entitlements` + `project.pbxproj` 三組 build config 加 `CODE_SIGN_ENTITLEMENTS`；`signInLoadingProvider` 改為 `SignInMethod` enum 區分 Google / Apple；登入頁改為雙按鈕垂直排列（Apple 在上），subtitle 更新為「用 AI 點亮妳的衣櫥」 | Auth / iOS |
 | 2026-05-07 | 1.0.28+117 | 1.0.3 | 後續清理：移除 `lib/core/photos/` 空目錄；清除 `auth_repository.dart` 中已廢棄的 Google Photos scope 歷史說明 comments | Auth / Cleanup |
 | 2026-05-07 | 1.0.27+116 | 1.0.3 | 修正衣物卡片點擊無反應（`GestureDetector(onTap)` 外包 `InkWell(onLongPress)` 造成 gesture arena 衝突，改為 `onTap` 直接放在 `InkWell`）；改善 Cloud Functions 錯誤日誌（`analyzeClothing`/`compareClothing` catch block 改用 `formatFirebaseCallableError` 展開 `code`/`message`/`details`） | Search / Wardrobe / Snap |

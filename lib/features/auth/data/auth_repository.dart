@@ -1,7 +1,13 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+
 import '../../../core/debug/debug_log.dart';
 import '../../../core/providers/firebase_providers.dart'
     show firebaseAuthProvider, googleSignInProvider;
@@ -50,10 +56,7 @@ class AuthRepository {
           idToken: googleAuth.idToken,
         );
 
-        // Firebase sign-in — auth state change fires HERE.
         userCredential = await _auth.signInWithCredential(credential);
-
-        // Upsert Firestore profile — creates on first login, refreshes name/email later.
         await _userRepository.ensureProfile(userCredential.user!);
       }
 
@@ -62,6 +65,39 @@ class AuthRepository {
       return userCredential;
     } catch (e) {
       _log('signInWithGoogle ✗ ${sw.elapsedMilliseconds}ms $e');
+      rethrow;
+    }
+  }
+
+  Future<UserCredential> signInWithApple() async {
+    _log('signInWithApple →');
+    final sw = Stopwatch()..start();
+    try {
+      final rawNonce = _generateNonce();
+      final nonce = _sha256ofString(rawNonce);
+
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: nonce,
+      );
+
+      final oauthCredential = OAuthProvider('apple.com').credential(
+        idToken: appleCredential.identityToken,
+        rawNonce: rawNonce,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      final userCredential = await _auth.signInWithCredential(oauthCredential);
+      await _userRepository.ensureProfile(userCredential.user!);
+
+      _log('signInWithApple ← ok ${sw.elapsedMilliseconds}ms'
+          ' uid=${userCredential.user?.uid}');
+      return userCredential;
+    } catch (e) {
+      _log('signInWithApple ✗ ${sw.elapsedMilliseconds}ms $e');
       rethrow;
     }
   }
@@ -105,3 +141,21 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
     ref.watch(userRepositoryProvider),
   );
 });
+
+// ── Nonce helpers ─────────────────────────────────────────────────────────────
+
+String _generateNonce([int length = 32]) {
+  const charset =
+      '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+  final random = Random.secure();
+  return List.generate(
+    length,
+    (_) => charset[random.nextInt(charset.length)],
+  ).join();
+}
+
+String _sha256ofString(String input) {
+  final bytes = utf8.encode(input);
+  final digest = sha256.convert(bytes);
+  return digest.toString();
+}

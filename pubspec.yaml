@@ -1,7 +1,7 @@
 name: lumi
 description: Light up your wardrobe with Google Photos.
 publish_to: 'none'
-version: 1.0.28+117
+version: 1.0.29+118
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -25,6 +25,8 @@ dependencies:
   web: ^1.1.1
   path_provider: ^2.1.0
   uuid: ^4.4.0
+  sign_in_with_apple: ^6.1.2
+  crypto: ^3.0.3
 
 dev_dependencies:
   flutter_test:

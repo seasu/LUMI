@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.28+117
+**前端版本 (Flutter App)：** 1.0.29+118
 **後端版本 (Cloud Functions)：** 1.0.3
 **開發框架：** Flutter (Cross-platform)
 
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-05-08 | 1.0.29+118 | 1.0.3 | 新增 Apple ID 登入：`sign_in_with_apple` + `crypto` 套件；`signInWithApple()` 含 SHA-256 nonce 防重放；iOS `Runner.entitlements` + `project.pbxproj` 三組 build config 加 `CODE_SIGN_ENTITLEMENTS`；`signInLoadingProvider` 改為 `SignInMethod` enum 區分 Google / Apple；登入頁改為雙按鈕垂直排列（Apple 在上），subtitle 更新為「用 AI 點亮妳的衣櫥」 | Auth / iOS |
 | 2026-05-07 | 1.0.28+117 | 1.0.3 | 後續清理：移除 `lib/core/photos/` 空目錄；清除 `auth_repository.dart` 中已廢棄的 Google Photos scope 歷史說明 comments | Auth / Cleanup |
 | 2026-05-07 | 1.0.27+116 | 1.0.3 | 修正衣物卡片點擊無反應（`GestureDetector(onTap)` 外包 `InkWell(onLongPress)` 造成 gesture arena 衝突，改為 `onTap` 直接放在 `InkWell`）；改善 Cloud Functions 錯誤日誌（`analyzeClothing`/`compareClothing` catch block 改用 `formatFirebaseCallableError` 展開 `code`/`message`/`details`） | Search / Wardrobe / Snap |
 | 2026-05-07 | 1.0.26+115 | 1.0.3 | 重新設計 Snap（加入新品）流程：新增相機拍攝入口、圖庫新增採合併模式（可累積至上限）、預覽頁每張縮圖加 X 移除按鈕、「＋ 新增」補位磚、更新所有 copy 至本地儲存語意（移除 Google Photos 上傳語言） | Snap |

@@ -189,7 +189,11 @@ export async function generateEmbedding(
   for (let i = 0; i < candidates.length; i++) {
     const modelId = candidates[i];
     try {
-      const embeddingModel = genAI.getGenerativeModel({ model: modelId });
+      // text-embedding-004 lives on the v1 stable API, not v1beta (SDK default).
+      const embeddingModel = genAI.getGenerativeModel(
+        { model: modelId },
+        { apiVersion: "v1" }
+      );
       const result = await embeddingModel.embedContent(input);
       return result.embedding.values;
     } catch (err) {
@@ -204,6 +208,9 @@ export async function generateEmbedding(
           `Gemini embedding API error (model: ${modelId}): ${msg}`
         );
       }
+      console.warn(
+        `Gemini embedding fallback (model: ${modelId}): ${msg}`
+      );
     }
   }
 

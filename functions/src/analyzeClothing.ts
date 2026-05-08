@@ -48,6 +48,7 @@ export const analyzeClothing = onCall(
     } catch (err) {
       if (err instanceof HttpsError) throw err;
       const msg = err instanceof Error ? err.message : String(err);
+      console.error("analyzeClothing unhandled error:", msg, err);
       throw new HttpsError("internal", `analyzeClothing failed: ${msg}`);
     }
   }

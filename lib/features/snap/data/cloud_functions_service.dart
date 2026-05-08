@@ -53,7 +53,14 @@ class CloudFunctionsService {
           ' category=${r.category}');
       return r;
     } catch (e) {
-      _log('analyzeClothing ✗ ${sw.elapsedMilliseconds}ms ${formatFirebaseCallableError(e)}');
+      if (e is FirebaseFunctionsException) {
+        _log('analyzeClothing ✗ ${sw.elapsedMilliseconds}ms'
+            ' code=${e.code}'
+            ' msg=${e.message}'
+            ' details=${e.details}');
+      } else {
+        _log('analyzeClothing ✗ ${sw.elapsedMilliseconds}ms $e');
+      }
       rethrow;
     }
   }

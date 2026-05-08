@@ -138,6 +138,7 @@ export async function analyzeImage(
       const canRetry =
         i < candidates.length - 1 && isLikelyModelNotFoundMessage(msg);
       if (!canRetry) {
+        console.error(`Gemini vision error (model: ${modelId}):`, msg, err);
         throw new HttpsError(
           "internal",
           `Gemini vision API error (model: ${modelId}): ${msg}`
@@ -197,6 +198,7 @@ export async function generateEmbedding(
       const canRetry =
         i < candidates.length - 1 && isLikelyModelNotFoundMessage(msg);
       if (!canRetry) {
+        console.error(`Gemini embedding error (model: ${modelId}):`, msg, err);
         throw new HttpsError(
           "internal",
           `Gemini embedding API error (model: ${modelId}): ${msg}`

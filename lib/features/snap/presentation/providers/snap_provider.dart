@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -13,6 +12,13 @@ import '../../data/cloud_functions_service.dart';
 import '../../domain/snap_state.dart';
 
 const _maxPhotos = 10;
+
+typedef _AnalysisTask = ({
+  String docId,
+  List<int> bytes,
+  String mimeType,
+  String userId,
+});
 
 final snapProvider = NotifierProvider<SnapNotifier, SnapState>(SnapNotifier.new);
 
@@ -65,13 +71,21 @@ class SnapNotifier extends Notifier<SnapState> {
     final current = state;
     if (current is! SnapPreviewing) return;
 
+    final user = ref.read(firebaseAuthProvider).currentUser;
+    if (user == null) {
+      state = const SnapError('請先登入再加入衣物。');
+      return;
+    }
+
     final files = current.files;
     final total = files.length;
+    final tasks = <_AnalysisTask>[];
 
     for (var i = 0; i < total; i++) {
       state = SnapUploading(current: i + 1, total: total);
       try {
-        await _saveOne(files[i], i);
+        final task = await _saveOne(files[i], user.uid);
+        tasks.add(task);
       } catch (e) {
         state = SnapError(
           '儲存失敗，請再試一次。\n'
@@ -82,9 +96,13 @@ class SnapNotifier extends Notifier<SnapState> {
     }
 
     state = SnapDone(count: total);
+
+    // Analyze sequentially in background — prevents concurrent Gemini API calls
+    // that would trigger rate-limit errors when uploading multiple photos.
+    unawaited(_runAnalysesSequentially(tasks));
   }
 
-  Future<void> _saveOne(XFile file, int index) async {
+  Future<_AnalysisTask> _saveOne(XFile file, String userId) async {
     final bytes = await file.readAsBytes();
 
     // image_picker with imageQuality: 85 converts HEIC/PNG → JPEG on iOS.
@@ -98,18 +116,25 @@ class SnapNotifier extends Notifier<SnapState> {
     final fileName = await LocalImageStorage.saveImage(bytes, extension: ext);
 
     // 2. Create Firestore doc (analyzed: false) — visible immediately in wardrobe.
-    final user = ref.read(firebaseAuthProvider).currentUser;
-    if (user == null) throw Exception('User not authenticated.');
-
     final repo = ref.read(wardrobeRepositoryProvider);
     final docId = await repo.addItemLocal(
-      user.uid,
+      userId,
       localFileName: fileName,
       createdAt: DateTime.now(),
     );
 
-    // 3. Trigger Gemini analysis in background (non-blocking).
-    unawaited(_analyzeInBackground(docId, bytes, mimeType, user.uid));
+    return (docId: docId, bytes: bytes, mimeType: mimeType, userId: userId);
+  }
+
+  Future<void> _runAnalysesSequentially(List<_AnalysisTask> tasks) async {
+    for (final task in tasks) {
+      await _analyzeInBackground(
+        task.docId,
+        task.bytes,
+        task.mimeType,
+        task.userId,
+      );
+    }
   }
 
   Future<void> _analyzeInBackground(
@@ -134,14 +159,10 @@ class SnapNotifier extends Notifier<SnapState> {
         materials: result.materials,
         embedding: result.embedding,
       );
-    } on FirebaseFunctionsException catch (e) {
-      final msg = 'analysis_failed:${e.message ?? e.code}';
+    } catch (e) {
+      final msg = 'analysis_failed:${formatFirebaseCallableError(e)}';
       try {
         await repo.markAnalyzeFailed(userId, docId, msg);
-      } catch (_) {}
-    } catch (e) {
-      try {
-        await repo.markAnalyzeFailed(userId, docId, 'analysis_failed:$e');
       } catch (_) {}
     }
   }

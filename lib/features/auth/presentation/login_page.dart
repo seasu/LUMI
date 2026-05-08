@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/constants/app_version.dart';
@@ -70,14 +72,16 @@ class LoginPage extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: LumiSpacing.sm),
-                  _SignInButton(
-                    label: '使用 Apple 帳號登入',
-                    icon: const _AppleIcon(),
-                    isLoading: loading == SignInMethod.apple,
-                    isDisabled: loading != SignInMethod.none,
-                    onTap: () => _handleSignIn(context, ref, SignInMethod.apple),
-                  ),
-                  const SizedBox(height: LumiSpacing.sm),
+                  if (Platform.isIOS) ...[
+                    _SignInButton(
+                      label: '使用 Apple 帳號登入',
+                      icon: const _AppleIcon(),
+                      isLoading: loading == SignInMethod.apple,
+                      isDisabled: loading != SignInMethod.none,
+                      onTap: () => _handleSignIn(context, ref, SignInMethod.apple),
+                    ),
+                    const SizedBox(height: LumiSpacing.sm),
+                  ],
                   _SignInButton(
                     label: '使用 Google 帳號登入',
                     icon: const _GoogleIcon(),

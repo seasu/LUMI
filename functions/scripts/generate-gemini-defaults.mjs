@@ -32,7 +32,7 @@ const deprecatedEmbeddingRaw =
 
 const fallbackVisionRaw =
   process.env.GEMINI_VISION_FALLBACK_CHAIN?.trim() ||
-  "gemini-2.5-flash,gemini-flash-latest";
+  "gemini-2.5-flash,gemini-2.0-flash";
 
 const fallbackEmbeddingRaw =
   process.env.GEMINI_EMBEDDING_FALLBACK_CHAIN?.trim() ||

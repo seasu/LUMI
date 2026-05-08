@@ -3,28 +3,21 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class WardrobeItem {
   const WardrobeItem({
     required this.docId,
+    required this.localFileName,
     required this.category,
     required this.colors,
     required this.materials,
     required this.embedding,
     required this.createdAt,
-    this.localFileName,
-    this.mediaItemId,
     this.analyzed = true,
     this.analyzeError,
   });
 
-  /// Firestore document ID. For new (local) items this is a UUID; for items
-  /// imported from Google Photos it equals the old mediaItemId.
+  /// Firestore document ID — UUID derived from the image file name.
   final String docId;
 
-  /// Local image file name (e.g. `"abc123.jpg"`). Null for items imported
-  /// from Google Photos before the local-storage migration.
-  final String? localFileName;
-
-  /// Google Photos media item ID. Kept for backward compatibility with items
-  /// created before the local-storage migration; null for new local items.
-  final String? mediaItemId;
+  /// Local image file name (e.g. `"abc123.jpg"`).
+  final String localFileName;
 
   final String category;
   final List<String> colors;
@@ -38,12 +31,8 @@ class WardrobeItem {
   bool get isPending => !analyzed && analyzeError == null;
   bool get isQuotaExceeded => analyzeError == 'quota_exceeded';
 
-  /// True when the item was stored locally (new architecture).
-  bool get isLocal => localFileName != null;
-
   Map<String, dynamic> toFirestore() => {
-        if (localFileName != null) 'localFileName': localFileName,
-        if (mediaItemId != null) 'mediaItemId': mediaItemId,
+        'localFileName': localFileName,
         'category': category,
         'colors': colors,
         'materials': materials,
@@ -57,8 +46,7 @@ class WardrobeItem {
     final d = doc.data()! as Map<String, dynamic>;
     return WardrobeItem(
       docId: doc.id,
-      localFileName: d['localFileName'] as String?,
-      mediaItemId: d['mediaItemId'] as String?,
+      localFileName: d['localFileName'] as String? ?? '',
       category: d['category'] as String? ?? '',
       colors: d['colors'] != null
           ? List<String>.from(d['colors'] as List)
@@ -85,7 +73,6 @@ class WardrobeItem {
       WardrobeItem(
         docId: docId,
         localFileName: localFileName,
-        mediaItemId: mediaItemId,
         category: category,
         colors: colors,
         materials: materials,

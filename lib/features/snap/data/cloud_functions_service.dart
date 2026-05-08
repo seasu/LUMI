@@ -53,7 +53,7 @@ class CloudFunctionsService {
           ' category=${r.category}');
       return r;
     } catch (e) {
-      _log('analyzeClothing ✗ ${sw.elapsedMilliseconds}ms $e');
+      _log('analyzeClothing ✗ ${sw.elapsedMilliseconds}ms ${formatFirebaseCallableError(e)}');
       rethrow;
     }
   }
@@ -89,7 +89,7 @@ class CloudFunctionsService {
           ' matches=${r.topMatches.length}');
       return r;
     } catch (e) {
-      _log('compareClothing ✗ ${sw.elapsedMilliseconds}ms $e');
+      _log('compareClothing ✗ ${sw.elapsedMilliseconds}ms ${formatFirebaseCallableError(e)}');
       rethrow;
     }
   }

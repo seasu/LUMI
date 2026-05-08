@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.25+114
+**前端版本 (Flutter App)：** 1.0.28+117
 **後端版本 (Cloud Functions)：** 1.0.3
 **開發框架：** Flutter (Cross-platform)
 
@@ -308,6 +308,9 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-05-07 | 1.0.28+117 | 1.0.3 | 後續清理：移除 `lib/core/photos/` 空目錄；清除 `auth_repository.dart` 中已廢棄的 Google Photos scope 歷史說明 comments | Auth / Cleanup |
+| 2026-05-07 | 1.0.27+116 | 1.0.3 | 修正衣物卡片點擊無反應（`GestureDetector(onTap)` 外包 `InkWell(onLongPress)` 造成 gesture arena 衝突，改為 `onTap` 直接放在 `InkWell`）；改善 Cloud Functions 錯誤日誌（`analyzeClothing`/`compareClothing` catch block 改用 `formatFirebaseCallableError` 展開 `code`/`message`/`details`） | Search / Wardrobe / Snap |
+| 2026-05-07 | 1.0.26+115 | 1.0.3 | 重新設計 Snap（加入新品）流程：新增相機拍攝入口、圖庫新增採合併模式（可累積至上限）、預覽頁每張縮圖加 X 移除按鈕、「＋ 新增」補位磚、更新所有 copy 至本地儲存語意（移除 Google Photos 上傳語言） | Snap |
 | 2026-05-07 | 1.0.25+114 | 1.0.3 | 架構遷移至本地儲存（Local-First）：圖片存於手機 `lumi_wardrobe/` 目錄，iOS 由 iCloud Backup 自動備份，Android 新增 `backup_rules.xml` 及 `data_extraction_rules.xml` 設定 Google Auto Backup。移除所有 Google Photos OAuth / Drive 依賴（`google_photos_oauth.dart`、`google_photos_api_client.dart`、`wardrobe_google_sync.dart`、`thumbnail_repair_provider.dart`）；新增 `LocalImageStorage`；Snap 改為本地存圖 → Firestore doc（`analyzed: false`）→ 背景呼叫 `analyzeClothing` CF 寫回分析結果；顯示層改用 `Image.file`；`compareClothing` CF 回傳 `docId` + `localFileName`（移除 `mediaItemId` + `thumbnailUrl`）；刪除 CF：`uploadToPhotos`、`syncWardrobeFromPhotos`、`refreshWardrobeThumbnail`、`analyzeWardrobeItemOnCreate`、`retryAnalyzeWardrobeItem` | Architecture / Auth / Snap / Wardrobe / Search / Check / Cloud Functions / Android Backup |
 | 2026-05-07 | 1.0.24+113 | 1.0.2 | 修正 Photos API 403 根本原因：`photoslibrary.readonly` scope 已於 2024 年底對未審核 app 停止授予；Google OAuth 實際回傳 `photoslibrary.readonly.appcreateddata`（子字串 match 造成 `hasReadonly=true` 偽陽性）。將 `kGooglePhotosReadonlyScope` 改為 `photoslibrary.readonly.appcreateddata`；`logTokenInfo` 及 `refreshThumbnailUrl` 新增 `hasAppCreated` flag 與完整 scopes 欄位以便後續診斷 | Auth / OAuth / Wardrobe Sync / Diagnostics |
 | 2026-05-07 | 1.0.23+112 | 1.0.2 | 修正 nativeSync 403 retry 中 `signOut()` 導致的連環崩潰：`signOut()` 後 iOS `GIDSignIn.currentUser` 變 nil，`requestScopes` 拋出 `sign_in_required`，後續 sync 因 `account=null` 顯示「尚未登入 Google」；移除 retry 中的 `signOut()` 呼叫，直接對現有 session 執行 `forceRequestScopes: true`，讓 iOS consent dialog 正常彈出 | Auth / OAuth / Wardrobe Sync |

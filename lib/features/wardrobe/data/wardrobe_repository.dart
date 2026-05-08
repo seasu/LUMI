@@ -74,11 +74,11 @@ class WardrobeRepository {
     });
   }
 
-  /// Deletes a wardrobe item and its local image file (if any).
+  /// Deletes a wardrobe item and its local image file.
   Future<void> deleteItem(
     String userId,
     String docId, {
-    String? localFileName,
+    required String localFileName,
   }) async {
     _log('deleteItem → uid=$userId docId=$docId');
     await LocalImageStorage.deleteFile(localFileName);

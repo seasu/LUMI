@@ -15,24 +15,28 @@ class OotdAddNotifier extends Notifier<OotdAddState> {
   OotdAddState build() => const OotdAddIdle();
 
   Future<void> pickPhoto() async {
-    final picker = ImagePicker();
-    final file = await picker.pickImage(
-      source: ImageSource.camera,
-      maxWidth: 1080,
-      maxHeight: 1920,
-      imageQuality: 85,
-    );
-    if (file == null) {
-      state = const OotdAddIdle();
-      return;
-    }
+    try {
+      final picker = ImagePicker();
+      final file = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1080,
+        maxHeight: 1920,
+        imageQuality: 85,
+      );
+      if (file == null) {
+        state = const OotdAddIdle();
+        return;
+      }
 
-    final bytes = await file.readAsBytes();
-    state = OotdAddEditing(
-      photoBytes: bytes,
-      date: DateTime.now(),
-      caption: '',
-    );
+      final bytes = await file.readAsBytes();
+      state = OotdAddEditing(
+        photoBytes: bytes,
+        date: DateTime.now(),
+        caption: '',
+      );
+    } catch (_) {
+      state = const OotdAddIdle();
+    }
   }
 
   void updateCaption(String caption) {

@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { FUNCTIONS_REGION } from "./functionsRegion";
-import { analyzeImage, generateEmbedding, geminiVisionModel, geminiEmbeddingModel } from "./gemini";
+import { analyzeImage, geminiVisionModel } from "./gemini";
 
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
 
@@ -37,13 +37,12 @@ export const analyzeClothing = onCall(
     try {
       const apiKey = geminiApiKey.value();
       const analysis = await analyzeImage(apiKey, geminiVisionModel.value(), imageBase64, mimeType);
-      const embedding = await generateEmbedding(apiKey, geminiEmbeddingModel.value(), analysis);
 
       return {
         category: analysis.category,
         colors: analysis.colors,
         materials: analysis.materials,
-        embedding,
+        embedding: [],
       };
     } catch (err) {
       if (err instanceof HttpsError) throw err;

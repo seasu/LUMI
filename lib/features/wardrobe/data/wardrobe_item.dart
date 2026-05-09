@@ -31,6 +31,38 @@ class WardrobeItem {
   bool get isPending => !analyzed && analyzeError == null;
   bool get isQuotaExceeded => analyzeError == 'quota_exceeded';
 
+  Map<String, dynamic> toJson() => {
+        'docId': docId,
+        'localFileName': localFileName,
+        'category': category,
+        'colors': colors,
+        'materials': materials,
+        'embedding': embedding,
+        'createdAt': createdAt.toUtc().toIso8601String(),
+        'analyzed': analyzed,
+        if (analyzeError != null) 'analyzeError': analyzeError,
+      };
+
+  factory WardrobeItem.fromJson(Map<String, dynamic> d) => WardrobeItem(
+        docId: d['docId'] as String,
+        localFileName: d['localFileName'] as String? ?? '',
+        category: d['category'] as String? ?? '',
+        colors: d['colors'] != null
+            ? List<String>.from(d['colors'] as List)
+            : const [],
+        materials: d['materials'] != null
+            ? List<String>.from(d['materials'] as List)
+            : const [],
+        embedding: d['embedding'] != null
+            ? List<double>.from(
+                (d['embedding'] as List).map((e) => (e as num).toDouble()),
+              )
+            : const [],
+        createdAt: DateTime.parse(d['createdAt'] as String),
+        analyzed: d['analyzed'] as bool? ?? true,
+        analyzeError: d['analyzeError'] as String?,
+      );
+
   Map<String, dynamic> toFirestore() => {
         'localFileName': localFileName,
         'category': category,

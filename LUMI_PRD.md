@@ -3,7 +3,7 @@
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
 **前端版本 (Flutter App)：** 1.0.34+123
-**後端版本 (Cloud Functions)：** 1.0.10
+**後端版本 (Cloud Functions)：** 1.0.11
 **開發框架：** Flutter (Cross-platform)
 
 ---
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-05-09 | 1.0.34+123 | 1.0.11 | 換用 `gemini-embedding-2`（GA，multimodal）取代 `gemini-embedding-001`（text-only）；`generateEmbedding` 改為直接嵌入衣物圖片（`inlineData` image），提升 Lumi-Check cosine similarity 的視覺準確度；`analyzeClothing` CF 傳入 `imageBase64`/`mimeType` 給 embedding 步驟 | Cloud Functions / Gemini / Lumi-Check |
 | 2026-05-08 | 1.0.30+119 | 1.0.4 | 修正 `signOut` / `signInWithGoogle` / `signInWithApple` 在 iOS 上觸發 `Bad state: Cannot use "ref" after the widget was disposed` 崩潰：Firebase 在 iOS 同步觸發 auth state change，GoRouter 在 `finally` 執行前就銷毀 ProfilePage，導致後續 `ref.read()` 拋出；修正方式：在第一個 `await` 前先讀取所有 providers，`finally` 只使用直接物件參考 | Auth / iOS |
 | 2026-05-09 | 1.0.30+119 | 1.0.7 | 參考 Magic-Sticker 架構，將 `@google/generative-ai` SDK 替換為直接呼叫 Gemini REST API（native `fetch`），模型名稱改用 `defineString` 參數（`GEMINI_VISION_MODEL` / `GEMINI_EMBEDDING_MODEL`）；刪除 codegen 腳本、generated 檔、死碼（`analyzeWardrobeCore`、`imageDownload`）；`package.json` 移除 SDK 依賴，build 簡化為純 `tsc` | Cloud Functions / Architecture |
 | 2026-05-09 | 1.0.30+119 | 1.0.6 | 修正 embedding 模型：`text-embedding-004` 僅存在於 Vertex AI（`aiplatform.googleapis.com`），透過 `GEMINI_API_KEY`（Gemini Developer API）呼叫 `generativelanguage.googleapis.com` 時 v1/v1beta 皆回傳 404；改為使用 `gemini-embedding-exp-03-07`（Developer API 可用），同時還原不必要的 `apiVersion:"v1"` 覆寫，並將 `text-embedding-004` 加入 deprecated 清單 | Cloud Functions / Gemini / Embedding |

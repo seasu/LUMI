@@ -26,18 +26,6 @@ jobs:
         run: npm ci
         working-directory: functions
 
-      # Inject GitHub Repository variables → geminiDefaults.generated.ts (see functions/ENV.md).
-      - name: Generate Gemini defaults from GitHub Variables
-        working-directory: functions
-        env:
-          GEMINI_DEFAULT_VISION_MODEL: ${{ vars.GEMINI_DEFAULT_VISION_MODEL }}
-          GEMINI_DEFAULT_EMBEDDING_MODEL: ${{ vars.GEMINI_DEFAULT_EMBEDDING_MODEL }}
-          GEMINI_DEPRECATED_VISION_MODELS: ${{ vars.GEMINI_DEPRECATED_VISION_MODELS }}
-          GEMINI_DEPRECATED_EMBEDDING_MODELS: ${{ vars.GEMINI_DEPRECATED_EMBEDDING_MODELS }}
-          GEMINI_VISION_FALLBACK_CHAIN: ${{ vars.GEMINI_VISION_FALLBACK_CHAIN }}
-          GEMINI_EMBEDDING_FALLBACK_CHAIN: ${{ vars.GEMINI_EMBEDDING_FALLBACK_CHAIN }}
-        run: npm run codegen:gemini
-
       - name: Build TypeScript
         run: npm run build
         working-directory: functions

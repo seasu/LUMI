@@ -2,7 +2,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import * as admin from "firebase-admin";
 import { FUNCTIONS_REGION } from "./functionsRegion";
-import { analyzeImage, generateEmbedding } from "./gemini";
+import { analyzeImage, generateEmbedding, geminiVisionModel, geminiEmbeddingModel } from "./gemini";
 
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
 
@@ -69,11 +69,9 @@ export const compareClothing = onCall(
     try {
       const apiKey = geminiApiKey.value();
 
-      // Step 1: Generate embedding for the new photo
-      const analysis = await analyzeImage(apiKey, imageBase64, mimeType);
-      const queryEmbedding = await generateEmbedding(apiKey, analysis);
+      const analysis = await analyzeImage(apiKey, geminiVisionModel.value(), imageBase64, mimeType);
+      const queryEmbedding = await generateEmbedding(apiKey, geminiEmbeddingModel.value(), analysis);
 
-      // Step 2: Read all wardrobe items via Admin SDK
       const snapshot = await admin
         .firestore()
         .collection("users")
@@ -86,7 +84,6 @@ export const compareClothing = onCall(
         return { topMatches: [] };
       }
 
-      // Step 3: Brute-force cosine similarity (ADR-004)
       const scored: Array<{ sim: number; docId: string; doc: WardrobeDoc }> = [];
 
       for (const doc of snapshot.docs) {
@@ -97,7 +94,6 @@ export const compareClothing = onCall(
         scored.push({ sim, docId: doc.id, doc: data });
       }
 
-      // Sort descending by similarity, return top 5
       scored.sort((a, b) => b.sim - a.sim);
       const topMatches: MatchedItem[] = scored.slice(0, 5).map(({ sim, docId, doc }) => ({
         similarity: sim,

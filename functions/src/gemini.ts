@@ -1,7 +1,15 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { HttpsError } from "firebase-functions/v2/https";
+import { defineString } from "firebase-functions/params";
 
-import { geminiGeneratedDefaults } from "./geminiDefaults.generated";
+export const geminiVisionModel = defineString("GEMINI_VISION_MODEL", {
+  default: "gemini-2.5-flash",
+  description: "Gemini model for clothing image analysis",
+});
+
+export const geminiEmbeddingModel = defineString("GEMINI_EMBEDDING_MODEL", {
+  default: "gemini-embedding-exp-03-07",
+  description: "Gemini model for generating clothing embeddings",
+});
 
 export interface GeminiAnalysis {
   category: string;
@@ -10,151 +18,62 @@ export interface GeminiAnalysis {
   description: string;
 }
 
-/**
- * Model IDs: defaults + fallback chains from `geminiDefaults.generated.ts`
- * (`npm run codegen:gemini` — CI injects GitHub Variables).
- * Runtime overrides: `GEMINI_VISION_MODEL`, `GEMINI_EMBEDDING_MODEL`.
- * Vision and embedding use the same resolution pattern (primary → deprecated remap → fallback chain).
- */
-function defaultVisionModel(): string {
-  return geminiGeneratedDefaults.defaultVisionModel;
-}
-
-function defaultEmbeddingModel(): string {
-  return geminiGeneratedDefaults.defaultEmbeddingModel;
-}
-
-const DEPRECATED_VISION_MODEL_IDS = new Set(
-  geminiGeneratedDefaults.deprecatedVisionModelIds.map((id) => id.toLowerCase())
-);
-
-const DEPRECATED_EMBEDDING_MODEL_IDS = new Set(
-  Array.from(
-    geminiGeneratedDefaults.deprecatedEmbeddingModelIds as readonly string[]
-  ).map((id) => id.toLowerCase())
-);
-
-const VISION_FALLBACK_CHAIN = [...geminiGeneratedDefaults.visionFallbackChain];
-const EMBEDDING_FALLBACK_CHAIN = [
-  ...geminiGeneratedDefaults.embeddingFallbackChain,
-];
-
-function geminiVisionModelId(): string {
-  const raw = process.env.GEMINI_VISION_MODEL?.trim();
-  if (!raw || raw.length === 0) return defaultVisionModel();
-  const lower = raw.toLowerCase();
-  if (DEPRECATED_VISION_MODEL_IDS.has(lower)) return defaultVisionModel();
-  return raw;
-}
-
-function geminiEmbeddingModelId(): string {
-  const raw = process.env.GEMINI_EMBEDDING_MODEL?.trim();
-  if (!raw || raw.length === 0) return defaultEmbeddingModel();
-  const lower = raw.toLowerCase();
-  if (DEPRECATED_EMBEDDING_MODEL_IDS.has(lower)) return defaultEmbeddingModel();
-  return raw;
-}
-
-function isLikelyModelNotFoundMessage(msg: string): boolean {
-  const m = msg.toLowerCase();
-  return (
-    /\b404\b/.test(msg) ||
-    m.includes("not found") ||
-    m.includes("not_supported") ||
-    m.includes("was not found")
-  );
-}
-
-/** Unique ordered list: env primary first, then codegen fallback chain (no duplicates). */
-function visionModelCandidates(): string[] {
-  const primary = geminiVisionModelId();
-  const ordered = [primary, ...VISION_FALLBACK_CHAIN];
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const id of ordered) {
-    const t = id.trim();
-    if (!t || seen.has(t)) continue;
-    seen.add(t);
-    out.push(t);
-  }
-  return out;
-}
-
-function embeddingModelCandidates(): string[] {
-  const primary = geminiEmbeddingModelId();
-  const ordered = [primary, ...EMBEDDING_FALLBACK_CHAIN];
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const id of ordered) {
-    const t = id.trim();
-    if (!t || seen.has(t)) continue;
-    seen.add(t);
-    out.push(t);
-  }
-  return out;
-}
+const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
 export async function analyzeImage(
   apiKey: string,
+  modelId: string,
   imageBase64: string,
   mimeType: string
 ): Promise<GeminiAnalysis> {
-  if (!apiKey) {
-    throw new HttpsError("internal", "GEMINI_API_KEY is not configured.");
-  }
+  const endpoint = `${GEMINI_BASE}/models/${modelId}:generateContent?key=${apiKey}`;
 
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const contents = [
-    {
-      role: "user" as const,
-      parts: [
-        { inlineData: { data: imageBase64, mimeType } },
-        {
-          text: `Analyze this clothing item. Return ONLY a valid JSON object with no markdown:
+  const body = {
+    contents: [
+      {
+        role: "user",
+        parts: [
+          { inlineData: { data: imageBase64, mimeType } },
+          {
+            text: `Analyze this clothing item. Return ONLY a valid JSON object with no markdown:
 {
   "category": one of ["上衣","褲子","外套","配件","鞋子"],
   "colors": array of 1-3 dominant hex color codes (e.g. ["#3B5BDB","#FFFFFF"]),
   "materials": array of material names in Chinese (e.g. ["棉","聚酯纖維"]),
   "description": brief English description of the clothing item (used for similarity matching)
 }`,
-        },
-      ],
-    },
-  ];
+          },
+        ],
+      },
+    ],
+  };
 
-  const candidates = visionModelCandidates();
-  let visionResult;
-  let lastErr = "";
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(50000),
+  });
 
-  for (let i = 0; i < candidates.length; i++) {
-    const modelId = candidates[i];
-    try {
-      const visionModel = genAI.getGenerativeModel({ model: modelId });
-      visionResult = await visionModel.generateContent({ contents });
-      break;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      lastErr = msg;
-      const canRetry =
-        i < candidates.length - 1 && isLikelyModelNotFoundMessage(msg);
-      if (!canRetry) {
-        console.error(`Gemini vision error (model: ${modelId}):`, msg, err);
-        throw new HttpsError(
-          "internal",
-          `Gemini vision API error (model: ${modelId}): ${msg}`
-        );
-      }
-    }
-  }
-
-  if (!visionResult) {
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error(`Gemini vision error ${res.status} (model: ${modelId}):`, errText.slice(0, 500));
     throw new HttpsError(
       "internal",
-      `Gemini vision API error (tried ${candidates.join(", ")}): ${lastErr}`
+      `Gemini vision API error ${res.status}: ${errText.slice(0, 300)}`
     );
   }
 
-  const rawText = visionResult.response.text().trim();
+  const json = (await res.json()) as {
+    candidates?: Array<{ content: { parts: Array<{ text?: string }> } }>;
+  };
+
+  const rawText =
+    json.candidates?.[0]?.content?.parts
+      ?.map((p) => p.text ?? "")
+      .join("")
+      .trim() ?? "";
+
   const jsonText = rawText
     .replace(/^```json?\s*/i, "")
     .replace(/```\s*$/i, "")
@@ -163,6 +82,7 @@ export async function analyzeImage(
   try {
     return JSON.parse(jsonText) as GeminiAnalysis;
   } catch {
+    console.error("Gemini vision parse error:", rawText.slice(0, 200));
     throw new HttpsError(
       "internal",
       `Failed to parse Gemini response: ${rawText.slice(0, 200)}`
@@ -172,9 +92,10 @@ export async function analyzeImage(
 
 export async function generateEmbedding(
   apiKey: string,
+  modelId: string,
   analysis: GeminiAnalysis
 ): Promise<number[]> {
-  const genAI = new GoogleGenerativeAI(apiKey);
+  const endpoint = `${GEMINI_BASE}/models/${modelId}:embedContent?key=${apiKey}`;
 
   const input = [
     analysis.category,
@@ -183,33 +104,35 @@ export async function generateEmbedding(
     analysis.description,
   ].join(" ");
 
-  const candidates = embeddingModelCandidates();
-  let lastErr = "";
+  const body = {
+    content: {
+      parts: [{ text: input }],
+    },
+  };
 
-  for (let i = 0; i < candidates.length; i++) {
-    const modelId = candidates[i];
-    try {
-      const embeddingModel = genAI.getGenerativeModel({ model: modelId });
-      const result = await embeddingModel.embedContent(input);
-      return result.embedding.values;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      lastErr = msg;
-      const canRetry =
-        i < candidates.length - 1 && isLikelyModelNotFoundMessage(msg);
-      if (!canRetry) {
-        console.error(`Gemini embedding error (model: ${modelId}):`, msg, err);
-        throw new HttpsError(
-          "internal",
-          `Gemini embedding API error (model: ${modelId}): ${msg}`
-        );
-      }
-      console.warn(`Gemini embedding fallback (model: ${modelId}): ${msg}`);
-    }
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(30000),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error(`Gemini embedding error ${res.status} (model: ${modelId}):`, errText.slice(0, 500));
+    throw new HttpsError(
+      "internal",
+      `Gemini embedding API error ${res.status}: ${errText.slice(0, 300)}`
+    );
   }
 
-  throw new HttpsError(
-    "internal",
-    `Gemini embedding API error (tried ${candidates.join(", ")}): ${lastErr}`
-  );
+  const json = (await res.json()) as {
+    embedding?: { values?: number[] };
+  };
+
+  const values = json.embedding?.values;
+  if (!values?.length) {
+    throw new HttpsError("internal", "Gemini embedding returned no values");
+  }
+  return values;
 }

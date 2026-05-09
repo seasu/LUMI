@@ -139,21 +139,23 @@ refactor: 拆分 WardrobeRepository 為獨立 Provider
 
 未經討論不得推翻。
 
-### ADR-001：Google Photos 只存圖，Metadata 存 Firestore
+### ADR-001：圖片與 Metadata 全部存本機（Local-First）
 
-AI 分析結果（顏色、材質、embedding 等）存 **Firestore**，以 `mediaItemId` 關聯；Google Photos 僅存圖。
+AI 分析結果（category、colors、materials、embedding）以 **JSON sidecar** 格式（`{uuid}.json`）存在 `lumi_wardrobe/` 目錄，與圖片並排。iOS iCloud Backup 與 Android Google Auto Backup 自動涵蓋此目錄。**不使用 Firestore 儲存衣物資料。**
+
+Firebase Auth 用於身份識別；Firestore 保留用於未來訂閱／購買紀錄（`users/{uid}/purchases`）。
 
 ### ADR-002：AI 推論必須走 Firebase Cloud Functions
 
 Gemini 等呼叫經 **Cloud Functions**；客戶端不內嵌 Vertex AI 憑證。
 
-### ADR-003：Google Photos API 範圍
+### ADR-003（已廢棄）：Google Photos API
 
-第三方 App 僅能可靠讀取**透過本 App 上傳**的媒體；入庫以 Lumi Snap／上傳流程為準。
+已移除 Google Photos 整合；現行架構為純本機儲存。
 
-### ADR-004：Lumi-Check 比對
+### ADR-004：Lumi-Check 比對在 Client 端執行
 
-初版於 Functions 端做相似度；規模大可再評估 Vector Search。
+`analyzeClothing` CF 回傳新圖 embedding 後，Flutter 端載入全部本地衣物 embedding，以 **cosine similarity** 比對（`similarity.dart`）取 top 5。無需 Firestore 或額外 CF 呼叫。規模大時可再評估 Vector Search。
 
 ---
 

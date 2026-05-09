@@ -1,9 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
-import 'package:lumi/core/providers/firebase_providers.dart';
 import 'package:lumi/features/wardrobe/data/wardrobe_item.dart';
-import 'package:lumi/features/wardrobe/data/wardrobe_repository.dart';
 import 'package:lumi/features/search/domain/wardrobe_filter.dart';
 import 'package:lumi/features/search/presentation/providers/search_provider.dart';
 
@@ -26,18 +23,6 @@ WardrobeItem _item({
 }
 
 List<WardrobeItem> _apply(List<WardrobeItem> items, WardrobeFilter filter) {
-  // Mirror the private _applyFilter logic via the provider
-  final container = ProviderContainer(
-    overrides: [
-      firestoreProvider.overrideWithValue(FakeFirebaseFirestore()),
-      wardrobeRepositoryProvider.overrideWith(
-        (ref) => WardrobeRepository(ref.watch(firestoreProvider)),
-      ),
-    ],
-  );
-  addTearDown(container.dispose);
-
-  // Directly call the filter logic by constructing a local copy
   if (filter.isEmpty) return items;
 
   return items.where((item) {
@@ -169,11 +154,7 @@ void main() {
     late ProviderContainer container;
 
     setUp(() {
-      container = ProviderContainer(
-        overrides: [
-          firestoreProvider.overrideWithValue(FakeFirebaseFirestore()),
-        ],
-      );
+      container = ProviderContainer();
     });
 
     tearDown(() => container.dispose());

@@ -47,5 +47,11 @@
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>Lumi 需要使用相機來拍攝衣物與穿搭照片。</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Lumi 需要存取相片以儲存衣物與穿搭照片。</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Lumi 需要將衣物與穿搭照片儲存至相簿。</string>
 </dict>
 </plist>

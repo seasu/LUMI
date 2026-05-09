@@ -250,6 +250,29 @@ jobs:
           echo "Found: $IPA_PATH"
           echo "ipa_path=$IPA_PATH" >> "$GITHUB_OUTPUT"
 
+      - name: Upload dSYMs to App Store Connect
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/private_keys
+          printf '%s' "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            > ~/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8
+          DSYM_DIR="build/ios/archive/Runner.xcarchive/dSYMs"
+          if [ -d "$DSYM_DIR" ] && [ "$(ls -A "$DSYM_DIR")" ]; then
+            cd build/ios/archive/Runner.xcarchive
+            zip -r /tmp/app-dSYMs.zip dSYMs/
+            xcrun altool --upload-symbols \
+              -p /tmp/app-dSYMs.zip \
+              --type ios \
+              --apiKey "$APP_STORE_CONNECT_KEY_ID" \
+              --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" \
+              2>&1 | tail -5 || echo "dSYM upload failed (non-fatal)"
+          else
+            echo "No dSYMs found — skipping"
+          fi
+
       - name: Upload to TestFlight
         uses: apple-actions/upload-testflight-build@v3
         with:

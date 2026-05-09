@@ -5,7 +5,7 @@
  *
  * Env vars (all optional — defaults shown):
  *   GEMINI_DEFAULT_VISION_MODEL       default: gemini-2.5-flash
- *   GEMINI_DEFAULT_EMBEDDING_MODEL    default: text-embedding-004
+ *   GEMINI_DEFAULT_EMBEDDING_MODEL    default: gemini-embedding-exp-03-07
  *   GEMINI_DEPRECATED_VISION_MODELS   comma-separated
  *   GEMINI_DEPRECATED_EMBEDDING_MODELS comma-separated (optional)
  *   GEMINI_VISION_FALLBACK_CHAIN       comma-separated
@@ -21,7 +21,8 @@ const outPath = join(__dirname, "..", "src", "geminiDefaults.generated.ts");
 const defaultVision =
   process.env.GEMINI_DEFAULT_VISION_MODEL?.trim() || "gemini-2.5-flash";
 const defaultEmbedding =
-  process.env.GEMINI_DEFAULT_EMBEDDING_MODEL?.trim() || "text-embedding-004";
+  process.env.GEMINI_DEFAULT_EMBEDDING_MODEL?.trim() ||
+  "gemini-embedding-exp-03-07";
 
 const deprecatedVisionRaw =
   process.env.GEMINI_DEPRECATED_VISION_MODELS?.trim() ||
@@ -29,7 +30,7 @@ const deprecatedVisionRaw =
 
 const deprecatedEmbeddingRaw =
   process.env.GEMINI_DEPRECATED_EMBEDDING_MODELS?.trim() ||
-  "text-embedding-001,embedding-001";
+  "text-embedding-001,embedding-001,text-embedding-004";
 
 const fallbackVisionRaw =
   process.env.GEMINI_VISION_FALLBACK_CHAIN?.trim() ||
@@ -37,7 +38,7 @@ const fallbackVisionRaw =
 
 const fallbackEmbeddingRaw =
   process.env.GEMINI_EMBEDDING_FALLBACK_CHAIN?.trim() ||
-  "text-embedding-004";
+  "gemini-embedding-exp-03-07";
 
 function splitCsv(s) {
   return s

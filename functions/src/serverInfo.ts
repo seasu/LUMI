@@ -1,7 +1,7 @@
 import { onCall } from "firebase-functions/v2/https";
 import { FUNCTIONS_REGION } from "./functionsRegion";
 
-export const FUNCTIONS_VERSION = "1.0.8";
+export const FUNCTIONS_VERSION = "1.0.9";
 
 export const getServerInfo = onCall(
   { region: FUNCTIONS_REGION },

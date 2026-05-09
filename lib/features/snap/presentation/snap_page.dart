@@ -30,6 +30,8 @@ class _SnapPageState extends ConsumerState<SnapPage>
   @override
   void initState() {
     super.initState();
+    // Reset stale state from a previous session so the page always starts idle.
+    ref.read(snapProvider.notifier).reset();
     _glowController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),

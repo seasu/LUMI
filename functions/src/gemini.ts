@@ -2,12 +2,12 @@ import { HttpsError } from "firebase-functions/v2/https";
 import { defineString } from "firebase-functions/params";
 
 export const geminiVisionModel = defineString("GEMINI_VISION_MODEL", {
-  default: "gemini-2.5-flash",
+  default: "gemini-3.1-flash-lite",
   description: "Gemini model for clothing image analysis",
 });
 
 export const geminiEmbeddingModel = defineString("GEMINI_EMBEDDING_MODEL", {
-  default: "gemini-embedding-exp-03-07",
+  default: "gemini-embedding-001",
   description: "Gemini model for generating clothing embeddings",
 });
 
@@ -18,7 +18,7 @@ export interface GeminiAnalysis {
   description: string;
 }
 
-const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta";
+const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1";
 
 export async function analyzeImage(
   apiKey: string,

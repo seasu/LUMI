@@ -24,8 +24,8 @@ class _OotdAddPageState extends ConsumerState<OotdAddPage> {
   @override
   void initState() {
     super.initState();
-    // Immediately open the camera/picker when the page loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(ootdAddProvider.notifier).reset();
       ref.read(ootdAddProvider.notifier).pickPhoto();
     });
   }

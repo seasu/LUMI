@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.33+122
+**前端版本 (Flutter App)：** 1.0.34+123
 **後端版本 (Cloud Functions)：** 1.0.9
 **開發框架：** Flutter (Cross-platform)
 
@@ -313,6 +313,7 @@ users/{userId}/
 | 2026-05-09 | 1.0.30+119 | 1.0.6 | 修正 embedding 模型：`text-embedding-004` 僅存在於 Vertex AI（`aiplatform.googleapis.com`），透過 `GEMINI_API_KEY`（Gemini Developer API）呼叫 `generativelanguage.googleapis.com` 時 v1/v1beta 皆回傳 404；改為使用 `gemini-embedding-exp-03-07`（Developer API 可用），同時還原不必要的 `apiVersion:"v1"` 覆寫，並將 `text-embedding-004` 加入 deprecated 清單 | Cloud Functions / Gemini / Embedding |
 | 2026-05-08 | 1.0.30+119 | 1.0.5 | 修正 embedding 步驟 404 錯誤：`text-embedding-004` 只存在於 v1 stable API，SDK 預設為 v1beta，導致 `embedContent` 每次回傳 404；修正方式：`getGenerativeModel` 嵌入時傳入 `{ apiVersion: "v1" }`。同時將 `text-embedding-001`/`embedding-001` 加入 deprecated 清單並從 fallback chain 移除，新增 fallback 警告日誌 | Cloud Functions / Gemini / Embedding |
 | 2026-05-08 | 1.0.30+119 | 1.0.4 | 修正 `analyzeClothing` Cloud Function 每次回傳 HTTP 500 的根本原因：`@google/generative-ai` `^0.15.0` 的 semver 0.x 語意鎖定在 0.15.x，舊 SDK 無法解析 `gemini-2.5-flash`（2025）回應格式，導致 Cloud Run 返回未封裝的 HTTP 500；升級至 `^0.24.0`（已安裝 0.24.1）。同時修正 fallback chain 中無效的模型名稱 `gemini-flash-latest` → `gemini-2.0-flash`；在 `analyzeClothing.ts` 與 `gemini.ts` catch block 加入 `console.error` 以利後續 Cloud Logging 診斷 | Cloud Functions / Gemini / analyzeClothing |
+| 2026-05-09 | 1.0.34+123 | 1.0.9 | 修正相機 crash 根本原因：`Info.plist` 缺少 `NSCameraUsageDescription`，iOS TCC 在呼叫相機時直接 SIGKILL App；新增三個 Privacy Usage 說明（Camera、PhotoLibrary、PhotoLibraryAdd）；CI workflow 補 dSYM 自動上傳步驟，未來 crash 可在 App Store Connect 被符號化 | iOS / Privacy / CI |
 | 2026-05-09 | 1.0.33+122 | 1.0.9 | 更新 Gemini 模型：視覺分析改用 `gemini-3.1-flash-lite`（GA，multimodal）；embedding 改用 `gemini-embedding-001`；API endpoint 由 `v1beta` 改為 `v1`（修正 embedding 404 根本原因）；恢復 `analyzeClothing` 的 embedding 步驟，Lumi-Check cosine similarity 重新生效 | Cloud Functions / Gemini / Lumi-Check |
 | 2026-05-09 | 1.0.33+122 | 1.0.8 | 修正兩個 crash：（1）移除 `analyzeClothing` CF 中的 embedding 步驟（`text-embedding-004` v1beta 404 錯誤），改回傳空 embedding；（2）`SnapPage.initState()` 與 `OotdAddPage.initState()` 補 `reset()` 呼叫，防止跨 session 殘留狀態（`SnapDone`／`OotdAddResult`）導致頁面開啟後立即自動返回；`OotdAddNotifier.pickPhoto()` 加入 try-catch 防止相機不可用時 Future 拋出未捕捉例外 | Snap / OOTD / Cloud Functions |
 | 2026-05-09 | 1.0.32+121 | 1.0.8 | 全面本地化衣櫥資料：移除 Firestore wardrobe 集合，改以 JSON sidecar 檔案（`{uuid}.json`）與圖片並排存於 `lumi_wardrobe/`，由 iCloud/Google Auto Backup 自動備份；新增 `LocalWardrobeStore`（AsyncNotifier）、`WardrobeItem.toJson/fromJson`、`LocalImageStorage` JSON 方法；刪除 `WardrobeRepository`（Firestore）；Lumi-Check 改為 client 端 cosine similarity（新增 `similarity.dart`）取代 `compareClothing` CF；下拉重新整理觸發失敗項目重新分析；移除 `compareClothing` Cloud Function | Architecture / Storage / Check / Cloud Functions |

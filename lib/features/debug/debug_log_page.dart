@@ -1,25 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/debug/debug_log.dart';
 import '../../shared/constants/lumi_colors.dart';
 import '../../shared/constants/lumi_spacing.dart';
+import '../snap/data/cloud_functions_service.dart';
 
-class DebugLogPage extends StatefulWidget {
+class DebugLogPage extends ConsumerStatefulWidget {
   const DebugLogPage({super.key});
 
   @override
-  State<DebugLogPage> createState() => _DebugLogPageState();
+  ConsumerState<DebugLogPage> createState() => _DebugLogPageState();
 }
 
-class _DebugLogPageState extends State<DebugLogPage> {
+class _DebugLogPageState extends ConsumerState<DebugLogPage> {
   final _scrollCtrl = ScrollController();
   final _service = DebugLogService.instance;
+  String? _serverVersion;
 
   @override
   void initState() {
     super.initState();
     _service.addListener(_onLog);
+    _fetchServerVersion();
+  }
+
+  Future<void> _fetchServerVersion() async {
+    final v = await ref.read(cloudFunctionsServiceProvider).getServerVersion();
+    if (mounted) setState(() => _serverVersion = v);
   }
 
   @override
@@ -62,9 +71,24 @@ class _DebugLogPageState extends State<DebugLogPage> {
       appBar: AppBar(
         backgroundColor: LumiColors.base,
         foregroundColor: LumiColors.text,
-        title: Text(
-          'Debug Log (${entries.length})',
-          style: const TextStyle(fontSize: 16),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Debug Log (${entries.length})',
+              style: const TextStyle(fontSize: 16),
+            ),
+            Text(
+              _serverVersion == null
+                  ? 'Server: …'
+                  : 'Server v$_serverVersion',
+              style: const TextStyle(
+                fontSize: 11,
+                color: LumiColors.subtext,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(

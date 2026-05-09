@@ -77,41 +77,6 @@ class CloudFunctionsService {
     }
   }
 
-  Future<CompareClothingResult> compareClothing({
-    required String imageBase64,
-    required String mimeType,
-  }) async {
-    _log('compareClothing → mime=$mimeType');
-    final sw = Stopwatch()..start();
-    try {
-      final callable = _functions.httpsCallable('compareClothing');
-      final result = await callable.call<Map<dynamic, dynamic>>({
-        'imageBase64': imageBase64,
-        'mimeType': mimeType,
-      });
-
-      final data = _asStringKeyedMap(result.data);
-      final rawMatches = data['topMatches'] as List? ?? [];
-      final topMatches = rawMatches.map((e) {
-        final m = _asStringKeyedMap(e);
-        return MatchedClothingItem(
-          similarity: (m['similarity'] as num).toDouble(),
-          docId: _requireString(m, 'docId'),
-          localFileName: m['localFileName'] as String?,
-          category: m['category'] as String? ?? '',
-          colors: List<String>.from(m['colors'] as List? ?? []),
-        );
-      }).toList();
-
-      final r = CompareClothingResult(topMatches: topMatches);
-      _log('compareClothing ← ok ${sw.elapsedMilliseconds}ms'
-          ' matches=${r.topMatches.length}');
-      return r;
-    } catch (e) {
-      _log('compareClothing ✗ ${sw.elapsedMilliseconds}ms ${formatFirebaseCallableError(e)}');
-      rethrow;
-    }
-  }
 }
 
 class AnalyzeClothingResult {
@@ -142,12 +107,6 @@ class MatchedClothingItem {
   final String? localFileName;
   final String category;
   final List<String> colors;
-}
-
-class CompareClothingResult {
-  const CompareClothingResult({required this.topMatches});
-
-  final List<MatchedClothingItem> topMatches;
 }
 
 Map<String, dynamic> _asStringKeyedMap(Object? raw) {

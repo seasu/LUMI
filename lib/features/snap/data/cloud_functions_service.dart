@@ -65,6 +65,18 @@ class CloudFunctionsService {
     }
   }
 
+  Future<String> getServerVersion() async {
+    try {
+      final callable = _functions.httpsCallable('getServerInfo');
+      final result = await callable.call<Map<dynamic, dynamic>>();
+      final data = _asStringKeyedMap(result.data);
+      return data['version'] as String? ?? 'unknown';
+    } catch (e) {
+      _log('getServerVersion ✗ $e');
+      return 'error';
+    }
+  }
+
   Future<CompareClothingResult> compareClothing({
     required String imageBase64,
     required String mimeType,

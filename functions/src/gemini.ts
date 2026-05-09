@@ -18,7 +18,7 @@ export interface GeminiAnalysis {
   description: string;
 }
 
-const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1";
+const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
 export async function analyzeImage(
   apiKey: string,

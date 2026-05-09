@@ -3,7 +3,7 @@
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
 **前端版本 (Flutter App)：** 1.0.30+119
-**後端版本 (Cloud Functions)：** 1.0.6
+**後端版本 (Cloud Functions)：** 1.0.7
 **開發框架：** Flutter (Cross-platform)
 
 ---
@@ -309,6 +309,7 @@ users/{userId}/
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
 | 2026-05-08 | 1.0.30+119 | 1.0.4 | 修正 `signOut` / `signInWithGoogle` / `signInWithApple` 在 iOS 上觸發 `Bad state: Cannot use "ref" after the widget was disposed` 崩潰：Firebase 在 iOS 同步觸發 auth state change，GoRouter 在 `finally` 執行前就銷毀 ProfilePage，導致後續 `ref.read()` 拋出；修正方式：在第一個 `await` 前先讀取所有 providers，`finally` 只使用直接物件參考 | Auth / iOS |
+| 2026-05-09 | 1.0.30+119 | 1.0.7 | 參考 Magic-Sticker 架構，將 `@google/generative-ai` SDK 替換為直接呼叫 Gemini REST API（native `fetch`），模型名稱改用 `defineString` 參數（`GEMINI_VISION_MODEL` / `GEMINI_EMBEDDING_MODEL`）；刪除 codegen 腳本、generated 檔、死碼（`analyzeWardrobeCore`、`imageDownload`）；`package.json` 移除 SDK 依賴，build 簡化為純 `tsc` | Cloud Functions / Architecture |
 | 2026-05-09 | 1.0.30+119 | 1.0.6 | 修正 embedding 模型：`text-embedding-004` 僅存在於 Vertex AI（`aiplatform.googleapis.com`），透過 `GEMINI_API_KEY`（Gemini Developer API）呼叫 `generativelanguage.googleapis.com` 時 v1/v1beta 皆回傳 404；改為使用 `gemini-embedding-exp-03-07`（Developer API 可用），同時還原不必要的 `apiVersion:"v1"` 覆寫，並將 `text-embedding-004` 加入 deprecated 清單 | Cloud Functions / Gemini / Embedding |
 | 2026-05-08 | 1.0.30+119 | 1.0.5 | 修正 embedding 步驟 404 錯誤：`text-embedding-004` 只存在於 v1 stable API，SDK 預設為 v1beta，導致 `embedContent` 每次回傳 404；修正方式：`getGenerativeModel` 嵌入時傳入 `{ apiVersion: "v1" }`。同時將 `text-embedding-001`/`embedding-001` 加入 deprecated 清單並從 fallback chain 移除，新增 fallback 警告日誌 | Cloud Functions / Gemini / Embedding |
 | 2026-05-08 | 1.0.30+119 | 1.0.4 | 修正 `analyzeClothing` Cloud Function 每次回傳 HTTP 500 的根本原因：`@google/generative-ai` `^0.15.0` 的 semver 0.x 語意鎖定在 0.15.x，舊 SDK 無法解析 `gemini-2.5-flash`（2025）回應格式，導致 Cloud Run 返回未封裝的 HTTP 500；升級至 `^0.24.0`（已安裝 0.24.1）。同時修正 fallback chain 中無效的模型名稱 `gemini-flash-latest` → `gemini-2.0-flash`；在 `analyzeClothing.ts` 與 `gemini.ts` catch block 加入 `console.error` 以利後續 Cloud Logging 診斷 | Cloud Functions / Gemini / analyzeClothing |

@@ -1,12 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/storage/local_wardrobe_store.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
 import '../../../shared/constants/lumi_type_scale.dart';
+import '../../snap/presentation/providers/snap_provider.dart';
 import '../../wardrobe/data/wardrobe_item.dart';
-import '../../wardrobe/data/wardrobe_repository.dart';
 import 'providers/search_provider.dart';
 import 'widgets/filter_bar.dart';
 import 'widgets/wardrobe_card.dart';
@@ -83,10 +86,16 @@ class SearchPage extends ConsumerWidget {
   }
 
   Future<void> _onRefresh(WidgetRef ref) async {
-    final uid = ref.read(currentUserProvider)?.uid;
-    if (uid == null) return;
-    await ref.read(wardrobeRepositoryProvider).prefetchWardrobeFromServer(uid);
-    ref.invalidate(wardrobeStreamProvider);
+    // Capture failed items before reload clears them from state.
+    final current = ref.read(localWardrobeProvider).valueOrNull ?? [];
+    final failed =
+        current.where((i) => !i.analyzed && i.analyzeError != null).toList();
+
+    await ref.read(localWardrobeProvider.notifier).reload();
+
+    if (failed.isNotEmpty) {
+      unawaited(ref.read(snapProvider.notifier).retryFailedAnalyses(failed));
+    }
   }
 }
 

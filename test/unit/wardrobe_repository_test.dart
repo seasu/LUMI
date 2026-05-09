@@ -1,138 +1,142 @@
-import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lumi/features/wardrobe/data/wardrobe_repository.dart';
+import 'package:lumi/features/wardrobe/data/wardrobe_item.dart';
+import 'package:lumi/features/check/domain/similarity.dart';
 
 void main() {
-  const userId = 'test-user-123';
-  const localFileName = 'abc123.jpg';
-  const docId = 'abc123';
-
-  group('WardrobeRepository', () {
-    late FakeFirebaseFirestore fakeFirestore;
-    late WardrobeRepository repo;
-
-    setUp(() {
-      fakeFirestore = FakeFirebaseFirestore();
-      repo = WardrobeRepository(fakeFirestore);
-    });
-
-    test('addItemLocal creates Firestore doc with analyzed=false', () async {
-      final id = await repo.addItemLocal(
-        userId,
-        localFileName: localFileName,
-        createdAt: DateTime(2024, 1, 15),
-      );
-
-      expect(id, equals(docId));
-
-      final doc = await fakeFirestore
-          .collection('users')
-          .doc(userId)
-          .collection('wardrobe')
-          .doc(docId)
-          .get();
-
-      expect(doc.exists, isTrue);
-      expect(doc['localFileName'], equals(localFileName));
-      expect(doc['analyzed'], isFalse);
-    });
-
-    test('updateAnalysis sets analyzed=true and populates fields', () async {
-      await repo.addItemLocal(
-        userId,
-        localFileName: localFileName,
-        createdAt: DateTime(2024, 1, 15),
-      );
-
-      await repo.updateAnalysis(
-        userId,
-        docId,
+  group('WardrobeItem JSON serialization', () {
+    test('toJson/fromJson roundtrip preserves all fields', () {
+      final original = WardrobeItem(
+        docId: 'abc123',
+        localFileName: 'abc123.jpg',
         category: '上衣',
-        colors: ['#FFFFFF'],
+        colors: ['#FFFFFF', '#3B5BDB'],
         materials: ['棉'],
         embedding: [0.1, 0.2, 0.3],
+        createdAt: DateTime.utc(2026, 5, 9, 10, 0),
+        analyzed: true,
       );
 
-      final item = await repo.getItem(userId, docId);
-      expect(item, isNotNull);
-      expect(item!.analyzed, isTrue);
-      expect(item.category, equals('上衣'));
-      expect(item.colors, equals(['#FFFFFF']));
-      expect(item.materials, equals(['棉']));
-      expect(item.embedding, equals([0.1, 0.2, 0.3]));
+      final restored = WardrobeItem.fromJson(original.toJson());
+
+      expect(restored.docId, equals(original.docId));
+      expect(restored.localFileName, equals(original.localFileName));
+      expect(restored.category, equals(original.category));
+      expect(restored.colors, equals(original.colors));
+      expect(restored.materials, equals(original.materials));
+      expect(restored.embedding, equals(original.embedding));
+      expect(restored.analyzed, isTrue);
+      expect(restored.analyzeError, isNull);
     });
 
-    test('markAnalyzeFailed sets analyzeError and keeps analyzed=false', () async {
-      await repo.addItemLocal(
-        userId,
-        localFileName: localFileName,
-        createdAt: DateTime.now(),
+    test('analyzeError is preserved in JSON', () {
+      final item = WardrobeItem(
+        docId: 'abc',
+        localFileName: 'abc.jpg',
+        category: '',
+        colors: const [],
+        materials: const [],
+        embedding: const [],
+        createdAt: DateTime.utc(2026, 1, 1),
+        analyzed: false,
+        analyzeError: 'analysis_failed:timeout',
       );
 
-      await repo.markAnalyzeFailed(userId, docId, 'analysis_failed:timeout');
-
-      final item = await repo.getItem(userId, docId);
-      expect(item!.analyzed, isFalse);
-      expect(item.analyzeError, contains('analysis_failed'));
+      final restored = WardrobeItem.fromJson(item.toJson());
+      expect(restored.analyzeError, equals('analysis_failed:timeout'));
+      expect(restored.analyzed, isFalse);
     });
 
-    test('getItem returns null for non-existent docId', () async {
-      final result = await repo.getItem(userId, 'does-not-exist');
-      expect(result, isNull);
+    test('analyzed: false survives roundtrip', () {
+      final item = WardrobeItem(
+        docId: 'pending',
+        localFileName: 'pending.jpg',
+        category: '',
+        colors: const [],
+        materials: const [],
+        embedding: const [],
+        createdAt: DateTime.utc(2026, 1, 1),
+        analyzed: false,
+      );
+
+      final restored = WardrobeItem.fromJson(item.toJson());
+      expect(restored.analyzed, isFalse);
+      expect(restored.analyzeError, isNull);
     });
 
-    test('getItem returns correct item after addItemLocal', () async {
-      await repo.addItemLocal(
-        userId,
-        localFileName: localFileName,
-        createdAt: DateTime.now(),
+    test('embedding list is correctly encoded/decoded as floats', () {
+      final item = WardrobeItem(
+        docId: 'e',
+        localFileName: 'e.jpg',
+        category: '',
+        colors: const [],
+        materials: const [],
+        embedding: [0.5, -0.25, 1.0],
+        createdAt: DateTime.utc(2026, 1, 1),
+        analyzed: true,
       );
 
-      final result = await repo.getItem(userId, docId);
-      expect(result, isNotNull);
-      expect(result!.localFileName, equals(localFileName));
+      final restored = WardrobeItem.fromJson(item.toJson());
+      expect(restored.embedding, equals([0.5, -0.25, 1.0]));
+    });
+  });
+
+  group('cosineSimilarity', () {
+    test('identical vectors return 1.0', () {
+      expect(cosineSimilarity([1.0, 0.0, 0.0], [1.0, 0.0, 0.0]),
+          closeTo(1.0, 1e-9));
     });
 
-    test('deleteItem removes document from Firestore', () async {
-      await repo.addItemLocal(
-        userId,
-        localFileName: localFileName,
-        createdAt: DateTime.now(),
-      );
-
-      final before = await repo.getItem(userId, docId);
-      expect(before, isNotNull);
-
-      await repo.deleteItem(userId, docId, localFileName: localFileName);
-
-      final after = await repo.getItem(userId, docId);
-      expect(after, isNull);
+    test('orthogonal vectors return 0.0', () {
+      expect(cosineSimilarity([1.0, 0.0], [0.0, 1.0]), closeTo(0.0, 1e-9));
     });
 
-    test('watchWardrobe emits items in descending createdAt order', () async {
-      await repo.addItemLocal(
-        userId,
-        localFileName: 'old.jpg',
-        createdAt: DateTime(2024, 1, 1),
-      );
-      await repo.addItemLocal(
-        userId,
-        localFileName: 'new.jpg',
-        createdAt: DateTime(2024, 6, 1),
-      );
-
-      final items = await repo.watchWardrobe(userId).first;
-      expect(items.first.localFileName, equals('new.jpg'));
-      expect(items.last.localFileName, equals('old.jpg'));
+    test('opposite vectors return -1.0', () {
+      expect(cosineSimilarity([1.0, 0.0], [-1.0, 0.0]), closeTo(-1.0, 1e-9));
     });
 
-    test('prefetchWardrobeFromServer completes without error', () async {
-      await repo.addItemLocal(
-        userId,
-        localFileName: localFileName,
-        createdAt: DateTime.now(),
-      );
-      await expectLater(repo.prefetchWardrobeFromServer(userId), completes);
+    test('empty vectors return 0.0', () {
+      expect(cosineSimilarity([], []), equals(0.0));
+    });
+  });
+
+  group('findTopMatches', () {
+    WardrobeItem makeItem(String id, List<double> embedding) => WardrobeItem(
+          docId: id,
+          localFileName: '$id.jpg',
+          category: id,
+          colors: const [],
+          materials: const [],
+          embedding: embedding,
+          createdAt: DateTime.utc(2026, 1, 1),
+          analyzed: true,
+        );
+
+    final wardrobe = [
+      makeItem('a', [1.0, 0.0, 0.0]),
+      makeItem('b', [0.0, 1.0, 0.0]),
+      makeItem('c', [1.0, 0.0, 0.0]), // same direction as 'a'
+    ];
+
+    test('returns top-k sorted by similarity', () {
+      final matches = findTopMatches([1.0, 0.0, 0.0], wardrobe, topK: 2);
+      expect(matches.length, equals(2));
+      expect(matches.first.similarity, closeTo(1.0, 1e-9));
+    });
+
+    test('skips items with empty embedding', () {
+      final noEmb = makeItem('empty', const []);
+      final result = findTopMatches([1.0, 0.0, 0.0], [noEmb]);
+      expect(result, isEmpty);
+    });
+
+    test('empty query embedding returns empty', () {
+      final result = findTopMatches([], wardrobe);
+      expect(result, isEmpty);
+    });
+
+    test('top match is most similar item', () {
+      final matches = findTopMatches([0.0, 1.0, 0.0], wardrobe, topK: 1);
+      expect(matches.first.docId, equals('b'));
     });
   });
 }

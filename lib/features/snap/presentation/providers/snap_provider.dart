@@ -7,7 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/providers/firebase_providers.dart'
     show firebaseAuthProvider;
 import '../../../../core/storage/local_image_storage.dart';
-import '../../../wardrobe/data/wardrobe_repository.dart';
+import '../../../../core/storage/local_wardrobe_store.dart';
+import '../../../wardrobe/data/wardrobe_item.dart';
 import '../../data/cloud_functions_service.dart';
 import '../../domain/snap_state.dart';
 
@@ -17,7 +18,6 @@ typedef _AnalysisTask = ({
   String docId,
   List<int> bytes,
   String mimeType,
-  String userId,
 });
 
 final snapProvider = NotifierProvider<SnapNotifier, SnapState>(SnapNotifier.new);
@@ -115,25 +115,19 @@ class SnapNotifier extends Notifier<SnapState> {
     // 1. Persist to device storage.
     final fileName = await LocalImageStorage.saveImage(bytes, extension: ext);
 
-    // 2. Create Firestore doc (analyzed: false) — visible immediately in wardrobe.
-    final repo = ref.read(wardrobeRepositoryProvider);
-    final docId = await repo.addItemLocal(
-      userId,
+    // 2. Create local JSON doc (analyzed: false) — visible immediately in wardrobe.
+    final store = ref.read(localWardrobeProvider.notifier);
+    final docId = await store.addItem(
       localFileName: fileName,
       createdAt: DateTime.now(),
     );
 
-    return (docId: docId, bytes: bytes, mimeType: mimeType, userId: userId);
+    return (docId: docId, bytes: bytes, mimeType: mimeType);
   }
 
   Future<void> _runAnalysesSequentially(List<_AnalysisTask> tasks) async {
     for (final task in tasks) {
-      await _analyzeInBackground(
-        task.docId,
-        task.bytes,
-        task.mimeType,
-        task.userId,
-      );
+      await _analyzeInBackground(task.docId, task.bytes, task.mimeType);
     }
   }
 
@@ -141,9 +135,8 @@ class SnapNotifier extends Notifier<SnapState> {
     String docId,
     List<int> bytes,
     String mimeType,
-    String userId,
   ) async {
-    final repo = ref.read(wardrobeRepositoryProvider);
+    final store = ref.read(localWardrobeProvider.notifier);
     try {
       final service = ref.read(cloudFunctionsServiceProvider);
       final imageBase64 = base64Encode(bytes);
@@ -151,8 +144,7 @@ class SnapNotifier extends Notifier<SnapState> {
         imageBase64: imageBase64,
         mimeType: mimeType,
       );
-      await repo.updateAnalysis(
-        userId,
+      await store.updateAnalysis(
         docId,
         category: result.category,
         colors: result.colors,
@@ -162,12 +154,39 @@ class SnapNotifier extends Notifier<SnapState> {
     } catch (e) {
       final msg = 'analysis_failed:${formatFirebaseCallableError(e)}';
       try {
-        await repo.markAnalyzeFailed(userId, docId, msg);
+        await store.markAnalyzeFailed(docId, msg);
       } catch (_) {}
     }
   }
 
   void reset() => state = const SnapIdle();
+
+  /// Retries analysis for items that previously failed (e.g. triggered by
+  /// pull-to-refresh). Runs sequentially in the background; does NOT mutate
+  /// [SnapState].
+  Future<void> retryFailedAnalyses(List<WardrobeItem> failedItems) async {
+    final store = ref.read(localWardrobeProvider.notifier);
+    for (final item in failedItems) {
+      // Show item as pending during retry.
+      try {
+        await store.resetAnalyzeError(item.docId);
+      } catch (_) {
+        continue;
+      }
+
+      final file = await LocalImageStorage.getFile(item.localFileName);
+      if (file == null) {
+        try {
+          await store.markAnalyzeFailed(item.docId, 'file_not_found');
+        } catch (_) {}
+        continue;
+      }
+
+      final bytes = await file.readAsBytes();
+      final mimeType = _mimeFromFileName(item.localFileName);
+      await _analyzeInBackground(item.docId, bytes.toList(), mimeType);
+    }
+  }
 }
 
 String _effectiveMimeType(XFile file) {
@@ -212,5 +231,22 @@ String _extForMime(String mime) {
       return 'gif';
     default:
       return 'jpg';
+  }
+}
+
+String _mimeFromFileName(String fileName) {
+  final ext = _fileExtension(fileName).toLowerCase();
+  switch (ext) {
+    case '.heic':
+    case '.heif':
+      return 'image/heic';
+    case '.png':
+      return 'image/png';
+    case '.webp':
+      return 'image/webp';
+    case '.gif':
+      return 'image/gif';
+    default:
+      return 'image/jpeg';
   }
 }

@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/storage/local_wardrobe_store.dart';
 import '../../../../features/snap/data/cloud_functions_service.dart';
 import '../../domain/check_state.dart';
+import '../../domain/similarity.dart';
 
 final checkProvider =
     NotifierProvider<CheckNotifier, CheckState>(CheckNotifier.new);
@@ -31,13 +33,17 @@ class CheckNotifier extends Notifier<CheckState> {
       final imageBase64 = base64Encode(bytes);
       final mimeType = file.mimeType ?? 'image/jpeg';
 
+      // 1. Analyze the new item to get its embedding.
       final service = ref.read(cloudFunctionsServiceProvider);
-      final result = await service.compareClothing(
+      final result = await service.analyzeClothing(
         imageBase64: imageBase64,
         mimeType: mimeType,
       );
 
-      final matches = result.topMatches;
+      // 2. Compare against all local wardrobe items on-device.
+      final wardrobe = ref.read(localWardrobeProvider).valueOrNull ?? [];
+      final matches = findTopMatches(result.embedding, wardrobe);
+
       final topSimilarity = matches.isNotEmpty ? matches.first.similarity : 0.0;
 
       if (topSimilarity >= 0.8) {

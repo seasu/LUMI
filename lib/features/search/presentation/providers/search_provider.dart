@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/storage/local_wardrobe_store.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../../../features/wardrobe/data/wardrobe_item.dart';
-import '../../../../features/wardrobe/data/wardrobe_repository.dart';
 import '../../domain/wardrobe_filter.dart';
 
 // ── Filter state ──────────────────────────────────────────────────────────────
@@ -48,25 +48,13 @@ class WardrobeFilterNotifier extends Notifier<WardrobeFilter> {
   void clearAll() => state = const WardrobeFilter();
 }
 
-// ── Raw stream from Firestore ─────────────────────────────────────────────────
-
-final wardrobeStreamProvider = StreamProvider<List<WardrobeItem>>((ref) {
-  // Watch authStateProvider (StreamProvider<User?>) so this provider rebuilds
-  // on sign-in/sign-out. Using firebaseAuthProvider.currentUser (a static
-  // singleton) did NOT trigger rebuilds, leaving the stream in error state
-  // after a sign-out → sign-in cycle within the same session.
-  final user = ref.watch(authStateProvider).valueOrNull;
-  if (user == null) return const Stream.empty();
-  return ref.watch(wardrobeRepositoryProvider).watchWardrobe(user.uid);
-});
-
 // ── Client-side filtered list ─────────────────────────────────────────────────
 
 final filteredWardrobeProvider = Provider<AsyncValue<List<WardrobeItem>>>((ref) {
-  final stream = ref.watch(wardrobeStreamProvider);
+  final wardrobe = ref.watch(localWardrobeProvider);
   final filter = ref.watch(wardrobeFilterProvider);
 
-  return stream.whenData((items) => _applyFilter(items, filter));
+  return wardrobe.whenData((items) => _applyFilter(items, filter));
 });
 
 List<WardrobeItem> _applyFilter(

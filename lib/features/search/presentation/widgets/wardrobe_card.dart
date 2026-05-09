@@ -3,12 +3,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/providers/firebase_providers.dart'
-    show firebaseAuthProvider;
 import '../../../../core/storage/local_image_storage.dart';
+import '../../../../core/storage/local_wardrobe_store.dart';
 import '../../../../shared/constants/lumi_colors.dart';
 import '../../../wardrobe/data/wardrobe_item.dart';
-import '../../../wardrobe/data/wardrobe_repository.dart';
 
 class WardrobeCard extends ConsumerWidget {
   const WardrobeCard({super.key, required this.item, this.onTap});
@@ -121,13 +119,10 @@ class WardrobeCard extends ConsumerWidget {
     );
     if (confirmed != true) return;
 
-    final user = ref.read(firebaseAuthProvider).currentUser;
-    if (user == null) return;
-
     try {
       await ref
-          .read(wardrobeRepositoryProvider)
-          .deleteItem(user.uid, item.docId, localFileName: item.localFileName);
+          .read(localWardrobeProvider.notifier)
+          .deleteItem(item.docId, localFileName: item.localFileName);
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -160,7 +155,7 @@ String _displaySubtitle(WardrobeItem item) {
   if (err != null && err.isNotEmpty && !item.isQuotaExceeded) {
     final hint = _analyzeErrorHintForUser(err);
     if (hint.isNotEmpty) return hint;
-    return '請至 Firebase 後台查看紀錄';
+    return '分析失敗，可下拉重試';
   }
   final category = item.category.isEmpty ? '未分類' : item.category;
   final id = item.docId;

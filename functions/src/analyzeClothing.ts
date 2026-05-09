@@ -37,7 +37,7 @@ export const analyzeClothing = onCall(
     try {
       const apiKey = geminiApiKey.value();
       const analysis = await analyzeImage(apiKey, geminiVisionModel.value(), imageBase64, mimeType);
-      const embedding = await generateEmbedding(apiKey, geminiEmbeddingModel.value(), analysis);
+      const embedding = await generateEmbedding(apiKey, geminiEmbeddingModel.value(), imageBase64, mimeType);
 
       return {
         category: analysis.category,

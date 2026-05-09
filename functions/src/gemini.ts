@@ -7,7 +7,7 @@ export const geminiVisionModel = defineString("GEMINI_VISION_MODEL", {
 });
 
 export const geminiEmbeddingModel = defineString("GEMINI_EMBEDDING_MODEL", {
-  default: "gemini-embedding-001",
+  default: "gemini-embedding-2",
   description: "Gemini model for generating clothing embeddings",
 });
 
@@ -93,20 +93,16 @@ export async function analyzeImage(
 export async function generateEmbedding(
   apiKey: string,
   modelId: string,
-  analysis: GeminiAnalysis
+  imageBase64: string,
+  mimeType: string
 ): Promise<number[]> {
   const endpoint = `${GEMINI_BASE}/models/${modelId}:embedContent?key=${apiKey}`;
 
-  const input = [
-    analysis.category,
-    ...analysis.colors,
-    ...analysis.materials,
-    analysis.description,
-  ].join(" ");
-
+  // gemini-embedding-2 embeds the clothing image directly (multimodal),
+  // giving more accurate visual similarity than text-based embedding.
   const body = {
     content: {
-      parts: [{ text: input }],
+      parts: [{ inlineData: { data: imageBase64, mimeType } }],
     },
   };
 

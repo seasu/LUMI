@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
@@ -270,16 +272,10 @@ class _ResultView extends StatelessWidget {
 
   Future<void> _share(BuildContext context) async {
     try {
-      await Share.shareXFiles(
-        [
-          XFile.fromData(
-            photoBytes,
-            mimeType: 'image/jpeg',
-            name: 'lumi_ootd.jpg',
-          )
-        ],
-        subject: '我的 Lumi 穿搭',
-      );
+      final tmp = await getTemporaryDirectory();
+      final file = File('${tmp.path}/lumi_ootd_share.jpg');
+      await file.writeAsBytes(photoBytes);
+      await Share.shareXFiles([XFile(file.path)], subject: '我的 Lumi 穿搭');
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

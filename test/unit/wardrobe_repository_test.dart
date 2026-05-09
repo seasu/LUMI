@@ -100,7 +100,7 @@ void main() {
   });
 
   group('findTopMatches', () {
-    WardrobeItem _item(String id, List<double> embedding) => WardrobeItem(
+    WardrobeItem makeItem(String id, List<double> embedding) => WardrobeItem(
           docId: id,
           localFileName: '$id.jpg',
           category: id,
@@ -112,9 +112,9 @@ void main() {
         );
 
     final wardrobe = [
-      _item('a', [1.0, 0.0, 0.0]),
-      _item('b', [0.0, 1.0, 0.0]),
-      _item('c', [1.0, 0.0, 0.0]), // same direction as 'a'
+      makeItem('a', [1.0, 0.0, 0.0]),
+      makeItem('b', [0.0, 1.0, 0.0]),
+      makeItem('c', [1.0, 0.0, 0.0]), // same direction as 'a'
     ];
 
     test('returns top-k sorted by similarity', () {
@@ -124,7 +124,7 @@ void main() {
     });
 
     test('skips items with empty embedding', () {
-      final noEmb = _item('empty', const []);
+      final noEmb = makeItem('empty', const []);
       final result = findTopMatches([1.0, 0.0, 0.0], [noEmb]);
       expect(result, isEmpty);
     });

@@ -11,6 +11,7 @@ import '../../../shared/constants/lumi_type_scale.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../../ootd/domain/ootd_item.dart';
 import '../../ootd/data/ootd_repository.dart';
+import '../../ootd/presentation/widgets/ootd_detail_modal.dart';
 
 class OutfitPage extends ConsumerWidget {
   const OutfitPage({super.key});
@@ -145,13 +146,16 @@ class _OotdCard extends StatelessWidget {
       if (item.imageBase64.isNotEmpty) bytes = base64Decode(item.imageBase64);
     } catch (_) {}
 
-    return Container(
-      decoration: BoxDecoration(
-        color: LumiColors.surface,
-        borderRadius: BorderRadius.circular(LumiRadii.lg),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
+    return InkWell(
+      borderRadius: BorderRadius.circular(LumiRadii.lg),
+      onTap: () => showOotdDetailModal(context, item),
+      child: Container(
+        decoration: BoxDecoration(
+          color: LumiColors.surface,
+          borderRadius: BorderRadius.circular(LumiRadii.lg),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
@@ -186,6 +190,7 @@ class _OotdCard extends StatelessWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }

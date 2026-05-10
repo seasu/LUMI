@@ -3,7 +3,7 @@
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
 **前端版本 (Flutter App)：** 1.0.35+124
-**後端版本 (Cloud Functions)：** 1.0.11
+**後端版本 (Cloud Functions)：** 1.0.12
 **開發框架：** Flutter (Cross-platform)
 
 ---
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-05-10 | 1.0.35+124 | 1.0.12 | 修正 `GEMINI_EMBEDDING_MODEL` GitHub Variable 設為 `text-embedding-004`（v1beta 不支援）導致 embedding 步驟持續 404；更新 Variable 為 `gemini-embedding-2`；bump 後端版本確認部署一致性 | Cloud Functions / Gemini / Deployment |
 | 2026-05-09 | 1.0.35+124 | 1.0.11 | 新增 OOTD 穿搭卡片點擊 Detail Modal（顯示圖片 3:4、日期、備註、分享按鈕，樣式與衣櫥 Detail 一致）；修復新增穿搭完成後「分享穿搭」按鈕無法喚起系統分享：改用 temp 檔寫入後以 `XFile(path)` 分享，解決 iOS `XFile.fromData` 不可靠問題 | OOTD / UI / Share |
 | 2026-05-09 | 1.0.34+123 | 1.0.11 | 換用 `gemini-embedding-2`（GA，multimodal）取代 `gemini-embedding-001`（text-only）；`generateEmbedding` 改為直接嵌入衣物圖片（`inlineData` image），提升 Lumi-Check cosine similarity 的視覺準確度；`analyzeClothing` CF 傳入 `imageBase64`/`mimeType` 給 embedding 步驟 | Cloud Functions / Gemini / Lumi-Check |
 | 2026-05-08 | 1.0.30+119 | 1.0.4 | 修正 `signOut` / `signInWithGoogle` / `signInWithApple` 在 iOS 上觸發 `Bad state: Cannot use "ref" after the widget was disposed` 崩潰：Firebase 在 iOS 同步觸發 auth state change，GoRouter 在 `finally` 執行前就銷毀 ProfilePage，導致後續 `ref.read()` 拋出；修正方式：在第一個 `await` 前先讀取所有 providers，`finally` 只使用直接物件參考 | Auth / iOS |

@@ -142,13 +142,13 @@ class _TosFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final linkStyle = TextStyle(
+    const linkStyle = TextStyle(
       fontSize: LumiTypeScale.labelSm,
       color: LumiColors.subtext,
       decoration: TextDecoration.underline,
       decorationColor: LumiColors.subtext,
     );
-    final baseStyle = TextStyle(
+    const baseStyle = TextStyle(
       fontSize: LumiTypeScale.labelSm,
       color: LumiColors.subtext,
       height: 1.6,

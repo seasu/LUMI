@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -10,6 +11,8 @@ import '../../../../shared/constants/lumi_colors.dart';
 import '../../../../shared/constants/lumi_radii.dart';
 import '../../../../shared/constants/lumi_spacing.dart';
 import '../../../../shared/constants/lumi_type_scale.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../data/ootd_repository.dart';
 import '../../domain/ootd_item.dart';
 
 void showOotdDetailModal(BuildContext context, OotdItem item) {
@@ -20,13 +23,55 @@ void showOotdDetailModal(BuildContext context, OotdItem item) {
   );
 }
 
-class _OotdDetailModal extends StatelessWidget {
+class _OotdDetailModal extends ConsumerWidget {
   const _OotdDetailModal({required this.item});
 
   final OotdItem item;
 
+  Future<void> _deleteItem(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: LumiColors.surface,
+        title: const Text(
+          '刪除穿搭',
+          style: TextStyle(fontSize: LumiTypeScale.titleSm, color: LumiColors.text),
+        ),
+        content: const Text(
+          '確定要刪除這筆穿搭記錄嗎？',
+          style: TextStyle(fontSize: LumiTypeScale.labelMd, color: LumiColors.subtext),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text(
+              '取消',
+              style: TextStyle(color: LumiColors.subtext),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: LumiColors.warning),
+            child: const Text('刪除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final userId = ref.read(authStateProvider).valueOrNull?.uid;
+    if (userId == null) return;
+
+    try {
+      await ref.read(ootdRepositoryProvider).deleteItem(userId, item.id);
+    } catch (_) {}
+
+    if (context.mounted) Navigator.of(context).pop();
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Dialog(
@@ -66,11 +111,7 @@ class _OotdDetailModal extends StatelessWidget {
                       onTap: () => Navigator.of(context).pop(),
                       child: const Padding(
                         padding: EdgeInsets.all(LumiSpacing.xs),
-                        child: Icon(
-                          Icons.close,
-                          size: 20,
-                          color: LumiColors.text,
-                        ),
+                        child: Icon(Icons.close, size: 20, color: LumiColors.text),
                       ),
                     ),
                   ),
@@ -111,7 +152,9 @@ class _OotdDetailModal extends StatelessWidget {
                       ),
                     ],
                     const SizedBox(height: LumiSpacing.lg),
-                    _ShareButton(item: item, context: context),
+                    _ShareButton(item: item),
+                    const SizedBox(height: LumiSpacing.sm),
+                    _DeleteButton(onTap: () => _deleteItem(context, ref)),
                   ],
                 ),
               ),
@@ -180,12 +223,11 @@ class _SectionLabel extends StatelessWidget {
 // ── 分享按鈕 ──────────────────────────────────────────────────────────────────
 
 class _ShareButton extends StatelessWidget {
-  const _ShareButton({required this.item, required this.context});
+  const _ShareButton({required this.item});
 
   final OotdItem item;
-  final BuildContext context;
 
-  Future<void> _share() async {
+  Future<void> _share(BuildContext context) async {
     try {
       final bytes = base64Decode(item.imageBase64);
       final tmp = await getTemporaryDirectory();
@@ -207,7 +249,7 @@ class _ShareButton extends StatelessWidget {
       width: double.infinity,
       height: 48,
       child: OutlinedButton.icon(
-        onPressed: _share,
+        onPressed: () => _share(context),
         icon: const Icon(Icons.ios_share, size: 18),
         label: const Text('分享穿搭'),
         style: OutlinedButton.styleFrom(
@@ -219,6 +261,34 @@ class _ShareButton extends StatelessWidget {
           textStyle: const TextStyle(
             fontSize: LumiTypeScale.labelMd,
             fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── 刪除按鈕 ──────────────────────────────────────────────────────────────────
+
+class _DeleteButton extends StatelessWidget {
+  const _DeleteButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: TextButton.icon(
+        onPressed: onTap,
+        icon: const Icon(Icons.delete_outline, size: 18),
+        label: const Text('刪除穿搭'),
+        style: TextButton.styleFrom(
+          foregroundColor: LumiColors.warning,
+          textStyle: const TextStyle(
+            fontSize: LumiTypeScale.labelMd,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),

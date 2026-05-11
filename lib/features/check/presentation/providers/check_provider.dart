@@ -15,10 +15,10 @@ class CheckNotifier extends Notifier<CheckState> {
   @override
   CheckState build() => const CheckIdle();
 
-  Future<void> check() async {
+  Future<void> check({ImageSource source = ImageSource.camera}) async {
     final picker = ImagePicker();
     final XFile? file = await picker.pickImage(
-      source: ImageSource.camera,
+      source: source,
       maxWidth: 1920,
       maxHeight: 1920,
       imageQuality: 85,

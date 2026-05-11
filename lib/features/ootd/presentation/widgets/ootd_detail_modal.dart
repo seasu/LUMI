@@ -226,18 +226,39 @@ class _ShareButton extends StatelessWidget {
   final OotdItem item;
 
   Future<void> _share(BuildContext context) async {
+    // Capture render position before any await (needed for iPad popover anchor)
+    final box = context.findRenderObject() as RenderBox?;
+    final origin = box == null
+        ? null
+        : box.localToGlobal(Offset.zero) & box.size;
+
     try {
       final bytes = base64Decode(item.imageBase64);
       final tmp = await getTemporaryDirectory();
       final file = File('${tmp.path}/lumi_ootd_${item.id}.jpg');
       await file.writeAsBytes(bytes);
-      await Share.shareXFiles([XFile(file.path)], subject: '我的 Lumi 穿搭');
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: '我的 Lumi 穿搭',
+        sharePositionOrigin: origin,
+      );
     } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('此裝置不支援分享功能')),
-        );
-      }
+      if (!context.mounted) return;
+      // Use showDialog so the error appears inside this dialog,
+      // not behind it on the main screen (SnackBar hits the wrong scaffold).
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('分享失敗'),
+          content: const Text('無法分享此穿搭，請稍後再試。'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('確定'),
+            ),
+          ],
+        ),
+      );
     }
   }
 

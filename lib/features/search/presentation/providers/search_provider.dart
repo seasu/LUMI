@@ -85,10 +85,11 @@ List<WardrobeItem> _applyFilter(
     // Colors: fuzzy bucket matching — both filter hex and item hex are
     // classified into named buckets (紅/橘/黃/…) so Gemini's per-item
     // hex codes (e.g. #C62828) still match the fixed filter swatches.
+    // OR logic: item passes if it contains ANY of the selected buckets.
     if (filter.colors.isNotEmpty) {
       final filterBuckets = filter.colors.map(_colorBucket).toSet();
       final itemBuckets = item.colors.map(_colorBucket).toSet();
-      if (!filterBuckets.every(itemBuckets.contains)) return false;
+      if (!filterBuckets.any(itemBuckets.contains)) return false;
     }
 
     // Materials: item must contain ALL selected materials

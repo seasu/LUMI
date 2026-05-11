@@ -11,6 +11,8 @@ import '../../../../shared/constants/lumi_colors.dart';
 import '../../../../shared/constants/lumi_radii.dart';
 import '../../../../shared/constants/lumi_spacing.dart';
 import '../../../../shared/constants/lumi_type_scale.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../data/ootd_repository.dart';
 import '../../domain/ootd_item.dart';
 
 void showOotdDetailModal(BuildContext context, OotdItem item) {
@@ -25,6 +27,46 @@ class _OotdDetailModal extends ConsumerWidget {
   const _OotdDetailModal({required this.item});
 
   final OotdItem item;
+
+  Future<void> _deleteItem(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('刪除穿搭'),
+        content: const Text('確定要刪除這筆穿搭記錄嗎？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text(
+              '刪除',
+              style: TextStyle(color: LumiColors.warning),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final userId = ref.read(authStateProvider).valueOrNull?.uid;
+    if (userId == null) return;
+
+    try {
+      await ref.read(ootdRepositoryProvider).deleteItem(userId, item.id);
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('刪除失敗，請再試一次')),
+        );
+        return;
+      }
+    }
+
+    if (context.mounted) Navigator.of(context).pop();
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -109,6 +151,8 @@ class _OotdDetailModal extends ConsumerWidget {
                     ],
                     const SizedBox(height: LumiSpacing.lg),
                     _ShareButton(item: item),
+                    const SizedBox(height: LumiSpacing.sm),
+                    _DeleteButton(onTap: () => _deleteItem(context, ref)),
                   ],
                 ),
               ),
@@ -215,6 +259,34 @@ class _ShareButton extends StatelessWidget {
           textStyle: const TextStyle(
             fontSize: LumiTypeScale.labelMd,
             fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── 刪除按鈕 ──────────────────────────────────────────────────────────────────
+
+class _DeleteButton extends StatelessWidget {
+  const _DeleteButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: TextButton.icon(
+        onPressed: onTap,
+        icon: const Icon(Icons.delete_outline, size: 18),
+        label: const Text('刪除穿搭'),
+        style: TextButton.styleFrom(
+          foregroundColor: LumiColors.warning,
+          textStyle: const TextStyle(
+            fontSize: LumiTypeScale.labelMd,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),

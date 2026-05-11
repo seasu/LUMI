@@ -1,11 +1,13 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
 import '../../../shared/constants/lumi_type_scale.dart';
+import '../../search/presentation/providers/search_provider.dart';
 
 const _tabs = [
   _TabItem(path: '/home', icon: Icons.checkroom_outlined, label: '我的衣櫥'),
@@ -13,7 +15,7 @@ const _tabs = [
   _TabItem(path: '/home/profile', icon: Icons.person_outline, label: '個人檔案'),
 ];
 
-class MainShell extends StatelessWidget {
+class MainShell extends ConsumerWidget {
   const MainShell({super.key, required this.child});
 
   final Widget child;
@@ -26,7 +28,7 @@ class MainShell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = _currentIndex(context);
 
     return Scaffold(
@@ -34,7 +36,12 @@ class MainShell extends StatelessWidget {
       body: child,
       bottomNavigationBar: _LumiBottomNav(
         currentIndex: currentIndex,
-        onTap: (i) => context.go(_tabs[i].path),
+        onTap: (i) {
+          if (i == 0) {
+            ref.read(wardrobeFilterProvider.notifier).setCategory(null);
+          }
+          context.go(_tabs[i].path);
+        },
       ),
     );
   }

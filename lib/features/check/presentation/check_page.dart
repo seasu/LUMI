@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/storage/local_image_storage.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_radii.dart';
@@ -88,7 +89,10 @@ class _CheckPageState extends ConsumerState<CheckPage>
       body: SafeArea(
         child: switch (state) {
           CheckIdle() => _IdleView(
-              onCheck: () => ref.read(checkProvider.notifier).check(),
+              onCamera: () => ref.read(checkProvider.notifier).check(),
+              onGallery: () => ref
+                  .read(checkProvider.notifier)
+                  .check(source: ImageSource.gallery),
               onCancel: () => context.pop(),
             ),
           CheckAnalyzing() => _GlowView(animation: _glowAnimation),
@@ -130,9 +134,14 @@ class _CheckPageState extends ConsumerState<CheckPage>
 // ── Idle（入口）──────────────────────────────────────────────────────────────
 
 class _IdleView extends StatelessWidget {
-  const _IdleView({required this.onCheck, required this.onCancel});
+  const _IdleView({
+    required this.onCamera,
+    required this.onGallery,
+    required this.onCancel,
+  });
 
-  final VoidCallback onCheck;
+  final VoidCallback onCamera;
+  final VoidCallback onGallery;
   final VoidCallback onCancel;
 
   @override
@@ -207,8 +216,31 @@ class _IdleView extends StatelessWidget {
                   ],
                 ),
                 const Spacer(),
-                _PrimaryButton(label: '開始拍照', onTap: onCheck),
+                _PrimaryButton(label: '開始拍照', onTap: onCamera),
                 const SizedBox(height: LumiSpacing.sm),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: onGallery,
+                    icon: const Icon(Icons.photo_library_outlined, size: 18),
+                    label: const Text('從相簿選取'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: LumiColors.primary,
+                      side: BorderSide(
+                          color: LumiColors.primary.withValues(alpha: 0.5)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(LumiRadii.pill),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: LumiTypeScale.labelMd,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: LumiSpacing.xs),
                 TextButton(
                   onPressed: onCancel,
                   child: const Text(

@@ -14,11 +14,11 @@ class OotdAddNotifier extends Notifier<OotdAddState> {
   @override
   OotdAddState build() => const OotdAddIdle();
 
-  Future<void> pickPhoto() async {
+  Future<void> pickPhoto({ImageSource source = ImageSource.camera}) async {
     try {
       final picker = ImagePicker();
       final file = await picker.pickImage(
-        source: ImageSource.camera,
+        source: source,
         maxWidth: 1080,
         maxHeight: 1920,
         imageQuality: 85,

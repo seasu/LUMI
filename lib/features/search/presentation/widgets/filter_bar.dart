@@ -150,12 +150,12 @@ class _ColorDotRow extends ConsumerWidget {
                     // Selected: white ring + primary outer ring via spread shadows
                     boxShadow: isSelected
                         ? [
-                            BoxShadow(
+                            const BoxShadow(
                               color: LumiColors.surface,
                               blurRadius: 0,
                               spreadRadius: 2.5,
                             ),
-                            BoxShadow(
+                            const BoxShadow(
                               color: LumiColors.primary,
                               blurRadius: 0,
                               spreadRadius: 4.5,

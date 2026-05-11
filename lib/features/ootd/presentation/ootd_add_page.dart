@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,7 +15,9 @@ import '../domain/ootd_state.dart';
 import 'providers/ootd_provider.dart';
 
 class OotdAddPage extends ConsumerStatefulWidget {
-  const OotdAddPage({super.key});
+  const OotdAddPage({super.key, this.source = ImageSource.camera});
+
+  final ImageSource source;
 
   @override
   ConsumerState<OotdAddPage> createState() => _OotdAddPageState();
@@ -22,19 +25,22 @@ class OotdAddPage extends ConsumerStatefulWidget {
 
 class _OotdAddPageState extends ConsumerState<OotdAddPage> {
   final _captionController = TextEditingController();
+  // Persistent FocusNode prevents TextField from losing focus on state rebuilds
+  final _captionFocus = FocusNode();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(ootdAddProvider.notifier).reset();
-      ref.read(ootdAddProvider.notifier).pickPhoto();
+      ref.read(ootdAddProvider.notifier).pickPhoto(source: widget.source);
     });
   }
 
   @override
   void dispose() {
     _captionController.dispose();
+    _captionFocus.dispose();
     super.dispose();
   }
 
@@ -65,6 +71,7 @@ class _OotdAddPageState extends ConsumerState<OotdAddPage> {
             photoBytes: photoBytes,
             date: date,
             captionController: _captionController,
+            captionFocusNode: _captionFocus,
             onCaptionChanged: (v) =>
                 ref.read(ootdAddProvider.notifier).updateCaption(v),
             onRetake: () => ref.read(ootdAddProvider.notifier).retake(),
@@ -129,6 +136,7 @@ class _EditView extends StatelessWidget {
     required this.photoBytes,
     required this.date,
     required this.captionController,
+    required this.captionFocusNode,
     required this.onCaptionChanged,
     required this.onRetake,
     required this.onSave,
@@ -137,6 +145,7 @@ class _EditView extends StatelessWidget {
   final Uint8List photoBytes;
   final DateTime date;
   final TextEditingController captionController;
+  final FocusNode captionFocusNode;
   final ValueChanged<String> onCaptionChanged;
   final VoidCallback onRetake;
   final VoidCallback onSave;
@@ -201,6 +210,7 @@ class _EditView extends StatelessWidget {
               const SizedBox(height: LumiSpacing.xs),
               TextField(
                 controller: captionController,
+                focusNode: captionFocusNode,
                 onChanged: onCaptionChanged,
                 decoration: const InputDecoration(
                   hintText: '記錄今天的穿搭心情...',
@@ -271,11 +281,20 @@ class _ResultView extends StatelessWidget {
   final VoidCallback onBack;
 
   Future<void> _share(BuildContext context) async {
+    // Capture render position before any await (needed for iPad popover anchor)
+    final box = context.findRenderObject() as RenderBox?;
+    final origin =
+        box == null ? null : box.localToGlobal(Offset.zero) & box.size;
+
     try {
       final tmp = await getTemporaryDirectory();
       final file = File('${tmp.path}/lumi_ootd_share.jpg');
       await file.writeAsBytes(photoBytes);
-      await Share.shareXFiles([XFile(file.path)], subject: '我的 Lumi 穿搭');
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: '我的 Lumi 穿搭',
+        sharePositionOrigin: origin,
+      );
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -367,9 +386,11 @@ class _ResultView extends StatelessWidget {
             const Spacer(),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.md),
-              child: _PrimaryButton(
-                label: '分享穿搭',
-                onTap: () => _share(context),
+              child: Builder(
+                builder: (btnCtx) => _PrimaryButton(
+                  label: '分享穿搭',
+                  onTap: () => _share(btnCtx),
+                ),
               ),
             ),
             const SizedBox(height: LumiSpacing.sm),

@@ -60,22 +60,27 @@ class WardrobeCard extends ConsumerWidget {
                         color: LumiColors.text,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      maxLines:
-                          item.analyzeError != null &&
-                                  item.analyzeError!.isNotEmpty &&
-                                  !item.isQuotaExceeded
-                              ? 3
-                              : 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 9,
-                        color: LumiColors.subtext,
-                        height: 1.35,
+                    const SizedBox(height: 4),
+                    if (item.analyzed &&
+                        item.analyzeError == null &&
+                        item.colors.isNotEmpty)
+                      _ColorSwatches(colors: item.colors)
+                    else
+                      Text(
+                        subtitle,
+                        maxLines:
+                            item.analyzeError != null &&
+                                    item.analyzeError!.isNotEmpty &&
+                                    !item.isQuotaExceeded
+                                ? 3
+                                : 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 9,
+                          color: LumiColors.subtext,
+                          height: 1.35,
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -130,6 +135,51 @@ class WardrobeCard extends ConsumerWidget {
         );
       }
     }
+  }
+}
+
+// ── Color swatches ────────────────────────────────────────────────────────────
+
+class _ColorSwatches extends StatelessWidget {
+  const _ColorSwatches({required this.colors});
+
+  final List<String> colors;
+
+  @override
+  Widget build(BuildContext context) {
+    final parsed = colors.map(_parseHex).whereType<Color>().take(3).toList();
+    if (parsed.isEmpty) return const SizedBox.shrink();
+
+    return Row(
+      children: [
+        for (final color in parsed)
+          Container(
+            width: 10,
+            height: 10,
+            margin: const EdgeInsets.only(right: 4),
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: color.computeLuminance() > 0.85
+                    ? LumiColors.subtext.withValues(alpha: 0.25)
+                    : Colors.transparent,
+                width: 0.5,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+Color? _parseHex(String hex) {
+  try {
+    final h = hex.replaceAll('#', '').trim();
+    if (h.length != 6) return null;
+    return Color(int.parse('FF$h', radix: 16));
+  } catch (_) {
+    return null;
   }
 }
 

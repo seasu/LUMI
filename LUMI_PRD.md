@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.35+124
+**前端版本 (Flutter App)：** 1.0.36+125
 **後端版本 (Cloud Functions)：** 1.0.12
 **開發框架：** Flutter (Cross-platform)
 
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-05-11 | 1.0.36+125 | 1.0.12 | 修正衣櫥顏色篩選完全無效的問題：改用 HSL 分桶模糊比對（`_colorBucket`），解決 Gemini 回傳精確 hex（如 `#C62828`）與篩選預設色票 hex（如 `#e53935`）不一致導致永遠篩不到結果；同步擴大顏色色點 tap target 至 48×48px 並增強已選取視覺效果（白色外框 + primary 外環） | Wardrobe / UI / Filter |
 | 2026-05-10 | 1.0.35+124 | 1.0.12 | 修正 `GEMINI_EMBEDDING_MODEL` GitHub Variable 設為 `text-embedding-004`（v1beta 不支援）導致 embedding 步驟持續 404；更新 Variable 為 `gemini-embedding-2`；bump 後端版本確認部署一致性 | Cloud Functions / Gemini / Deployment |
 | 2026-05-09 | 1.0.35+124 | 1.0.11 | 新增 OOTD 穿搭卡片點擊 Detail Modal（顯示圖片 3:4、日期、備註、分享按鈕，樣式與衣櫥 Detail 一致）；修復新增穿搭完成後「分享穿搭」按鈕無法喚起系統分享：改用 temp 檔寫入後以 `XFile(path)` 分享，解決 iOS `XFile.fromData` 不可靠問題 | OOTD / UI / Share |
 | 2026-05-09 | 1.0.34+123 | 1.0.11 | 換用 `gemini-embedding-2`（GA，multimodal）取代 `gemini-embedding-001`（text-only）；`generateEmbedding` 改為直接嵌入衣物圖片（`inlineData` image），提升 Lumi-Check cosine similarity 的視覺準確度；`analyzeClothing` CF 傳入 `imageBase64`/`mimeType` 給 embedding 步驟 | Cloud Functions / Gemini / Lumi-Check |

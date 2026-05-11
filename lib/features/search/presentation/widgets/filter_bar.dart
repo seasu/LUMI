@@ -110,7 +110,7 @@ class _ColorDotRow extends ConsumerWidget {
     );
 
     return SizedBox(
-      height: 36,
+      height: 48,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -123,26 +123,46 @@ class _ColorDotRow extends ConsumerWidget {
           return GestureDetector(
             onTap: () {
               final notifier = ref.read(wardrobeFilterProvider.notifier);
-              if (isSelected) {
-                notifier.removeColor(hexStr);
-              } else {
-                notifier.addColor(hexStr);
-              }
+              isSelected
+                  ? notifier.removeColor(hexStr)
+                  : notifier.addColor(hexStr);
             },
-            child: Container(
-              width: 26,
-              height: 26,
-              margin: const EdgeInsets.only(right: 12),
-              decoration: BoxDecoration(
-                color: opt.color,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected
-                      ? LumiColors.primary
-                      : opt.color.computeLuminance() > 0.9
-                          ? LumiColors.subtext.withValues(alpha: 0.15)
-                          : Colors.transparent,
-                  width: isSelected ? 2.2 : 1.0,
+            // 48×48 tap area for comfortable touch
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: Center(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  width: isSelected ? 34 : 30,
+                  height: isSelected ? 34 : 30,
+                  decoration: BoxDecoration(
+                    color: opt.color,
+                    shape: BoxShape.circle,
+                    // Subtle outline for near-white dots so they're visible
+                    border: (!isSelected &&
+                            opt.color.computeLuminance() > 0.85)
+                        ? Border.all(
+                            color: LumiColors.subtext.withValues(alpha: 0.20),
+                          )
+                        : null,
+                    // Selected: white ring + primary outer ring via spread shadows
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: LumiColors.surface,
+                              blurRadius: 0,
+                              spreadRadius: 2.5,
+                            ),
+                            BoxShadow(
+                              color: LumiColors.primary,
+                              blurRadius: 0,
+                              spreadRadius: 4.5,
+                            ),
+                          ]
+                        : null,
+                  ),
                 ),
               ),
             ),

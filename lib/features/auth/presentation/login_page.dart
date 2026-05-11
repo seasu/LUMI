@@ -1,7 +1,10 @@
 import 'dart:io';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../shared/constants/app_urls.dart';
 import '../../../shared/constants/app_version.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_radii.dart';
@@ -89,6 +92,8 @@ class LoginPage extends ConsumerWidget {
                     isDisabled: loading != SignInMethod.none,
                     onTap: () => _handleSignIn(context, ref, SignInMethod.google),
                   ),
+                  const SizedBox(height: LumiSpacing.md),
+                  const _TosFooter(),
                   const SizedBox(height: LumiSpacing.xl),
                 ],
               ),
@@ -120,6 +125,57 @@ class LoginPage extends ConsumerWidget {
         );
       }
     }
+  }
+}
+
+// ── ToS footer ────────────────────────────────────────────────────────────────
+
+class _TosFooter extends StatelessWidget {
+  const _TosFooter();
+
+  Future<void> _launch(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final linkStyle = TextStyle(
+      fontSize: LumiTypeScale.labelSm,
+      color: LumiColors.subtext,
+      decoration: TextDecoration.underline,
+      decorationColor: LumiColors.subtext,
+    );
+    final baseStyle = TextStyle(
+      fontSize: LumiTypeScale.labelSm,
+      color: LumiColors.subtext,
+      height: 1.6,
+    );
+
+    return Text.rich(
+      TextSpan(
+        style: baseStyle,
+        children: [
+          const TextSpan(text: '繼續即表示您同意我們的'),
+          TextSpan(
+            text: '使用條款',
+            style: linkStyle,
+            recognizer: TapGestureRecognizer()
+              ..onTap = () => _launch(kTermsOfServiceUrl),
+          ),
+          const TextSpan(text: '與'),
+          TextSpan(
+            text: '隱私政策',
+            style: linkStyle,
+            recognizer: TapGestureRecognizer()
+              ..onTap = () => _launch(kPrivacyPolicyUrl),
+          ),
+        ],
+      ),
+      textAlign: TextAlign.center,
+    );
   }
 }
 

@@ -132,12 +132,49 @@ class _OotdGrid extends StatelessWidget {
   }
 }
 
-class _OotdCard extends StatelessWidget {
+class _OotdCard extends ConsumerWidget {
   const _OotdCard({required this.item});
   final OotdItem item;
 
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('刪除穿搭'),
+        content: const Text('確定要刪除這筆穿搭記錄嗎？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text(
+              '刪除',
+              style: TextStyle(color: LumiColors.warning),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final userId = ref.read(authStateProvider).valueOrNull?.uid;
+    if (userId == null) return;
+
+    try {
+      await ref.read(ootdRepositoryProvider).deleteItem(userId, item.id);
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('刪除失敗，請再試一次')),
+        );
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final dateStr =
         '${item.date.year}.${item.date.month.toString().padLeft(2, '0')}.${item.date.day.toString().padLeft(2, '0')}';
 
@@ -149,6 +186,7 @@ class _OotdCard extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(LumiRadii.lg),
       onTap: () => showOotdDetailModal(context, item),
+      onLongPress: () => _confirmDelete(context, ref),
       child: Container(
         decoration: BoxDecoration(
           color: LumiColors.surface,

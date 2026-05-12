@@ -274,14 +274,26 @@ class _SavingView extends StatelessWidget {
 
 // ── 結果 + 分享 ───────────────────────────────────────────────────────────────
 
-class _ResultView extends StatelessWidget {
+class _ResultView extends StatefulWidget {
   const _ResultView({required this.photoBytes, required this.onBack});
 
   final Uint8List photoBytes;
   final VoidCallback onBack;
 
+  @override
+  State<_ResultView> createState() => _ResultViewState();
+}
+
+class _ResultViewState extends State<_ResultView> {
+  final _captionController = TextEditingController();
+
+  @override
+  void dispose() {
+    _captionController.dispose();
+    super.dispose();
+  }
+
   Future<void> _share(BuildContext context) async {
-    // Capture render position before any await (needed for iPad popover anchor)
     final box = context.findRenderObject() as RenderBox?;
     final origin =
         box == null ? null : box.localToGlobal(Offset.zero) & box.size;
@@ -289,9 +301,12 @@ class _ResultView extends StatelessWidget {
     try {
       final tmp = await getTemporaryDirectory();
       final file = File('${tmp.path}/lumi_ootd_share.jpg');
-      await file.writeAsBytes(photoBytes);
+      await file.writeAsBytes(widget.photoBytes);
       await Share.shareXFiles(
         [XFile(file.path)],
+        text: _captionController.text.trim().isEmpty
+            ? null
+            : _captionController.text.trim(),
         subject: '我的 Lumi 穿搭',
         sharePositionOrigin: origin,
       );
@@ -328,7 +343,7 @@ class _ResultView extends StatelessWidget {
                 child: Stack(
                   children: [
                     Image.memory(
-                      photoBytes,
+                      widget.photoBytes,
                       fit: BoxFit.cover,
                       width: double.infinity,
                     ),
@@ -376,11 +391,25 @@ class _ResultView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: LumiSpacing.lg),
-            Text(
-              '分享一段話吧...',
-              style: TextStyle(
-                fontSize: LumiTypeScale.titleSm,
-                color: LumiColors.onPrimary.withValues(alpha: 0.72),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.xl),
+              child: TextField(
+                controller: _captionController,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: LumiTypeScale.titleSm,
+                  color: LumiColors.onPrimary.withValues(alpha: 0.9),
+                ),
+                decoration: InputDecoration(
+                  hintText: '分享一段話吧...',
+                  hintStyle: TextStyle(
+                    fontSize: LumiTypeScale.titleSm,
+                    color: LumiColors.onPrimary.withValues(alpha: 0.45),
+                  ),
+                  border: InputBorder.none,
+                ),
+                maxLines: 3,
+                minLines: 1,
               ),
             ),
             const Spacer(),
@@ -395,7 +424,7 @@ class _ResultView extends StatelessWidget {
             ),
             const SizedBox(height: LumiSpacing.sm),
             TextButton(
-              onPressed: onBack,
+              onPressed: widget.onBack,
               child: Text(
                 '回到我的穿搭',
                 style: TextStyle(

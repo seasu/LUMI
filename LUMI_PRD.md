@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.38+127
+**前端版本 (Flutter App)：** 1.0.39+128
 **後端版本 (Cloud Functions)：** 1.0.12
 **開發框架：** Flutter (Cross-platform)
 
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-05-12 | 1.0.39+128 | 1.0.12 | 修正分享穿搭畫面「分享一段話吧...」無法輸入：將 `_ResultView` 改為 `StatefulWidget`，新增 `TextEditingController`，靜態 `Text` 改為 `TextField`；使用者輸入的文字會隨圖片一起帶入 `Share.shareXFiles` 的 `text` 參數 | OOTD / UI |
 | 2026-05-11 | 1.0.38+127 | 1.0.12 | 登入頁新增使用條款與隱私政策文字連結（`_TosFooter`）；新增 `url_launcher` 依賴與 `lib/shared/constants/app_urls.dart` URL 常數 | Auth / UI / Login |
 | 2026-05-11 | 1.0.37+126 | 1.0.12 | 穿搭新增 FAB 改為「新增」並彈出選單（拍照 / 從相簿選取）；修復新增流程 `_EditView` TextField 失焦問題（加 persistent `FocusNode`）；修復 `_ResultView` 分享壞掉（加 `sharePositionOrigin` + `Builder`）；衣櫥卡片下方以色塊取代 hex 碼字串 | OOTD / Wardrobe / UI / Share |
 | 2026-05-11 | 1.0.36+125 | 1.0.12 | 修正衣櫥顏色篩選完全無效的問題：改用 HSL 分桶模糊比對（`_colorBucket`），解決 Gemini 回傳精確 hex（如 `#C62828`）與篩選預設色票 hex（如 `#e53935`）不一致導致永遠篩不到結果；同步擴大顏色色點 tap target 至 48×48px 並增強已選取視覺效果（白色外框 + primary 外環） | Wardrobe / UI / Filter |

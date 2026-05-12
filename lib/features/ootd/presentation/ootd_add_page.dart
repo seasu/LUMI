@@ -78,8 +78,9 @@ class _OotdAddPageState extends ConsumerState<OotdAddPage> {
             onSave: () => ref.read(ootdAddProvider.notifier).save(),
           ),
         OotdAddSaving() => const _SavingView(),
-        OotdAddResult(:final photoBytes) => _ResultView(
+        OotdAddResult(:final photoBytes, :final item) => _ResultView(
             photoBytes: photoBytes,
+            initialCaption: item.caption,
             onBack: () {
               ref.read(ootdAddProvider.notifier).reset();
               context.go('/home/outfits');
@@ -275,17 +276,23 @@ class _SavingView extends StatelessWidget {
 // ── 結果 + 分享 ───────────────────────────────────────────────────────────────
 
 class _ResultView extends StatefulWidget {
-  const _ResultView({required this.photoBytes, required this.onBack});
+  const _ResultView({
+    required this.photoBytes,
+    required this.onBack,
+    this.initialCaption = '',
+  });
 
   final Uint8List photoBytes;
   final VoidCallback onBack;
+  final String initialCaption;
 
   @override
   State<_ResultView> createState() => _ResultViewState();
 }
 
 class _ResultViewState extends State<_ResultView> {
-  final _captionController = TextEditingController();
+  late final _captionController =
+      TextEditingController(text: widget.initialCaption);
 
   @override
   void dispose() {

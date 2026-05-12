@@ -1,10 +1,6 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../../core/providers/firebase_providers.dart';
 import '../../data/ootd_repository.dart';
-import '../../domain/ootd_item.dart';
 import '../../domain/ootd_state.dart';
 
 final ootdAddProvider =
@@ -19,9 +15,9 @@ class OotdAddNotifier extends Notifier<OotdAddState> {
       final picker = ImagePicker();
       final file = await picker.pickImage(
         source: source,
-        maxWidth: 1080,
-        maxHeight: 1920,
-        imageQuality: 85,
+        maxWidth: 800,
+        maxHeight: 1200,
+        imageQuality: 70,
       );
       if (file == null) {
         state = const OotdAddIdle();
@@ -52,26 +48,12 @@ class OotdAddNotifier extends Notifier<OotdAddState> {
     state = const OotdAddSaving();
 
     try {
-      final user = ref.read(firebaseAuthProvider).currentUser;
-      if (user == null) throw Exception('未登入');
-
-      // Compress for Firestore storage (base64)
-      final imageBase64 = base64Encode(current.photoBytes);
-
-      final now = DateTime.now();
-      final draft = OotdItem(
-        id: '',
-        imageBase64: imageBase64,
-        caption: current.caption,
-        date: current.date,
-        createdAt: now,
-      );
-
-      final saved = await ref
-          .read(ootdRepositoryProvider)
-          .addItem(user.uid, draft);
-
-      state = OotdAddResult(item: saved, photoBytes: current.photoBytes);
+      final item = await ref.read(ootdLocalProvider.notifier).save(
+            caption: current.caption,
+            date: current.date,
+            imageBytes: current.photoBytes,
+          );
+      state = OotdAddResult(item: item, photoBytes: current.photoBytes);
     } catch (e) {
       state = OotdAddError(e.toString());
     }

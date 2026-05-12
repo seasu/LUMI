@@ -2,8 +2,10 @@
 <data-extraction-rules>
     <cloud-backup>
         <include domain="file" path="lumi_wardrobe/"/>
+        <include domain="file" path="lumi_ootd/"/>
     </cloud-backup>
     <device-transfer>
         <include domain="file" path="lumi_wardrobe/"/>
+        <include domain="file" path="lumi_ootd/"/>
     </device-transfer>
 </data-extraction-rules>

@@ -34,9 +34,9 @@ class SnapNotifier extends Notifier<SnapState> {
     if (remaining <= 0) return;
 
     final files = await picker.pickMultiImage(
-      maxWidth: 1920,
-      maxHeight: 1920,
-      imageQuality: 85,
+      maxWidth: 1280,
+      maxHeight: 1280,
+      imageQuality: 75,
     );
     if (files.isEmpty) return;
     final merged = [...existing, ...files.take(remaining)];
@@ -47,9 +47,9 @@ class SnapNotifier extends Notifier<SnapState> {
     final picker = ImagePicker();
     final file = await picker.pickImage(
       source: ImageSource.camera,
-      maxWidth: 1920,
-      maxHeight: 1920,
-      imageQuality: 85,
+      maxWidth: 1280,
+      maxHeight: 1280,
+      imageQuality: 75,
     );
     if (file == null) return;
     final current = state;

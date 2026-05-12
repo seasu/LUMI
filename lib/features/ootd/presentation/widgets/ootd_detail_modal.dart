@@ -1,17 +1,15 @@
-import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../../core/storage/local_ootd_storage.dart';
 import '../../../../shared/constants/lumi_colors.dart';
 import '../../../../shared/constants/lumi_radii.dart';
 import '../../../../shared/constants/lumi_spacing.dart';
 import '../../../../shared/constants/lumi_type_scale.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/ootd_repository.dart';
 import '../../domain/ootd_item.dart';
 
@@ -51,11 +49,8 @@ class _OotdDetailModal extends ConsumerWidget {
     );
     if (confirmed != true) return;
 
-    final userId = ref.read(authStateProvider).valueOrNull?.uid;
-    if (userId == null) return;
-
     try {
-      await ref.read(ootdRepositoryProvider).deleteItem(userId, item.id);
+      await ref.read(ootdLocalProvider.notifier).delete(item.id);
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -95,7 +90,7 @@ class _OotdDetailModal extends ConsumerWidget {
                   aspectRatio: 3 / 4,
                   child: ColoredBox(
                     color: LumiColors.base,
-                    child: _ModalImage(imageBase64: item.imageBase64),
+                    child: _ModalImage(itemId: item.id),
                   ),
                 ),
                 Positioned(
@@ -167,22 +162,23 @@ class _OotdDetailModal extends ConsumerWidget {
 // ── 圖片 ──────────────────────────────────────────────────────────────────────
 
 class _ModalImage extends StatelessWidget {
-  const _ModalImage({required this.imageBase64});
+  const _ModalImage({required this.itemId});
 
-  final String imageBase64;
+  final String itemId;
 
   @override
   Widget build(BuildContext context) {
-    if (imageBase64.isEmpty) return const _Placeholder();
-    Uint8List? bytes;
-    try {
-      bytes = base64Decode(imageBase64);
-    } catch (_) {}
-    if (bytes == null) return const _Placeholder();
-    return Image.memory(
-      bytes,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => const _Placeholder(),
+    return FutureBuilder<File?>(
+      future: LocalOotdStorage.getImageFile(itemId),
+      builder: (context, snapshot) {
+        final file = snapshot.data;
+        if (file == null) return const _Placeholder();
+        return Image.file(
+          file,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const _Placeholder(),
+        );
+      },
     );
   }
 }
@@ -226,26 +222,27 @@ class _ShareButton extends StatelessWidget {
   final OotdItem item;
 
   Future<void> _share(BuildContext context) async {
-    // Capture render position before any await (needed for iPad popover anchor)
     final box = context.findRenderObject() as RenderBox?;
     final origin = box == null
         ? null
         : box.localToGlobal(Offset.zero) & box.size;
 
     try {
-      final bytes = base64Decode(item.imageBase64);
+      final file = await LocalOotdStorage.getImageFile(item.id);
+      if (file == null) throw Exception('找不到圖片');
+
+      // Copy to tmp so share sheet gets a clean path
       final tmp = await getTemporaryDirectory();
-      final file = File('${tmp.path}/lumi_ootd_${item.id}.jpg');
-      await file.writeAsBytes(bytes);
+      final shareFile = File('${tmp.path}/lumi_ootd_${item.id}.jpg');
+      await shareFile.writeAsBytes(await file.readAsBytes());
+
       await Share.shareXFiles(
-        [XFile(file.path)],
+        [XFile(shareFile.path)],
         subject: '我的 Lumi 穿搭',
         sharePositionOrigin: origin,
       );
     } catch (_) {
       if (!context.mounted) return;
-      // Use showDialog so the error appears inside this dialog,
-      // not behind it on the main screen (SnackBar hits the wrong scaffold).
       showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(

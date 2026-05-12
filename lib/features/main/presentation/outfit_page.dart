@@ -1,16 +1,15 @@
-import 'dart:convert';
-import 'dart:typed_data';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/storage/local_ootd_storage.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
 import '../../../shared/constants/lumi_type_scale.dart';
-import '../../auth/presentation/providers/auth_provider.dart';
-import '../../ootd/domain/ootd_item.dart';
 import '../../ootd/data/ootd_repository.dart';
+import '../../ootd/domain/ootd_item.dart';
 import '../../ootd/presentation/widgets/ootd_detail_modal.dart';
 
 class OutfitPage extends ConsumerWidget {
@@ -18,10 +17,7 @@ class OutfitPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authStateProvider).valueOrNull;
-    if (user == null) return const SizedBox.shrink();
-
-    final itemsAsync = ref.watch(ootdItemsProvider(user.uid));
+    final itemsAsync = ref.watch(ootdLocalProvider);
 
     return Scaffold(
       backgroundColor: LumiColors.base,
@@ -248,11 +244,8 @@ class _OotdCard extends ConsumerWidget {
     );
     if (confirmed != true) return;
 
-    final userId = ref.read(authStateProvider).valueOrNull?.uid;
-    if (userId == null) return;
-
     try {
-      await ref.read(ootdRepositoryProvider).deleteItem(userId, item.id);
+      await ref.read(ootdLocalProvider.notifier).delete(item.id);
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -267,11 +260,6 @@ class _OotdCard extends ConsumerWidget {
     final dateStr =
         '${item.date.year}.${item.date.month.toString().padLeft(2, '0')}.${item.date.day.toString().padLeft(2, '0')}';
 
-    Uint8List? bytes;
-    try {
-      if (item.imageBase64.isNotEmpty) bytes = base64Decode(item.imageBase64);
-    } catch (_) {}
-
     return InkWell(
       borderRadius: BorderRadius.circular(LumiRadii.lg),
       onTap: () => showOotdDetailModal(context, item),
@@ -283,40 +271,53 @@ class _OotdCard extends ConsumerWidget {
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: bytes != null
-                ? Image.memory(bytes, fit: BoxFit.cover, width: double.infinity)
-                : Container(color: LumiColors.base),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(LumiSpacing.sm),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.caption.isEmpty ? '無備註' : item.caption,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: LumiTypeScale.labelMd,
-                    fontWeight: FontWeight.w500,
-                    color: LumiColors.text,
-                  ),
-                ),
-                const SizedBox(height: LumiSpacing.xs),
-                Text(
-                  dateStr,
-                  style: const TextStyle(
-                    fontSize: LumiTypeScale.labelSm,
-                    color: LumiColors.subtext,
-                  ),
-                ),
-              ],
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: FutureBuilder<File?>(
+                future: LocalOotdStorage.getImageFile(item.id),
+                builder: (context, snapshot) {
+                  final file = snapshot.data;
+                  if (file == null) {
+                    return Container(color: LumiColors.base);
+                  }
+                  return Image.file(
+                    file,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    errorBuilder: (_, __, ___) =>
+                        Container(color: LumiColors.base),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.all(LumiSpacing.sm),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.caption.isEmpty ? '無備註' : item.caption,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: LumiTypeScale.labelMd,
+                      fontWeight: FontWeight.w500,
+                      color: LumiColors.text,
+                    ),
+                  ),
+                  const SizedBox(height: LumiSpacing.xs),
+                  Text(
+                    dateStr,
+                    style: const TextStyle(
+                      fontSize: LumiTypeScale.labelSm,
+                      color: LumiColors.subtext,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

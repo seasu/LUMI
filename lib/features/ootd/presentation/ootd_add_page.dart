@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -155,6 +157,8 @@ class _EditView extends StatelessWidget {
   Widget build(BuildContext context) {
     final dateStr =
         '${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}';
+    // Cap photo at 50% of screen height so long images don't push content off
+    final maxPhotoHeight = MediaQuery.of(context).size.height * 0.5;
 
     return Scaffold(
       backgroundColor: LumiColors.base,
@@ -175,7 +179,8 @@ class _EditView extends StatelessWidget {
             ),
             Text(
               dateStr,
-              style: const TextStyle(fontSize: LumiTypeScale.labelSm, color: LumiColors.subtext),
+              style: const TextStyle(
+                  fontSize: LumiTypeScale.labelSm, color: LumiColors.subtext),
             ),
           ],
         ),
@@ -187,21 +192,20 @@ class _EditView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Photo card
-              Container(
+              // Photo card – explicit SizedBox keeps height bounded
+              SizedBox(
                 width: double.infinity,
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.5,
+                height: maxPhotoHeight,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: LumiColors.surface,
+                    borderRadius: BorderRadius.circular(LumiRadii.xl),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Image.memory(photoBytes, fit: BoxFit.cover),
                 ),
-                decoration: BoxDecoration(
-                  color: LumiColors.surface,
-                  borderRadius: BorderRadius.circular(LumiRadii.xl),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Image.memory(photoBytes, fit: BoxFit.cover),
               ),
               const SizedBox(height: LumiSpacing.md),
-              // Caption
               const Text(
                 '穿搭備註',
                 style: TextStyle(
@@ -217,11 +221,13 @@ class _EditView extends StatelessWidget {
                 onChanged: onCaptionChanged,
                 decoration: const InputDecoration(
                   hintText: '記錄今天的穿搭心情...',
-                  hintStyle:
-                      TextStyle(color: LumiColors.subtext, fontSize: LumiTypeScale.labelMd),
+                  hintStyle: TextStyle(
+                      color: LumiColors.subtext,
+                      fontSize: LumiTypeScale.labelMd),
                   border: InputBorder.none,
                 ),
-                style: const TextStyle(fontSize: LumiTypeScale.body, color: LumiColors.text),
+                style: const TextStyle(
+                    fontSize: LumiTypeScale.body, color: LumiColors.text),
                 maxLines: 3,
               ),
               const SizedBox(height: LumiSpacing.lg),
@@ -266,7 +272,8 @@ class _SavingView extends StatelessWidget {
             SizedBox(height: LumiSpacing.md),
             Text(
               '正在儲存穿搭...',
-              style: TextStyle(fontSize: LumiTypeScale.body, color: LumiColors.subtext),
+              style: TextStyle(
+                  fontSize: LumiTypeScale.body, color: LumiColors.subtext),
             ),
           ],
         ),
@@ -275,7 +282,7 @@ class _SavingView extends StatelessWidget {
   }
 }
 
-// ── 結果 + 分享 ───────────────────────────────────────────────────────────────
+// ── 結果 + 分享（互動式畫布）─────────────────────────────────────────────────
 
 class _ResultView extends StatefulWidget {
   const _ResultView({
@@ -295,6 +302,16 @@ class _ResultView extends StatefulWidget {
 class _ResultViewState extends State<_ResultView> {
   late final _captionController =
       TextEditingController(text: widget.initialCaption);
+  final _cardKey = GlobalKey();
+
+  // Photo transform state
+  double _photoScale = 1.0;
+  double _photoRotation = 0.0;
+  double _baseScale = 1.0;
+  double _baseRotation = 0.0;
+
+  // Draggable text position (initialised lazily in build)
+  Offset? _textPos;
 
   @override
   void dispose() {
@@ -302,23 +319,34 @@ class _ResultViewState extends State<_ResultView> {
     super.dispose();
   }
 
-  Future<void> _share(BuildContext context) async {
-    final box = context.findRenderObject() as RenderBox?;
-    final origin =
-        box == null ? null : box.localToGlobal(Offset.zero) & box.size;
+  void _onPhotoScaleStart(ScaleStartDetails _) {
+    _baseScale = _photoScale;
+    _baseRotation = _photoRotation;
+  }
 
+  void _onPhotoScaleUpdate(ScaleUpdateDetails d) {
+    setState(() {
+      _photoScale = (_baseScale * d.scale).clamp(0.3, 5.0);
+      _photoRotation = _baseRotation + d.rotation;
+    });
+  }
+
+  // Capture the RepaintBoundary as a PNG and share it
+  Future<void> _shareComposed(BuildContext context) async {
     try {
+      final boundary =
+          _cardKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) throw Exception('截圖失敗');
+
+      final bytes = byteData.buffer.asUint8List();
       final tmp = await getTemporaryDirectory();
-      final file = File('${tmp.path}/lumi_ootd_share.jpg');
-      await file.writeAsBytes(widget.photoBytes);
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        text: _captionController.text.trim().isEmpty
-            ? null
-            : _captionController.text.trim(),
-        subject: '我的 Lumi 穿搭',
-        sharePositionOrigin: origin,
-      );
+      final file = File('${tmp.path}/lumi_ootd_share.png');
+      await file.writeAsBytes(bytes);
+
+      await Share.shareXFiles([XFile(file.path)], subject: '我的 Lumi 穿搭');
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -334,104 +362,186 @@ class _ResultViewState extends State<_ResultView> {
     final dateStr =
         '${now.year}年${now.month.toString().padLeft(2, '0')}月${now.day.toString().padLeft(2, '0')}日';
 
+    final screenW = MediaQuery.of(context).size.width;
+    final cardW = screenW - LumiSpacing.xl * 2;
+    final cardH = cardW * 4 / 3; // 3:4 portrait canvas
+
+    // Place text in the lower third on first build
+    _textPos ??= Offset(cardW * 0.1, cardH * 0.70);
+
+    final caption = _captionController.text;
+
     return Scaffold(
       backgroundColor: LumiColors.overlayDark,
       body: SafeArea(
         child: Column(
           children: [
-            const Spacer(),
-            // Share card
+            const SizedBox(height: LumiSpacing.md),
+
+            // ── Interactive share card ──────────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.xl),
-              child: Container(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.55,
-                ),
-                decoration: BoxDecoration(
-                  color: LumiColors.surface,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: LumiSpacing.xl),
+              child: RepaintBoundary(
+                key: _cardKey,
+                child: ClipRRect(
                   borderRadius: BorderRadius.circular(LumiRadii.xl),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Stack(
-                  children: [
-                    Image.memory(
-                      widget.photoBytes,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                    ),
-                    Positioned(
-                      bottom: LumiSpacing.md,
-                      right: LumiSpacing.md,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            'Lumi',
-                            style: TextStyle(
-                              fontSize: LumiTypeScale.titleLg,
-                              fontWeight: FontWeight.w300,
-                              fontStyle: FontStyle.italic,
-                              color: LumiColors.onPrimary,
-                              shadows: [
-                                Shadow(
-                                  color:
-                                      LumiColors.text.withValues(alpha: 0.45),
-                                  blurRadius: 6,
-                                ),
-                              ],
+                  child: SizedBox(
+                    width: cardW,
+                    height: cardH,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // Dark background
+                        const ColoredBox(color: LumiColors.overlayDark),
+
+                        // Photo – pinch to zoom/rotate
+                        Positioned.fill(
+                          child: GestureDetector(
+                            onScaleStart: _onPhotoScaleStart,
+                            onScaleUpdate: _onPhotoScaleUpdate,
+                            child: Transform(
+                              alignment: Alignment.center,
+                              transform: Matrix4.identity()
+                                ..rotateZ(_photoRotation)
+                                ..scale(_photoScale),
+                              child: Image.memory(
+                                widget.photoBytes,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                              ),
                             ),
                           ),
-                          Text(
-                            dateStr,
-                            style: TextStyle(
-                              fontSize: LumiTypeScale.labelSm,
-                              color: LumiColors.onPrimary.withValues(alpha: 0.72),
-                              shadows: [
-                                Shadow(
-                                  color:
-                                      LumiColors.text.withValues(alpha: 0.45),
-                                  blurRadius: 4,
+                        ),
+
+                        // Lumi watermark (fixed bottom-right)
+                        Positioned(
+                          bottom: LumiSpacing.md,
+                          right: LumiSpacing.md,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                'Lumi',
+                                style: TextStyle(
+                                  fontSize: LumiTypeScale.titleLg,
+                                  fontWeight: FontWeight.w300,
+                                  fontStyle: FontStyle.italic,
+                                  color: LumiColors.onPrimary,
+                                  shadows: [
+                                    Shadow(
+                                      color: LumiColors.text
+                                          .withValues(alpha: 0.5),
+                                      blurRadius: 6,
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
+                              Text(
+                                dateStr,
+                                style: TextStyle(
+                                  fontSize: LumiTypeScale.labelSm,
+                                  color: LumiColors.onPrimary
+                                      .withValues(alpha: 0.72),
+                                  shadows: [
+                                    Shadow(
+                                      color: LumiColors.text
+                                          .withValues(alpha: 0.5),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Draggable caption overlay
+                        if (caption.isNotEmpty)
+                          Positioned(
+                            left: _textPos!.dx,
+                            top: _textPos!.dy,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onPanUpdate: (d) {
+                                setState(() {
+                                  _textPos = Offset(
+                                    (_textPos!.dx + d.delta.dx)
+                                        .clamp(0.0, cardW - 60),
+                                    (_textPos!.dy + d.delta.dy)
+                                        .clamp(0.0, cardH - 40),
+                                  );
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: LumiSpacing.sm,
+                                  vertical: LumiSpacing.xs,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: LumiColors.overlayDark
+                                      .withValues(alpha: 0.45),
+                                  borderRadius:
+                                      BorderRadius.circular(LumiRadii.sm),
+                                ),
+                                constraints:
+                                    BoxConstraints(maxWidth: cardW * 0.78),
+                                child: Text(
+                                  caption,
+                                  style: const TextStyle(
+                                    fontSize: LumiTypeScale.body,
+                                    color: LumiColors.onPrimary,
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.4,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
                             ),
                           ),
-                        ],
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: LumiSpacing.lg),
+
+            // ── Caption input ───────────────────────────────────────────
+            const SizedBox(height: LumiSpacing.md),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.xl),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: LumiSpacing.xl),
               child: TextField(
                 controller: _captionController,
+                onChanged: (_) => setState(() {}),
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: LumiTypeScale.titleSm,
+                  fontSize: LumiTypeScale.body,
                   color: LumiColors.onPrimary.withValues(alpha: 0.9),
                 ),
                 decoration: InputDecoration(
-                  hintText: '分享一段話吧...',
+                  hintText: '在照片上加一段話...',
                   hintStyle: TextStyle(
-                    fontSize: LumiTypeScale.titleSm,
+                    fontSize: LumiTypeScale.body,
                     color: LumiColors.onPrimary.withValues(alpha: 0.45),
                   ),
                   border: InputBorder.none,
                 ),
-                maxLines: 3,
+                maxLines: 2,
                 minLines: 1,
               ),
             ),
+
             const Spacer(),
+
+            // ── Actions ─────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.md),
-              child: Builder(
-                builder: (btnCtx) => _PrimaryButton(
-                  label: '分享穿搭',
-                  onTap: () => _share(btnCtx),
-                ),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: LumiSpacing.md),
+              child: _PrimaryButton(
+                label: '分享穿搭',
+                onTap: () => _shareComposed(context),
               ),
             ),
             const SizedBox(height: LumiSpacing.sm),
@@ -480,7 +590,9 @@ class _ErrorView extends StatelessWidget {
                   message,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                      fontSize: LumiTypeScale.labelMd, color: LumiColors.warning, height: 1.5),
+                      fontSize: LumiTypeScale.labelMd,
+                      color: LumiColors.warning,
+                      height: 1.5),
                 ),
               ),
               const SizedBox(height: LumiSpacing.lg),

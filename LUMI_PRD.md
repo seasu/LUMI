@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.40+129
+**前端版本 (Flutter App)：** 1.0.41+130
 **後端版本 (Cloud Functions)：** 1.0.12
 **開發框架：** Flutter (Cross-platform)
 
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-05-12 | 1.0.41+130 | 1.0.12 | 完成 OOTD 本地儲存遷移：`ootd_detail_modal.dart` 移除 `imageBase64`/`base64Decode`/`authStateProvider`/`ootdRepositoryProvider`，改用 `LocalOotdStorage.getImageFile(id)` + `FutureBuilder<File?>` 顯示圖片，刪除功能改為 `ootdLocalProvider.notifier.delete(id)`；OOTD 圖片壓縮改為 800×1200 Q70；衣櫥 Snap 圖片壓縮改為 1280×1280 Q75 | OOTD / Storage / Snap |
 | 2026-05-12 | 1.0.40+129 | 1.0.12 | 重寫穿搭分享畫面：以 `SizedBox(4:3)` + `RepaintBoundary` 修正超長照片破版；照片支援雙指縮放/旋轉（`GestureDetector onScaleUpdate` + `Matrix4 Transform`）；文字疊層可拖拉至任意位置；Lumi watermark 固定右下角；分享時以 `boundary.toImage(pixelRatio:3)` 合成 PNG 後透過 `Share.shareXFiles` 輸出 | OOTD / UI / Share |
 | 2026-05-12 | 1.0.39+128 | 1.0.12 | 修正分享穿搭畫面「分享一段話吧...」無法輸入：將 `_ResultView` 改為 `StatefulWidget`，新增 `TextEditingController`，靜態 `Text` 改為 `TextField`；使用者輸入的文字會隨圖片一起帶入 `Share.shareXFiles` 的 `text` 參數 | OOTD / UI |
 | 2026-05-11 | 1.0.38+127 | 1.0.12 | 登入頁新增使用條款與隱私政策文字連結（`_TosFooter`）；新增 `url_launcher` 依賴與 `lib/shared/constants/app_urls.dart` URL 常數 | Auth / UI / Login |

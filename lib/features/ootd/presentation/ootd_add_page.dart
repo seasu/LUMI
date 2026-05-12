@@ -190,7 +190,9 @@ class _EditView extends StatelessWidget {
               // Photo card
               Container(
                 width: double.infinity,
-                constraints: const BoxConstraints(maxHeight: 420),
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.5,
+                ),
                 decoration: BoxDecoration(
                   color: LumiColors.surface,
                   borderRadius: BorderRadius.circular(LumiRadii.xl),
@@ -342,6 +344,9 @@ class _ResultViewState extends State<_ResultView> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.xl),
               child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.55,
+                ),
                 decoration: BoxDecoration(
                   color: LumiColors.surface,
                   borderRadius: BorderRadius.circular(LumiRadii.xl),

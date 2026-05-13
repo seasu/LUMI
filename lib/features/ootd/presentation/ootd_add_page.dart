@@ -336,8 +336,10 @@ class _ResultViewState extends State<_ResultView> {
     });
   }
 
-  // Capture the RepaintBoundary as a PNG and share it
   Future<void> _shareComposed(BuildContext context) async {
+    // Capture messenger before first await to avoid BuildContext async gap lint
+    final messenger = ScaffoldMessenger.of(context);
+
     // Dismiss keyboard first so layout is stable before capturing
     _captionFocus.unfocus();
     await Future.delayed(const Duration(milliseconds: 150));
@@ -362,7 +364,7 @@ class _ResultViewState extends State<_ResultView> {
       await Share.shareXFiles([XFile(file.path)], subject: '我的 Lumi 穿搭');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text('分享失敗：$e')),
       );
     }
@@ -407,7 +409,7 @@ class _ResultViewState extends State<_ResultView> {
                   Container(
                     width: 32,
                     height: 32,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       gradient: LumiColors.buttonGradient,
                       shape: BoxShape.circle,
                     ),
@@ -659,13 +661,13 @@ class _ResultViewState extends State<_ResultView> {
                   ),
                   const Spacer(),
                   // Hint chips
-                  _EditorHintChip(
+                  const _EditorHintChip(
                     icon: Icons.pinch_outlined,
                     label: '縮放照片',
                   ),
                   const SizedBox(width: LumiSpacing.xs),
                   if (caption.isNotEmpty)
-                    _EditorHintChip(
+                    const _EditorHintChip(
                       icon: Icons.open_with,
                       label: '拖動文字',
                     ),

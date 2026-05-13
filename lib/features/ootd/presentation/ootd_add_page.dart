@@ -303,6 +303,7 @@ class _ResultViewState extends State<_ResultView> {
   late final _captionController =
       TextEditingController(text: widget.initialCaption);
   final _cardKey = GlobalKey();
+  final _captionFocus = FocusNode();
 
   // Photo transform state
   double _photoScale = 1.0;
@@ -316,6 +317,7 @@ class _ResultViewState extends State<_ResultView> {
   @override
   void dispose() {
     _captionController.dispose();
+    _captionFocus.dispose();
     super.dispose();
   }
 
@@ -333,26 +335,33 @@ class _ResultViewState extends State<_ResultView> {
 
   // Capture the RepaintBoundary as a PNG and share it
   Future<void> _shareComposed(BuildContext context) async {
+    // Dismiss keyboard first so layout is stable before capturing
+    _captionFocus.unfocus();
+    await Future.delayed(const Duration(milliseconds: 150));
+    if (!mounted) return;
+
     try {
-      final boundary =
-          _cardKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      final boundary = _cardKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+      if (boundary == null) throw Exception('截圖初始化失敗');
+
       final image = await boundary.toImage(pixelRatio: 3.0);
       final byteData =
           await image.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData == null) throw Exception('截圖失敗');
+      if (byteData == null) throw Exception('截圖轉換失敗');
 
       final bytes = byteData.buffer.asUint8List();
       final tmp = await getTemporaryDirectory();
       final file = File('${tmp.path}/lumi_ootd_share.png');
       await file.writeAsBytes(bytes);
 
+      if (!mounted) return;
       await Share.shareXFiles([XFile(file.path)], subject: '我的 Lumi 穿搭');
-    } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('此裝置不支援分享功能')),
-        );
-      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('分享失敗：$e')),
+      );
     }
   }
 
@@ -372,6 +381,7 @@ class _ResultViewState extends State<_ResultView> {
     final caption = _captionController.text;
 
     return Scaffold(
+      resizeToAvoidBottomInset: false, // keyboard overlays without moving layout
       backgroundColor: LumiColors.overlayDark,
       body: SafeArea(
         child: Column(
@@ -514,8 +524,11 @@ class _ResultViewState extends State<_ResultView> {
                   const EdgeInsets.symmetric(horizontal: LumiSpacing.xl),
               child: TextField(
                 controller: _captionController,
+                focusNode: _captionFocus,
                 onChanged: (_) => setState(() {}),
                 textAlign: TextAlign.center,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _captionFocus.unfocus(),
                 style: TextStyle(
                   fontSize: LumiTypeScale.body,
                   color: LumiColors.onPrimary.withValues(alpha: 0.9),

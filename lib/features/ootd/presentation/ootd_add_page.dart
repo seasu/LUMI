@@ -311,6 +311,7 @@ class _ResultViewState extends State<_ResultView> {
   // Photo transform state (editor)
   double _photoScale = 1.0;
   double _photoRotation = 0.0;
+  Offset _photoOffset = Offset.zero;
   double _baseScale = 1.0;
   double _baseRotation = 0.0;
 
@@ -333,6 +334,7 @@ class _ResultViewState extends State<_ResultView> {
     setState(() {
       _photoScale = (_baseScale * d.scale).clamp(0.3, 5.0);
       _photoRotation = _baseRotation + d.rotation;
+      _photoOffset += d.focalPointDelta;
     });
   }
 
@@ -698,16 +700,19 @@ class _ResultViewState extends State<_ResultView> {
                           child: GestureDetector(
                             onScaleStart: _onPhotoScaleStart,
                             onScaleUpdate: _onPhotoScaleUpdate,
-                            child: Transform(
-                              alignment: Alignment.center,
-                              transform: Matrix4.identity()
-                                ..rotateZ(_photoRotation)
-                                ..scale(_photoScale),
-                              child: Image.memory(
-                                widget.photoBytes,
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                height: double.infinity,
+                            child: Transform.translate(
+                              offset: _photoOffset,
+                              child: Transform(
+                                alignment: Alignment.center,
+                                transform: Matrix4.identity()
+                                  ..rotateZ(_photoRotation)
+                                  ..scale(_photoScale),
+                                child: Image.memory(
+                                  widget.photoBytes,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                ),
                               ),
                             ),
                           ),

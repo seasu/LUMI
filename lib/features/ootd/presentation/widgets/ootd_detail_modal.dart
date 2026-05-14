@@ -262,10 +262,6 @@ class _ShareButton extends StatelessWidget {
   final OotdItem item;
 
   Future<void> _share(BuildContext context) async {
-    final box = context.findRenderObject() as RenderBox?;
-    final origin =
-        box == null ? null : box.localToGlobal(Offset.zero) & box.size;
-
     try {
       final file = await LocalOotdStorage.getImageFile(item.id);
       if (file == null) throw Exception('找不到圖片');
@@ -277,7 +273,6 @@ class _ShareButton extends StatelessWidget {
       await Share.shareXFiles(
         [XFile(shareFile.path)],
         subject: '我的 Lumi 穿搭',
-        sharePositionOrigin: origin,
       );
     } catch (_) {
       if (!context.mounted) return;

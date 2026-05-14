@@ -339,8 +339,9 @@ class _ResultViewState extends State<_ResultView> {
   }
 
   Future<void> _shareComposed(BuildContext context) async {
-    // Capture messenger before first await to avoid BuildContext async gap lint
+    // Capture before first await (BuildContext async-gap rule)
     final messenger = ScaffoldMessenger.of(context);
+    final screenSize = MediaQuery.sizeOf(context);
 
     // Dismiss keyboard first so layout is stable before capturing
     _captionFocus.unfocus();
@@ -363,7 +364,18 @@ class _ResultViewState extends State<_ResultView> {
       await file.writeAsBytes(bytes);
 
       if (!mounted) return;
-      await Share.shareXFiles([XFile(file.path)], subject: '我的 Lumi 穿搭');
+      // sharePositionOrigin required by iOS even on iPhone in some builds;
+      // use screen-center as a safe non-zero anchor.
+      final shareOrigin = Rect.fromCenter(
+        center: Offset(screenSize.width / 2, screenSize.height / 2),
+        width: 1,
+        height: 1,
+      );
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: '我的 Lumi 穿搭',
+        sharePositionOrigin: shareOrigin,
+      );
     } catch (e) {
       if (!mounted) return;
       messenger.showSnackBar(

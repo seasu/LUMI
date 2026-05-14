@@ -262,6 +262,9 @@ class _ShareButton extends StatelessWidget {
   final OotdItem item;
 
   Future<void> _share(BuildContext context) async {
+    // Capture screen size before first await for iOS share anchor
+    final screenSize = MediaQuery.sizeOf(context);
+
     try {
       final file = await LocalOotdStorage.getImageFile(item.id);
       if (file == null) throw Exception('找不到圖片');
@@ -270,9 +273,15 @@ class _ShareButton extends StatelessWidget {
       final shareFile = File('${tmp.path}/lumi_ootd_${item.id}.jpg');
       await shareFile.writeAsBytes(await file.readAsBytes());
 
+      final shareOrigin = Rect.fromCenter(
+        center: Offset(screenSize.width / 2, screenSize.height / 2),
+        width: 1,
+        height: 1,
+      );
       await Share.shareXFiles(
         [XFile(shareFile.path)],
         subject: '我的 Lumi 穿搭',
+        sharePositionOrigin: shareOrigin,
       );
     } catch (_) {
       if (!context.mounted) return;

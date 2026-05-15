@@ -125,7 +125,7 @@ class _OotdSharePageState extends State<OotdSharePage> {
                     ),
 
                     // Gap with divider label
-                    _DividerLabel(
+                    const _DividerLabel(
                       label: '分享卡',
                       icon: Icons.auto_awesome,
                     ),

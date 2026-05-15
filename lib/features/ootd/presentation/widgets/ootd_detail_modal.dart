@@ -2,8 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/storage/local_ootd_storage.dart';
 import '../../../../shared/constants/lumi_colors.dart';
@@ -12,6 +10,7 @@ import '../../../../shared/constants/lumi_spacing.dart';
 import '../../../../shared/constants/lumi_type_scale.dart';
 import '../../data/ootd_repository.dart';
 import '../../domain/ootd_item.dart';
+import '../ootd_share_page.dart';
 
 void showOotdDetailModal(BuildContext context, OotdItem item) {
   showDialog(
@@ -262,41 +261,27 @@ class _ShareButton extends StatelessWidget {
   final OotdItem item;
 
   Future<void> _share(BuildContext context) async {
-    // Capture screen size before first await for iOS share anchor
-    final screenSize = MediaQuery.sizeOf(context);
+    // Capture context-dependent objects before first await
+    final messenger = ScaffoldMessenger.of(context);
+    final nav = Navigator.of(context);
 
     try {
       final file = await LocalOotdStorage.getImageFile(item.id);
       if (file == null) throw Exception('找不到圖片');
+      final bytes = await file.readAsBytes();
 
-      final tmp = await getTemporaryDirectory();
-      final shareFile = File('${tmp.path}/lumi_ootd_${item.id}.jpg');
-      await shareFile.writeAsBytes(await file.readAsBytes());
-
-      final shareOrigin = Rect.fromCenter(
-        center: Offset(screenSize.width / 2, screenSize.height / 2),
-        width: 1,
-        height: 1,
-      );
-      await Share.shareXFiles(
-        [XFile(shareFile.path)],
-        subject: '我的 Lumi 穿搭',
-        sharePositionOrigin: shareOrigin,
-      );
-    } catch (_) {
-      if (!context.mounted) return;
-      showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('分享失敗'),
-          content: const Text('無法分享此穿搭，請稍後再試。'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('確定'),
-            ),
-          ],
+      // Close the detail modal then open the shared share page
+      nav.pop();
+      nav.push(MaterialPageRoute<void>(
+        builder: (_) => OotdSharePage(
+          photoBytes: bytes,
+          caption: item.caption,
+          date: item.date,
         ),
+      ));
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('無法開啟分享，找不到圖片')),
       );
     }
   }

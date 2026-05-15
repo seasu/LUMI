@@ -29,15 +29,7 @@ class OotdSharePage extends StatefulWidget {
 }
 
 class _OotdSharePageState extends State<OotdSharePage> {
-  final _pageController = PageController();
   final _brandedCardKey = GlobalKey();
-  int _currentPage = 0;
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
 
   String get _dateStr {
     final d = widget.date;
@@ -47,18 +39,6 @@ class _OotdSharePageState extends State<OotdSharePage> {
   Future<void> _share(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
     final screenSize = MediaQuery.sizeOf(context);
-
-    // Ensure branded card page is rendered on screen before capture
-    if (_currentPage != 1) {
-      await _pageController.animateToPage(
-        1,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-      await Future.delayed(const Duration(milliseconds: 100));
-    }
-
-    if (!mounted) return;
 
     try {
       final boundary = _brandedCardKey.currentContext?.findRenderObject()
@@ -94,10 +74,6 @@ class _OotdSharePageState extends State<OotdSharePage> {
 
   @override
   Widget build(BuildContext context) {
-    final screenW = MediaQuery.of(context).size.width;
-    final cardW = screenW - LumiSpacing.xl * 2;
-    final cardH = cardW * 4 / 3;
-
     return Scaffold(
       backgroundColor: LumiColors.overlayDark,
       body: SafeArea(
@@ -133,79 +109,44 @@ class _OotdSharePageState extends State<OotdSharePage> {
               ),
             ),
 
-            const SizedBox(height: LumiSpacing.sm),
+            const SizedBox(height: LumiSpacing.xs),
 
-            // ── Cards PageView ───────────────────────────────────────────
-            SizedBox(
-              height: cardH,
-              child: PageView(
-                controller: _pageController,
-                onPageChanged: (i) => setState(() => _currentPage = i),
-                children: [
-                  // Page 0: Original photo
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: LumiSpacing.xl,
+            // ── Two-panel comparison ─────────────────────────────────────
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: LumiSpacing.md,
+                ),
+                child: Column(
+                  children: [
+                    // Top panel: Original photo
+                    Expanded(
+                      child: _OriginalCard(photoBytes: widget.photoBytes),
                     ),
-                    child: _OriginalCard(
-                      photoBytes: widget.photoBytes,
-                      cardW: cardW,
-                      cardH: cardH,
+
+                    // Gap with divider label
+                    _DividerLabel(
+                      label: '分享卡',
+                      icon: Icons.auto_awesome,
                     ),
-                  ),
-                  // Page 1: Branded share card (captured for export)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: LumiSpacing.xl,
-                    ),
-                    child: RepaintBoundary(
-                      key: _brandedCardKey,
-                      child: _BrandedCard(
-                        photoBytes: widget.photoBytes,
-                        caption: widget.caption,
-                        dateStr: _dateStr,
-                        cardW: cardW,
-                        cardH: cardH,
+
+                    // Bottom panel: Branded share card
+                    Expanded(
+                      child: RepaintBoundary(
+                        key: _brandedCardKey,
+                        child: _BrandedCard(
+                          photoBytes: widget.photoBytes,
+                          caption: widget.caption,
+                          dateStr: _dateStr,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
 
-            const SizedBox(height: LumiSpacing.md),
-
-            // ── Page indicator dots ──────────────────────────────────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(2, (i) {
-                final active = i == _currentPage;
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: active ? 20 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    gradient: active ? LumiColors.buttonGradient : null,
-                    color: active
-                        ? null
-                        : LumiColors.onPrimary.withValues(alpha: 0.25),
-                    borderRadius: BorderRadius.circular(LumiRadii.pill),
-                  ),
-                );
-              }),
-            ),
-
-            const SizedBox(height: LumiSpacing.xs),
-            Text(
-              _currentPage == 0 ? '← 滑動查看分享卡片' : '分享時將使用此卡片',
-              style: TextStyle(
-                fontSize: LumiTypeScale.labelSm,
-                color: LumiColors.onPrimary.withValues(alpha: 0.45),
-              ),
-            ),
-
-            const Spacer(),
+            const SizedBox(height: LumiSpacing.sm),
 
             // ── Action buttons ───────────────────────────────────────────
             Padding(
@@ -237,55 +178,94 @@ class _OotdSharePageState extends State<OotdSharePage> {
   }
 }
 
+// ── Divider label between panels ──────────────────────────────────────────────
+
+class _DividerLabel extends StatelessWidget {
+  const _DividerLabel({required this.label, required this.icon});
+
+  final String label;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: LumiSpacing.xs),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              height: 1,
+              color: LumiColors.onPrimary.withValues(alpha: 0.08),
+            ),
+          ),
+          const SizedBox(width: LumiSpacing.sm),
+          Icon(
+            icon,
+            size: 12,
+            color: LumiColors.onPrimary.withValues(alpha: 0.35),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: LumiTypeScale.labelSm,
+              color: LumiColors.onPrimary.withValues(alpha: 0.35),
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(width: LumiSpacing.sm),
+          Expanded(
+            child: Container(
+              height: 1,
+              color: LumiColors.onPrimary.withValues(alpha: 0.08),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Original card ─────────────────────────────────────────────────────────────
 
 class _OriginalCard extends StatelessWidget {
-  const _OriginalCard({
-    required this.photoBytes,
-    required this.cardW,
-    required this.cardH,
-  });
+  const _OriginalCard({required this.photoBytes});
 
   final Uint8List photoBytes;
-  final double cardW;
-  final double cardH;
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(LumiRadii.xl),
-      child: SizedBox(
-        width: cardW,
-        height: cardH,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.memory(photoBytes, fit: BoxFit.cover),
-            // "原圖" label chip
-            Positioned(
-              top: LumiSpacing.sm,
-              left: LumiSpacing.sm,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: LumiSpacing.sm,
-                  vertical: LumiSpacing.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: LumiColors.surface.withValues(alpha: 0.90),
-                  borderRadius: BorderRadius.circular(LumiRadii.pill),
-                ),
-                child: const Text(
-                  '原圖',
-                  style: TextStyle(
-                    fontSize: LumiTypeScale.labelSm,
-                    fontWeight: FontWeight.w600,
-                    color: LumiColors.text,
-                  ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.memory(photoBytes, fit: BoxFit.cover),
+          // "原圖" label chip — top-left
+          Positioned(
+            top: LumiSpacing.sm,
+            left: LumiSpacing.sm,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: LumiSpacing.sm,
+                vertical: LumiSpacing.xs,
+              ),
+              decoration: BoxDecoration(
+                color: LumiColors.surface.withValues(alpha: 0.90),
+                borderRadius: BorderRadius.circular(LumiRadii.pill),
+              ),
+              child: const Text(
+                '原圖',
+                style: TextStyle(
+                  fontSize: LumiTypeScale.labelSm,
+                  fontWeight: FontWeight.w600,
+                  color: LumiColors.text,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -298,186 +278,172 @@ class _BrandedCard extends StatelessWidget {
     required this.photoBytes,
     required this.caption,
     required this.dateStr,
-    required this.cardW,
-    required this.cardH,
   });
 
   final Uint8List photoBytes;
   final String caption;
   final String dateStr;
-  final double cardW;
-  final double cardH;
 
   @override
   Widget build(BuildContext context) {
-    const brandingH = 44.0;
-    final photoH = cardH - brandingH;
-
     return ClipRRect(
       borderRadius: BorderRadius.circular(LumiRadii.xl),
-      child: SizedBox(
-        width: cardW,
-        height: cardH,
-        child: Column(
-          children: [
-            // Photo area with overlays
-            SizedBox(
-              width: cardW,
-              height: photoH,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.memory(photoBytes, fit: BoxFit.cover),
-                  // Bottom gradient for text legibility
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      height: photoH * 0.45,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            LumiColors.text.withValues(alpha: 0.0),
-                            LumiColors.text.withValues(alpha: 0.58),
-                          ],
-                        ),
+      child: Column(
+        children: [
+          // Photo area — fills remaining space
+          Expanded(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.memory(photoBytes, fit: BoxFit.cover),
+                // Bottom gradient for legibility
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    height: 100,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          LumiColors.text.withValues(alpha: 0.0),
+                          LumiColors.text.withValues(alpha: 0.60),
+                        ],
                       ),
                     ),
                   ),
-                  // "Lumi" gradient chip — top-left
-                  Positioned(
-                    top: LumiSpacing.sm,
-                    left: LumiSpacing.sm,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: LumiSpacing.sm,
-                        vertical: LumiSpacing.xs,
+                ),
+                // "Lumi" gradient chip — top-left
+                Positioned(
+                  top: LumiSpacing.sm,
+                  left: LumiSpacing.sm,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: LumiSpacing.sm,
+                      vertical: LumiSpacing.xs,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LumiColors.buttonGradient,
+                      borderRadius: BorderRadius.circular(LumiRadii.pill),
+                    ),
+                    child: const Text(
+                      'Lumi',
+                      style: TextStyle(
+                        fontSize: LumiTypeScale.labelSm,
+                        fontWeight: FontWeight.w700,
+                        color: LumiColors.onPrimary,
+                        fontStyle: FontStyle.italic,
                       ),
-                      decoration: BoxDecoration(
-                        gradient: LumiColors.buttonGradient,
-                        borderRadius: BorderRadius.circular(LumiRadii.pill),
-                      ),
-                      child: const Text(
-                        'Lumi',
+                    ),
+                  ),
+                ),
+                // Caption + date stacked at bottom-left / bottom-right
+                Positioned(
+                  left: LumiSpacing.md,
+                  right: LumiSpacing.sm,
+                  bottom: LumiSpacing.xs,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (caption.isNotEmpty) ...[
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            caption,
+                            style: const TextStyle(
+                              fontSize: LumiTypeScale.body,
+                              color: LumiColors.onPrimary,
+                              fontWeight: FontWeight.w500,
+                              height: 1.4,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(height: LumiSpacing.xs),
+                      ],
+                      Text(
+                        dateStr,
                         style: TextStyle(
                           fontSize: LumiTypeScale.labelSm,
-                          fontWeight: FontWeight.w700,
-                          color: LumiColors.onPrimary,
-                          fontStyle: FontStyle.italic,
+                          color:
+                              LumiColors.onPrimary.withValues(alpha: 0.55),
+                          fontWeight: FontWeight.w400,
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Branding strip — always part of exported image
+          Container(
+            height: 40,
+            decoration: const BoxDecoration(
+              gradient: LumiColors.buttonGradient,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: LumiColors.onPrimary.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'L',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: LumiColors.onPrimary,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
                   ),
-                  // Caption + date stacked at bottom
-                  Positioned(
-                    left: LumiSpacing.md,
-                    right: LumiSpacing.sm,
-                    bottom: LumiSpacing.xs,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (caption.isNotEmpty) ...[
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              caption,
-                              style: const TextStyle(
-                                fontSize: LumiTypeScale.body,
-                                color: LumiColors.onPrimary,
-                                fontWeight: FontWeight.w500,
-                                height: 1.4,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(height: LumiSpacing.xs),
-                        ],
-                        Text(
-                          dateStr,
-                          style: TextStyle(
-                            fontSize: LumiTypeScale.labelSm,
-                            color:
-                                LumiColors.onPrimary.withValues(alpha: 0.55),
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
+                ),
+                const SizedBox(width: LumiSpacing.xs),
+                const Text(
+                  'Lumi',
+                  style: TextStyle(
+                    fontSize: LumiTypeScale.labelMd,
+                    fontWeight: FontWeight.w700,
+                    color: LumiColors.onPrimary,
+                    fontStyle: FontStyle.italic,
                   ),
-                ],
-              ),
+                ),
+                Container(
+                  height: 12,
+                  width: 1,
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: LumiSpacing.sm,
+                  ),
+                  color: LumiColors.onPrimary.withValues(alpha: 0.3),
+                ),
+                const Text(
+                  '用AI記錄每日穿搭風格',
+                  style: TextStyle(
+                    fontSize: LumiTypeScale.labelSm,
+                    color: LumiColors.onPrimary,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                const SizedBox(width: LumiSpacing.xs),
+                Icon(
+                  Icons.arrow_forward,
+                  size: 11,
+                  color: LumiColors.onPrimary.withValues(alpha: 0.8),
+                ),
+              ],
             ),
-            // Branding strip
-            Container(
-              width: cardW,
-              height: brandingH,
-              decoration: const BoxDecoration(
-                gradient: LumiColors.buttonGradient,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 22,
-                    height: 22,
-                    decoration: BoxDecoration(
-                      color: LumiColors.onPrimary.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'L',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: LumiColors.onPrimary,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: LumiSpacing.xs),
-                  const Text(
-                    'Lumi',
-                    style: TextStyle(
-                      fontSize: LumiTypeScale.labelMd,
-                      fontWeight: FontWeight.w700,
-                      color: LumiColors.onPrimary,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                  Container(
-                    height: 14,
-                    width: 1,
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: LumiSpacing.sm,
-                    ),
-                    color: LumiColors.onPrimary.withValues(alpha: 0.3),
-                  ),
-                  const Text(
-                    '用AI記錄每日穿搭風格',
-                    style: TextStyle(
-                      fontSize: LumiTypeScale.labelSm,
-                      color: LumiColors.onPrimary,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                  const SizedBox(width: LumiSpacing.xs),
-                  Icon(
-                    Icons.arrow_forward,
-                    size: 12,
-                    color: LumiColors.onPrimary.withValues(alpha: 0.8),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -503,10 +469,10 @@ class _OutlinedButton extends StatelessWidget {
           ),
           borderRadius: BorderRadius.circular(LumiRadii.pill),
         ),
-        child: Center(
+        child: const Center(
           child: Text(
-            label,
-            style: const TextStyle(
+            '分享穿搭',
+            style: TextStyle(
               fontSize: LumiTypeScale.body,
               fontWeight: FontWeight.w600,
               color: LumiColors.onPrimary,

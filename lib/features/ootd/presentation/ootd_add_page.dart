@@ -1,19 +1,15 @@
-import 'dart:io';
 import 'dart:typed_data';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
 import '../../../shared/constants/lumi_type_scale.dart';
 import '../domain/ootd_state.dart';
+import 'ootd_share_page.dart';
 import 'providers/ootd_provider.dart';
 
 class OotdAddPage extends ConsumerStatefulWidget {
@@ -82,7 +78,8 @@ class _OotdAddPageState extends ConsumerState<OotdAddPage> {
         OotdAddSaving() => const _SavingView(),
         OotdAddResult(:final photoBytes, :final item) => _ResultView(
             photoBytes: photoBytes,
-            initialCaption: item.caption,
+            caption: item.caption,
+            date: item.date,
             onBack: () {
               ref.read(ootdAddProvider.notifier).reset();
               context.go('/home/outfits');
@@ -282,126 +279,29 @@ class _SavingView extends StatelessWidget {
   }
 }
 
-// ── 結果：成功預覽 + 分享編輯器（兩段式）────────────────────────────────────
+// ── 結果：儲存成功預覽 ────────────────────────────────────────────────────────
 
-class _ResultView extends StatefulWidget {
+class _ResultView extends StatelessWidget {
   const _ResultView({
     required this.photoBytes,
+    required this.caption,
+    required this.date,
     required this.onBack,
-    this.initialCaption = '',
   });
 
   final Uint8List photoBytes;
+  final String caption;
+  final DateTime date;
   final VoidCallback onBack;
-  final String initialCaption;
-
-  @override
-  State<_ResultView> createState() => _ResultViewState();
-}
-
-class _ResultViewState extends State<_ResultView> {
-  late final _captionController =
-      TextEditingController(text: widget.initialCaption);
-  final _cardKey = GlobalKey();
-  final _captionFocus = FocusNode();
-
-  // Whether to show the interactive share editor (vs. success preview)
-  bool _showEditor = false;
-
-  // Photo transform state (editor)
-  double _photoScale = 1.0;
-  double _photoRotation = 0.0;
-  Offset _photoOffset = Offset.zero;
-  double _baseScale = 1.0;
-  double _baseRotation = 0.0;
-
-  // Draggable text position (initialised lazily in editor build)
-  Offset? _textPos;
-
-  @override
-  void dispose() {
-    _captionController.dispose();
-    _captionFocus.dispose();
-    super.dispose();
-  }
-
-  void _onPhotoScaleStart(ScaleStartDetails _) {
-    _baseScale = _photoScale;
-    _baseRotation = _photoRotation;
-  }
-
-  void _onPhotoScaleUpdate(ScaleUpdateDetails d) {
-    setState(() {
-      _photoScale = (_baseScale * d.scale).clamp(0.3, 5.0);
-      _photoRotation = _baseRotation + d.rotation;
-      _photoOffset += d.focalPointDelta;
-    });
-  }
-
-  Future<void> _shareComposed(BuildContext context) async {
-    // Capture before first await (BuildContext async-gap rule)
-    final messenger = ScaffoldMessenger.of(context);
-    final screenSize = MediaQuery.sizeOf(context);
-
-    // Dismiss keyboard first so layout is stable before capturing
-    _captionFocus.unfocus();
-    await Future.delayed(const Duration(milliseconds: 150));
-    if (!mounted) return;
-
-    try {
-      final boundary = _cardKey.currentContext?.findRenderObject()
-          as RenderRepaintBoundary?;
-      if (boundary == null) throw Exception('截圖初始化失敗');
-
-      final image = await boundary.toImage(pixelRatio: 3.0);
-      final byteData =
-          await image.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData == null) throw Exception('截圖轉換失敗');
-
-      final bytes = byteData.buffer.asUint8List();
-      final tmp = await getTemporaryDirectory();
-      final file = File('${tmp.path}/lumi_ootd_share.png');
-      await file.writeAsBytes(bytes);
-
-      if (!mounted) return;
-      // sharePositionOrigin required by iOS even on iPhone in some builds;
-      // use screen-center as a safe non-zero anchor.
-      final shareOrigin = Rect.fromCenter(
-        center: Offset(screenSize.width / 2, screenSize.height / 2),
-        width: 1,
-        height: 1,
-      );
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        subject: '我的 Lumi 穿搭',
-        sharePositionOrigin: shareOrigin,
-      );
-    } catch (e) {
-      if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(content: Text('分享失敗：$e')),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    return _showEditor
-        ? _buildShareEditor(context)
-        : _buildSuccessPreview(context);
-  }
-
-  // ── State A：儲存成功預覽（亮色調）───────────────────────────────────────
-
-  Widget _buildSuccessPreview(BuildContext context) {
-    final now = DateTime.now();
     final dateStr =
-        '${now.year}年${now.month.toString().padLeft(2, '0')}月${now.day.toString().padLeft(2, '0')}日';
+        '${date.year}年${date.month.toString().padLeft(2, '0')}月${date.day.toString().padLeft(2, '0')}日';
 
     final screenW = MediaQuery.of(context).size.width;
     final cardW = screenW - LumiSpacing.xl * 2;
     final cardH = cardW * 4 / 3;
-    final caption = widget.initialCaption;
 
     return Scaffold(
       backgroundColor: LumiColors.base,
@@ -488,7 +388,6 @@ class _ResultViewState extends State<_ResultView> {
                     const EdgeInsets.symmetric(horizontal: LumiSpacing.xl),
                 child: Column(
                   children: [
-                    // Preview card (non-interactive)
                     ClipRRect(
                       borderRadius: BorderRadius.circular(LumiRadii.xl),
                       child: SizedBox(
@@ -498,12 +397,11 @@ class _ResultViewState extends State<_ResultView> {
                           fit: StackFit.expand,
                           children: [
                             Image.memory(
-                              widget.photoBytes,
+                              photoBytes,
                               fit: BoxFit.cover,
                               width: double.infinity,
                               height: double.infinity,
                             ),
-                            // Bottom gradient
                             Positioned(
                               left: 0,
                               right: 0,
@@ -522,7 +420,6 @@ class _ResultViewState extends State<_ResultView> {
                                 ),
                               ),
                             ),
-                            // Caption preview
                             if (caption.isNotEmpty)
                               Positioned(
                                 left: LumiSpacing.md,
@@ -541,50 +438,23 @@ class _ResultViewState extends State<_ResultView> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                            // Lumi watermark
                             Positioned(
                               bottom: LumiSpacing.md,
                               right: LumiSpacing.md,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    'Lumi',
-                                    style: TextStyle(
-                                      fontSize: LumiTypeScale.titleSm,
-                                      fontWeight: FontWeight.w300,
-                                      fontStyle: FontStyle.italic,
-                                      color: LumiColors.onPrimary
-                                          .withValues(alpha: 0.85),
-                                    ),
-                                  ),
-                                ],
+                              child: Text(
+                                'Lumi',
+                                style: TextStyle(
+                                  fontSize: LumiTypeScale.titleSm,
+                                  fontWeight: FontWeight.w300,
+                                  fontStyle: FontStyle.italic,
+                                  color: LumiColors.onPrimary
+                                      .withValues(alpha: 0.85),
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-
-                    // Share hint
-                    const SizedBox(height: LumiSpacing.md),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.touch_app_outlined,
-                          size: 14,
-                          color: LumiColors.subtext.withValues(alpha: 0.6),
-                        ),
-                        const SizedBox(width: LumiSpacing.xs),
-                        Text(
-                          '分享時可縮放照片、拖拉文字位置',
-                          style: TextStyle(
-                            fontSize: LumiTypeScale.labelSm,
-                            color: LumiColors.subtext.withValues(alpha: 0.6),
-                          ),
-                        ),
-                      ],
                     ),
                     const SizedBox(height: LumiSpacing.lg),
                   ],
@@ -604,11 +474,19 @@ class _ResultViewState extends State<_ResultView> {
                 children: [
                   _PrimaryButton(
                     label: '分享穿搭',
-                    onTap: () => setState(() => _showEditor = true),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => OotdSharePage(
+                          photoBytes: photoBytes,
+                          caption: caption,
+                          date: date,
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: LumiSpacing.xs),
                   TextButton(
-                    onPressed: widget.onBack,
+                    onPressed: onBack,
                     child: const Text(
                       '完成，回到穿搭記錄',
                       style: TextStyle(
@@ -620,249 +498,6 @@ class _ResultViewState extends State<_ResultView> {
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── State B：互動式分享編輯器（暗色調）──────────────────────────────────
-
-  Widget _buildShareEditor(BuildContext context) {
-    final now = DateTime.now();
-    final dateStr =
-        '${now.year}年${now.month.toString().padLeft(2, '0')}月${now.day.toString().padLeft(2, '0')}日';
-
-    final screenW = MediaQuery.of(context).size.width;
-    final cardW = screenW - LumiSpacing.xl * 2;
-    final cardH = cardW * 4 / 3;
-
-    _textPos ??= Offset(cardW * 0.1, cardH * 0.62);
-
-    final caption = _captionController.text;
-
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      backgroundColor: LumiColors.overlayDark,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── Editor header ──────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                LumiSpacing.sm,
-                LumiSpacing.sm,
-                LumiSpacing.md,
-                0,
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => setState(() => _showEditor = false),
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new,
-                      size: 20,
-                      color: LumiColors.onPrimary,
-                    ),
-                  ),
-                  Text(
-                    '編輯分享卡',
-                    style: TextStyle(
-                      fontSize: LumiTypeScale.titleSm,
-                      fontWeight: FontWeight.w600,
-                      color: LumiColors.onPrimary.withValues(alpha: 0.9),
-                    ),
-                  ),
-                  const Spacer(),
-                  // Hint chips
-                  const _EditorHintChip(
-                    icon: Icons.pinch_outlined,
-                    label: '縮放照片',
-                  ),
-                  const SizedBox(width: LumiSpacing.xs),
-                  if (caption.isNotEmpty)
-                    const _EditorHintChip(
-                      icon: Icons.open_with,
-                      label: '拖動文字',
-                    ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: LumiSpacing.sm),
-
-            // ── Interactive share card ─────────────────────────────────
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: LumiSpacing.xl),
-              child: RepaintBoundary(
-                key: _cardKey,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(LumiRadii.xl),
-                  child: SizedBox(
-                    width: cardW,
-                    height: cardH,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        const ColoredBox(color: LumiColors.overlayDark),
-
-                        // Photo – pinch to zoom/rotate
-                        Positioned.fill(
-                          child: GestureDetector(
-                            onScaleStart: _onPhotoScaleStart,
-                            onScaleUpdate: _onPhotoScaleUpdate,
-                            child: Transform.translate(
-                              offset: _photoOffset,
-                              child: Transform(
-                                alignment: Alignment.center,
-                                transform: Matrix4.identity()
-                                  ..rotateZ(_photoRotation)
-                                  ..scale(_photoScale),
-                                child: Image.memory(
-                                  widget.photoBytes,
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // Lumi watermark
-                        Positioned(
-                          bottom: LumiSpacing.md,
-                          right: LumiSpacing.md,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                'Lumi',
-                                style: TextStyle(
-                                  fontSize: LumiTypeScale.titleLg,
-                                  fontWeight: FontWeight.w300,
-                                  fontStyle: FontStyle.italic,
-                                  color: LumiColors.onPrimary,
-                                  shadows: [
-                                    Shadow(
-                                      color:
-                                          LumiColors.text.withValues(alpha: 0.5),
-                                      blurRadius: 6,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Text(
-                                dateStr,
-                                style: TextStyle(
-                                  fontSize: LumiTypeScale.labelSm,
-                                  color: LumiColors.onPrimary
-                                      .withValues(alpha: 0.72),
-                                  shadows: [
-                                    Shadow(
-                                      color:
-                                          LumiColors.text.withValues(alpha: 0.5),
-                                      blurRadius: 4,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // Draggable caption overlay
-                        if (caption.isNotEmpty)
-                          Positioned(
-                            left: _textPos!.dx,
-                            top: _textPos!.dy,
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onPanUpdate: (d) {
-                                setState(() {
-                                  _textPos = Offset(
-                                    (_textPos!.dx + d.delta.dx)
-                                        .clamp(0.0, cardW - 60),
-                                    (_textPos!.dy + d.delta.dy)
-                                        .clamp(0.0, cardH - 40),
-                                  );
-                                });
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: LumiSpacing.sm,
-                                  vertical: LumiSpacing.xs,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: LumiColors.overlayDark
-                                      .withValues(alpha: 0.45),
-                                  borderRadius:
-                                      BorderRadius.circular(LumiRadii.sm),
-                                ),
-                                constraints:
-                                    BoxConstraints(maxWidth: cardW * 0.78),
-                                child: Text(
-                                  caption,
-                                  style: const TextStyle(
-                                    fontSize: LumiTypeScale.body,
-                                    color: LumiColors.onPrimary,
-                                    fontWeight: FontWeight.w500,
-                                    height: 1.4,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // ── Caption input ──────────────────────────────────────────
-            const SizedBox(height: LumiSpacing.sm),
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: LumiSpacing.xl),
-              child: TextField(
-                controller: _captionController,
-                focusNode: _captionFocus,
-                onChanged: (_) => setState(() {}),
-                textAlign: TextAlign.center,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _captionFocus.unfocus(),
-                style: TextStyle(
-                  fontSize: LumiTypeScale.body,
-                  color: LumiColors.onPrimary.withValues(alpha: 0.9),
-                ),
-                decoration: InputDecoration(
-                  hintText: '在照片上加一段話...',
-                  hintStyle: TextStyle(
-                    fontSize: LumiTypeScale.body,
-                    color: LumiColors.onPrimary.withValues(alpha: 0.45),
-                  ),
-                  border: InputBorder.none,
-                ),
-                maxLines: 2,
-                minLines: 1,
-              ),
-            ),
-
-            const Spacer(),
-
-            // ── Share action ───────────────────────────────────────────
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: LumiSpacing.md),
-              child: _PrimaryButton(
-                label: '立即分享',
-                onTap: () => _shareComposed(context),
-              ),
-            ),
-            const SizedBox(height: LumiSpacing.lg),
           ],
         ),
       ),
@@ -907,43 +542,6 @@ class _ErrorView extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-// ── Editor Hint Chip ──────────────────────────────────────────────────────────
-
-class _EditorHintChip extends StatelessWidget {
-  const _EditorHintChip({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: LumiSpacing.sm,
-        vertical: LumiSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: LumiColors.onPrimary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(LumiRadii.pill),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: LumiColors.onPrimary.withValues(alpha: 0.7)),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: LumiTypeScale.labelSm,
-              color: LumiColors.onPrimary.withValues(alpha: 0.7),
-            ),
-          ),
-        ],
       ),
     );
   }

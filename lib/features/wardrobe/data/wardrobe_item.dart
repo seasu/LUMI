@@ -98,6 +98,9 @@ class WardrobeItem {
   }
 
   WardrobeItem copyWith({
+    String? category,
+    List<String>? colors,
+    List<String>? materials,
     bool? analyzed,
     String? analyzeError,
     bool clearAnalyzeError = false,
@@ -105,9 +108,9 @@ class WardrobeItem {
       WardrobeItem(
         docId: docId,
         localFileName: localFileName,
-        category: category,
-        colors: colors,
-        materials: materials,
+        category: category ?? this.category,
+        colors: colors ?? this.colors,
+        materials: materials ?? this.materials,
         embedding: embedding,
         createdAt: createdAt,
         analyzed: analyzed ?? this.analyzed,

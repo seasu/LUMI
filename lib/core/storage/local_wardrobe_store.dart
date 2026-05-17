@@ -108,6 +108,24 @@ class LocalWardrobeNotifier extends AsyncNotifier<List<WardrobeItem>> {
     _log('deleteItem docId=$docId');
   }
 
+  /// Overwrites user-edited category, colors, and materials (keeps embedding).
+  Future<void> updateUserEdit(
+    String docId, {
+    required String category,
+    required List<String> colors,
+    required List<String> materials,
+  }) async {
+    await _patch(
+      docId,
+      (item) => item.copyWith(
+        category: category,
+        colors: colors,
+        materials: materials,
+      ),
+    );
+    _log('updateUserEdit docId=$docId category=$category');
+  }
+
   /// Rescans the wardrobe directory from disk (useful after OS backup restore).
   Future<void> reload() async {
     state = const AsyncLoading();

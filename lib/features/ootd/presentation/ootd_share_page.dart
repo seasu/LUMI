@@ -111,37 +111,19 @@ class _OotdSharePageState extends State<OotdSharePage> {
 
             const SizedBox(height: LumiSpacing.xs),
 
-            // ── Two-panel comparison ─────────────────────────────────────
+            // ── Single branded card ──────────────────────────────────────
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: LumiSpacing.md,
                 ),
-                child: Column(
-                  children: [
-                    // Top panel: Original photo
-                    Expanded(
-                      child: _OriginalCard(photoBytes: widget.photoBytes),
-                    ),
-
-                    // Gap with divider label
-                    const _DividerLabel(
-                      label: '分享卡',
-                      icon: Icons.auto_awesome,
-                    ),
-
-                    // Bottom panel: Branded share card
-                    Expanded(
-                      child: RepaintBoundary(
-                        key: _brandedCardKey,
-                        child: _BrandedCard(
-                          photoBytes: widget.photoBytes,
-                          caption: widget.caption,
-                          dateStr: _dateStr,
-                        ),
-                      ),
-                    ),
-                  ],
+                child: RepaintBoundary(
+                  key: _brandedCardKey,
+                  child: _BrandedCard(
+                    photoBytes: widget.photoBytes,
+                    caption: widget.caption,
+                    dateStr: _dateStr,
+                  ),
                 ),
               ),
             ),
@@ -173,99 +155,6 @@ class _OotdSharePageState extends State<OotdSharePage> {
             const SizedBox(height: LumiSpacing.lg),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ── Divider label between panels ──────────────────────────────────────────────
-
-class _DividerLabel extends StatelessWidget {
-  const _DividerLabel({required this.label, required this.icon});
-
-  final String label;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: LumiSpacing.xs),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              height: 1,
-              color: LumiColors.onPrimary.withValues(alpha: 0.08),
-            ),
-          ),
-          const SizedBox(width: LumiSpacing.sm),
-          Icon(
-            icon,
-            size: 12,
-            color: LumiColors.onPrimary.withValues(alpha: 0.35),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: LumiTypeScale.labelSm,
-              color: LumiColors.onPrimary.withValues(alpha: 0.35),
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(width: LumiSpacing.sm),
-          Expanded(
-            child: Container(
-              height: 1,
-              color: LumiColors.onPrimary.withValues(alpha: 0.08),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Original card ─────────────────────────────────────────────────────────────
-
-class _OriginalCard extends StatelessWidget {
-  const _OriginalCard({required this.photoBytes});
-
-  final Uint8List photoBytes;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(LumiRadii.xl),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.memory(photoBytes, fit: BoxFit.cover),
-          // "原圖" label chip — top-left
-          Positioned(
-            top: LumiSpacing.sm,
-            left: LumiSpacing.sm,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: LumiSpacing.sm,
-                vertical: LumiSpacing.xs,
-              ),
-              decoration: BoxDecoration(
-                color: LumiColors.surface.withValues(alpha: 0.90),
-                borderRadius: BorderRadius.circular(LumiRadii.pill),
-              ),
-              child: const Text(
-                '原圖',
-                style: TextStyle(
-                  fontSize: LumiTypeScale.labelSm,
-                  fontWeight: FontWeight.w600,
-                  color: LumiColors.text,
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

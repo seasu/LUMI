@@ -97,152 +97,359 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
         vertical: LumiSpacing.xl,
       ),
       child: Container(
-        constraints: BoxConstraints(maxHeight: screenHeight * 0.85),
+        constraints: BoxConstraints(maxHeight: screenHeight * 0.88),
         decoration: BoxDecoration(
           color: LumiColors.surface,
           borderRadius: BorderRadius.circular(LumiRadii.xl),
         ),
         clipBehavior: Clip.antiAlias,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ── 圖片區 ────────────────────────────────────────────────
-            Stack(
-              children: [
-                AspectRatio(
-                  aspectRatio: 3 / 4,
-                  child: ColoredBox(
-                    color: LumiColors.base,
-                    child: _ModalImage(localFileName: item.localFileName),
-                  ),
-                ),
-                Positioned(
-                  top: LumiSpacing.sm,
-                  right: LumiSpacing.sm,
-                  child: Material(
-                    color: LumiColors.surface.withValues(alpha: 0.82),
-                    shape: const CircleBorder(),
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: () => Navigator.of(context).pop(),
-                      child: const Padding(
-                        padding: EdgeInsets.all(LumiSpacing.xs),
-                        child: Icon(
-                          Icons.close,
-                          size: 20,
-                          color: LumiColors.text,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            // ── 資訊 / 編輯區 ─────────────────────────────────────────
-            Flexible(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                  LumiSpacing.lg,
-                  LumiSpacing.md,
-                  LumiSpacing.lg,
-                  LumiSpacing.lg,
-                ),
-                child: _editing
-                    ? _buildEditSection()
-                    : _buildViewSection(item),
-              ),
-            ),
-          ],
-        ),
+        child: _editing
+            ? _buildEditLayout(context, item)
+            : _buildViewLayout(context, item),
       ),
     );
   }
 
-  // ── 檢視模式 ──────────────────────────────────────────────────────────────
+  // ── 檢視模式：全圖 + gradient overlay ─────────────────────────────────────
 
-  Widget _buildViewSection(WardrobeItem item) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildViewLayout(BuildContext context, WardrobeItem item) {
+    return Stack(
       children: [
-        if (item.analyzed) ...[
-          if (item.category.isNotEmpty) ...[
-            const _SectionLabel('種類'),
-            const SizedBox(height: LumiSpacing.xs),
-            _MetaChip(item.category),
-            const SizedBox(height: LumiSpacing.md),
-          ],
-          if (item.materials.isNotEmpty) ...[
-            const _SectionLabel('材質'),
-            const SizedBox(height: LumiSpacing.xs),
-            Wrap(
-              spacing: LumiSpacing.xs,
-              runSpacing: LumiSpacing.xs,
-              children: item.materials.map((m) => _MetaChip(m)).toList(),
-            ),
-            const SizedBox(height: LumiSpacing.md),
-          ],
-          if (item.colors.isNotEmpty) ...[
-            const _SectionLabel('顏色'),
-            const SizedBox(height: LumiSpacing.xs),
-            Wrap(
-              spacing: LumiSpacing.sm,
-              runSpacing: LumiSpacing.sm,
-              children: item.colors.map((c) => _ColorSwatch(c)).toList(),
-            ),
-            const SizedBox(height: LumiSpacing.md),
-          ],
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: () {
-                _resetEdit(item);
-                setState(() => _editing = true);
-              },
-              icon: const Icon(Icons.edit_outlined, size: 14),
-              label: const Text('編輯辨識結果'),
-              style: TextButton.styleFrom(
-                foregroundColor: LumiColors.subtext,
-                textStyle: const TextStyle(
-                  fontSize: LumiTypeScale.labelMd,
-                  fontWeight: FontWeight.w400,
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: LumiSpacing.sm,
-                  vertical: LumiSpacing.xs,
-                ),
+        // Hero photo — full 3:4 portrait
+        AspectRatio(
+          aspectRatio: 3 / 4,
+          child: ColoredBox(
+            color: LumiColors.base,
+            child: _ModalImage(localFileName: item.localFileName),
+          ),
+        ),
+
+        // Top scrim (date chip + close button legibility)
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            height: 120,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  LumiColors.text.withValues(alpha: 0.52),
+                  LumiColors.text.withValues(alpha: 0.0),
+                ],
               ),
             ),
           ),
-        ] else ...[
-          Text(
-            item.analyzeError != null ? '分析失敗，可下拉重試' : '分析中…',
-            style: const TextStyle(
-              fontSize: LumiTypeScale.labelMd,
-              color: LumiColors.subtext,
+        ),
+
+        // Bottom scrim (info overlay legibility)
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            height: 230,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  LumiColors.text.withValues(alpha: 0.0),
+                  LumiColors.text.withValues(alpha: 0.78),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: LumiSpacing.md),
-        ],
-        Text(
-          '加入：${_formatDate(item.createdAt)}',
-          style: const TextStyle(
-            fontSize: LumiTypeScale.labelSm,
-            color: LumiColors.subtext,
+        ),
+
+        // Date chip — top-left
+        Positioned(
+          top: LumiSpacing.sm,
+          left: LumiSpacing.sm,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: LumiSpacing.sm,
+              vertical: LumiSpacing.xs,
+            ),
+            decoration: BoxDecoration(
+              color: LumiColors.surface.withValues(alpha: 0.88),
+              borderRadius: BorderRadius.circular(LumiRadii.pill),
+            ),
+            child: Text(
+              _formatDate(item.createdAt),
+              style: const TextStyle(
+                fontSize: LumiTypeScale.labelSm,
+                fontWeight: FontWeight.w600,
+                color: LumiColors.text,
+              ),
+            ),
+          ),
+        ),
+
+        // Close button — top-right
+        Positioned(
+          top: LumiSpacing.sm,
+          right: LumiSpacing.sm,
+          child: Material(
+            color: LumiColors.surface.withValues(alpha: 0.82),
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () => Navigator.of(context).pop(),
+              child: const Padding(
+                padding: EdgeInsets.all(LumiSpacing.xs),
+                child: Icon(Icons.close, size: 20, color: LumiColors.text),
+              ),
+            ),
+          ),
+        ),
+
+        // Bottom overlay: materials → category + colors + edit
+        Positioned(
+          bottom: LumiSpacing.md,
+          left: LumiSpacing.md,
+          right: LumiSpacing.md,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Analysis status (when not yet done)
+              if (!item.analyzed)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: LumiSpacing.sm,
+                    vertical: LumiSpacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: LumiColors.onPrimary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(LumiRadii.pill),
+                    border: Border.all(
+                      color: LumiColors.onPrimary.withValues(alpha: 0.30),
+                    ),
+                  ),
+                  child: Text(
+                    item.analyzeError != null ? '分析失敗，可下拉重試' : 'AI 分析中…',
+                    style: const TextStyle(
+                      fontSize: LumiTypeScale.labelSm,
+                      color: LumiColors.onPrimary,
+                    ),
+                  ),
+                ),
+
+              // Material chips (translucent pills)
+              if (item.analyzed && item.materials.isNotEmpty) ...[
+                Wrap(
+                  spacing: LumiSpacing.xs,
+                  runSpacing: LumiSpacing.xs,
+                  children: item.materials
+                      .map(
+                        (m) => Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: LumiSpacing.sm,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: LumiColors.onPrimary.withValues(alpha: 0.15),
+                            borderRadius:
+                                BorderRadius.circular(LumiRadii.pill),
+                          ),
+                          child: Text(
+                            m,
+                            style: const TextStyle(
+                              fontSize: LumiTypeScale.labelSm,
+                              color: LumiColors.onPrimary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(height: LumiSpacing.sm),
+              ],
+
+              // Category badge + color dots + edit button
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Category white pill
+                  if (item.analyzed && item.category.isNotEmpty) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: LumiSpacing.md,
+                        vertical: LumiSpacing.xs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: LumiColors.onPrimary.withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(LumiRadii.pill),
+                      ),
+                      child: Text(
+                        item.category,
+                        style: const TextStyle(
+                          fontSize: LumiTypeScale.labelMd,
+                          fontWeight: FontWeight.w600,
+                          color: LumiColors.text,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: LumiSpacing.xs),
+                  ],
+
+                  // Color dots (up to 5)
+                  if (item.analyzed)
+                    ...item.colors.take(5).map(
+                          (c) => Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: Container(
+                              width: 22,
+                              height: 22,
+                              decoration: BoxDecoration(
+                                color: _parseHex(c),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color:
+                                      LumiColors.onPrimary.withValues(alpha: 0.5),
+                                  width: 1.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                  const Spacer(),
+
+                  // Edit button (pencil circle) — only when analyzed
+                  if (item.analyzed)
+                    GestureDetector(
+                      onTap: () {
+                        _resetEdit(item);
+                        setState(() => _editing = true);
+                      },
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: LumiColors.onPrimary.withValues(alpha: 0.18),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: LumiColors.onPrimary.withValues(alpha: 0.40),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.edit_outlined,
+                          size: 16,
+                          color: LumiColors.onPrimary,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  // ── 編輯模式 ──────────────────────────────────────────────────────────────
+  // ── 編輯模式：縮圖 header + 表單 ─────────────────────────────────────────
+
+  Widget _buildEditLayout(BuildContext context, WardrobeItem item) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Compact photo banner
+        SizedBox(
+          height: 200,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              ColoredBox(
+                color: LumiColors.base,
+                child: _ModalImage(localFileName: item.localFileName),
+              ),
+              // Subtle bottom scrim
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      LumiColors.text.withValues(alpha: 0.0),
+                      LumiColors.text.withValues(alpha: 0.38),
+                    ],
+                  ),
+                ),
+              ),
+              // "編輯辨識結果" gradient chip — top-left
+              Positioned(
+                top: LumiSpacing.sm,
+                left: LumiSpacing.sm,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: LumiSpacing.sm,
+                    vertical: LumiSpacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LumiColors.buttonGradient,
+                    borderRadius: BorderRadius.circular(LumiRadii.pill),
+                  ),
+                  child: const Text(
+                    '編輯辨識結果',
+                    style: TextStyle(
+                      fontSize: LumiTypeScale.labelSm,
+                      fontWeight: FontWeight.w600,
+                      color: LumiColors.onPrimary,
+                    ),
+                  ),
+                ),
+              ),
+              // Close button — top-right
+              Positioned(
+                top: LumiSpacing.sm,
+                right: LumiSpacing.sm,
+                child: Material(
+                  color: LumiColors.surface.withValues(alpha: 0.82),
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () => Navigator.of(context).pop(),
+                    child: const Padding(
+                      padding: EdgeInsets.all(LumiSpacing.xs),
+                      child:
+                          Icon(Icons.close, size: 20, color: LumiColors.text),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Edit form
+        Flexible(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              LumiSpacing.lg,
+              LumiSpacing.md,
+              LumiSpacing.lg,
+              LumiSpacing.lg,
+            ),
+            child: _buildEditSection(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── 編輯表單內容 ──────────────────────────────────────────────────────────
 
   Widget _buildEditSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── 種類 ────────────────────────────────────────────────────
+        // ── 種類 ──────────────────────────────────────────────────────
         const _SectionLabel('種類'),
         const SizedBox(height: LumiSpacing.xs),
         SingleChildScrollView(
@@ -262,19 +469,16 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
                       vertical: LumiSpacing.xs + 2,
                     ),
                     decoration: BoxDecoration(
-                      gradient:
-                          active ? LumiColors.buttonGradient : null,
+                      gradient: active ? LumiColors.buttonGradient : null,
                       color: active ? null : LumiColors.base,
-                      borderRadius:
-                          BorderRadius.circular(LumiRadii.pill),
+                      borderRadius: BorderRadius.circular(LumiRadii.pill),
                     ),
                     child: Text(
                       cat,
                       style: TextStyle(
                         fontSize: LumiTypeScale.labelMd,
-                        fontWeight: active
-                            ? FontWeight.w600
-                            : FontWeight.w400,
+                        fontWeight:
+                            active ? FontWeight.w600 : FontWeight.w400,
                         color: active
                             ? LumiColors.onPrimary
                             : LumiColors.text,
@@ -289,7 +493,7 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
 
         const SizedBox(height: LumiSpacing.md),
 
-        // ── 顏色 ────────────────────────────────────────────────────
+        // ── 顏色 ──────────────────────────────────────────────────────
         const _SectionLabel('顏色'),
         const SizedBox(height: LumiSpacing.xs),
         Wrap(
@@ -354,7 +558,7 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
 
         const SizedBox(height: LumiSpacing.md),
 
-        // ── 材質 ────────────────────────────────────────────────────
+        // ── 材質 ──────────────────────────────────────────────────────
         const _SectionLabel('材質'),
         const SizedBox(height: LumiSpacing.xs),
         Wrap(
@@ -385,11 +589,9 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
                   mat,
                   style: TextStyle(
                     fontSize: LumiTypeScale.labelMd,
-                    fontWeight:
-                        active ? FontWeight.w600 : FontWeight.w400,
-                    color: active
-                        ? LumiColors.onPrimary
-                        : LumiColors.text,
+                    fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                    color:
+                        active ? LumiColors.onPrimary : LumiColors.text,
                   ),
                 ),
               ),
@@ -399,7 +601,7 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
 
         const SizedBox(height: LumiSpacing.lg),
 
-        // ── 操作按鈕 ─────────────────────────────────────────────────
+        // ── 操作按鈕 ──────────────────────────────────────────────────
         Row(
           children: [
             Expanded(
@@ -516,57 +718,6 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-// ── 文字 Chip ─────────────────────────────────────────────────────────────────
-
-class _MetaChip extends StatelessWidget {
-  const _MetaChip(this.label);
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: LumiSpacing.md,
-        vertical: LumiSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: LumiColors.base,
-        borderRadius: BorderRadius.circular(LumiRadii.pill),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: LumiTypeScale.labelMd,
-          color: LumiColors.text,
-        ),
-      ),
-    );
-  }
-}
-
-// ── 顏色色票（檢視模式）──────────────────────────────────────────────────────
-
-class _ColorSwatch extends StatelessWidget {
-  const _ColorSwatch(this.hex);
-  final String hex;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: _parseHex(hex),
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: LumiColors.subtext.withValues(alpha: 0.15),
-          width: 1.5,
-        ),
-      ),
-    );
-  }
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 Color _parseHex(String hex) {
@@ -582,7 +733,6 @@ Color _parseHex(String hex) {
 bool _isLight(Color color) =>
     (0.299 * color.red + 0.587 * color.green + 0.114 * color.blue) > 127;
 
-/// Maps each AI-generated hex to the nearest bucket hex from [_kColorOptions].
 List<String> _nearestBuckets(List<String> aiColors) {
   final result = <String>{};
   for (final hex in aiColors) {
@@ -594,9 +744,6 @@ List<String> _nearestBuckets(List<String> aiColors) {
 
 String? _nearestBucket(String hex) {
   final ai = _parseHex(hex);
-  if (ai == LumiColors.base && !hex.toUpperCase().contains('FAF9F8')) {
-    return null; // parse failed
-  }
   String? nearest;
   double minDist = double.infinity;
   for (final (_, bHex) in _kColorOptions) {

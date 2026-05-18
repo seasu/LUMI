@@ -74,92 +74,132 @@ class _OotdSharePageState extends State<OotdSharePage> {
 
   @override
   Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
+    final botPad = MediaQuery.of(context).padding.bottom;
+
     return Scaffold(
       backgroundColor: LumiColors.overlayDark,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── Header ──────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                LumiSpacing.sm,
-                LumiSpacing.sm,
-                LumiSpacing.md,
-                0,
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new,
-                      size: 20,
-                      color: LumiColors.onPrimary,
-                    ),
-                  ),
-                  Text(
-                    '分享穿搭',
-                    style: TextStyle(
-                      fontSize: LumiTypeScale.titleSm,
-                      fontWeight: FontWeight.w600,
-                      color: LumiColors.onPrimary.withValues(alpha: 0.9),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+      body: Stack(
+        children: [
+          // ── Main layout ────────────────────────────────────────────────
+          Positioned.fill(
+            child: Column(
+              children: [
+                // Space for floating header
+                SizedBox(height: topPad + LumiSpacing.xl + LumiSpacing.sm),
 
-            const SizedBox(height: LumiSpacing.xs),
-
-            // ── Single branded card ──────────────────────────────────────
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: LumiSpacing.md,
-                ),
-                // ClipRRect is OUTSIDE RepaintBoundary — visual only on screen.
-                // Captured PNG stays rectangular (no white-corner artifact on share).
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(LumiRadii.xl),
-                  child: RepaintBoundary(
-                    key: _brandedCardKey,
-                    child: _BrandedCard(
-                      photoBytes: widget.photoBytes,
-                      caption: widget.caption,
-                      dateStr: _dateStr,
+                // Branded card
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: LumiSpacing.md,
+                    ),
+                    // ClipRRect is OUTSIDE RepaintBoundary — visual only on screen.
+                    // Captured PNG stays rectangular (no white-corner artifact on share).
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(LumiRadii.xl),
+                      child: RepaintBoundary(
+                        key: _brandedCardKey,
+                        child: _BrandedCard(
+                          photoBytes: widget.photoBytes,
+                          caption: widget.caption,
+                          dateStr: _dateStr,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
+
+                const SizedBox(height: LumiSpacing.md),
+
+                // Action buttons
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    LumiSpacing.md,
+                    0,
+                    LumiSpacing.md,
+                    LumiSpacing.md + botPad,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _OutlinedButton(
+                          label: '分享穿搭',
+                          onTap: () => _share(context),
+                        ),
+                      ),
+                      const SizedBox(width: LumiSpacing.sm),
+                      Expanded(
+                        child: _GradientButton(
+                          label: '完成',
+                          onTap: () => Navigator.of(context).pop(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
+          ),
 
-            const SizedBox(height: LumiSpacing.sm),
-
-            // ── Action buttons ───────────────────────────────────────────
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: LumiSpacing.md),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _OutlinedButton(
-                      label: '分享穿搭',
-                      onTap: () => _share(context),
+          // ── Floating header ────────────────────────────────────────────
+          Positioned(
+            top: topPad + LumiSpacing.xs,
+            left: LumiSpacing.md,
+            right: LumiSpacing.md,
+            child: Row(
+              children: [
+                // 返回按鈕（icon + 文字，符合 Lumi 設計規範）
+                Material(
+                  color: LumiColors.onPrimary.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(LumiRadii.pill),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(LumiRadii.pill),
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: LumiSpacing.sm,
+                        vertical: LumiSpacing.xs + 2,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.arrow_back_ios_new,
+                            size: 13,
+                            color: LumiColors.onPrimary.withValues(alpha: 0.9),
+                          ),
+                          const SizedBox(width: LumiSpacing.xs),
+                          Text(
+                            '返回',
+                            style: TextStyle(
+                              fontSize: LumiTypeScale.labelMd,
+                              fontWeight: FontWeight.w600,
+                              color:
+                                  LumiColors.onPrimary.withValues(alpha: 0.9),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(width: LumiSpacing.sm),
-                  Expanded(
-                    child: _GradientButton(
-                      label: '完成',
-                      onTap: () => Navigator.of(context).pop(),
-                    ),
+                ),
+
+                const Spacer(),
+
+                // 頁面標題
+                Text(
+                  '分享穿搭',
+                  style: TextStyle(
+                    fontSize: LumiTypeScale.titleSm,
+                    fontWeight: FontWeight.w600,
+                    color: LumiColors.onPrimary.withValues(alpha: 0.85),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(height: LumiSpacing.lg),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

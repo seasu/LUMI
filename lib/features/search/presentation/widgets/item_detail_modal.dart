@@ -29,10 +29,23 @@ const _kMaterials = [
 // ── 進入點 ────────────────────────────────────────────────────────────────────
 
 void showItemDetailModal(BuildContext context, WardrobeItem item) {
-  showDialog(
+  showGeneralDialog<void>(
     context: context,
-    barrierColor: LumiColors.overlayBarrier,
-    builder: (_) => _ItemDetailModal(item: item),
+    barrierDismissible: false,
+    barrierLabel: '',
+    barrierColor: Colors.transparent,
+    transitionDuration: const Duration(milliseconds: 360),
+    pageBuilder: (ctx, _, __) => _ItemDetailModal(item: item),
+    transitionBuilder: (ctx, anim, _, child) {
+      final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
+      return SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 1),
+          end: Offset.zero,
+        ).animate(curved),
+        child: child,
+      );
+    },
   );
 }
 
@@ -83,309 +96,273 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
     final items = ref.watch(localWardrobeProvider).valueOrNull ?? [];
     final item = items.firstWhere(
       (i) => i.docId == widget.item.docId,
       orElse: () => widget.item,
     );
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(
-        horizontal: LumiSpacing.md,
-        vertical: LumiSpacing.xl,
-      ),
-      child: Container(
-        constraints: BoxConstraints(maxHeight: screenHeight * 0.88),
-        decoration: BoxDecoration(
-          color: LumiColors.surface,
-          borderRadius: BorderRadius.circular(LumiRadii.xl),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: _editing
-            ? _buildEditLayout(context, item)
-            : _buildViewLayout(context, item),
-      ),
+    return Material(
+      color: LumiColors.base,
+      child: _editing
+          ? _buildEditLayout(context, item)
+          : _buildViewLayout(context, item),
     );
   }
 
-  // ── 檢視模式：全圖 + gradient overlay ─────────────────────────────────────
+  // ── 檢視模式：滿版照片 + gradient overlay ─────────────────────────────────
 
   Widget _buildViewLayout(BuildContext context, WardrobeItem item) {
-    return Stack(
-      children: [
-        // Hero photo — full 3:4 portrait
-        AspectRatio(
-          aspectRatio: 3 / 4,
-          child: ColoredBox(
-            color: LumiColors.base,
-            child: _ModalImage(localFileName: item.localFileName),
-          ),
-        ),
+    final topPad = MediaQuery.of(context).padding.top;
+    final botPad = MediaQuery.of(context).padding.bottom;
 
-        // Top scrim (date chip + close button legibility)
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: Container(
-            height: 120,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  LumiColors.text.withValues(alpha: 0.52),
-                  LumiColors.text.withValues(alpha: 0.0),
-                ],
-              ),
-            ),
-          ),
-        ),
+    return GestureDetector(
+      // 下滑手勢關閉
+      onVerticalDragEnd: (d) {
+        if ((d.primaryVelocity ?? 0) > 400) Navigator.of(context).pop();
+      },
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 全幅照片
+          _ModalImage(localFileName: item.localFileName),
 
-        // Bottom scrim (info overlay legibility)
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: Container(
-            height: 230,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  LumiColors.text.withValues(alpha: 0.0),
-                  LumiColors.text.withValues(alpha: 0.78),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // Date chip — top-left
-        Positioned(
-          top: LumiSpacing.sm,
-          left: LumiSpacing.sm,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: LumiSpacing.sm,
-              vertical: LumiSpacing.xs,
-            ),
-            decoration: BoxDecoration(
-              color: LumiColors.surface.withValues(alpha: 0.88),
-              borderRadius: BorderRadius.circular(LumiRadii.pill),
-            ),
-            child: Text(
-              _formatDate(item.createdAt),
-              style: const TextStyle(
-                fontSize: LumiTypeScale.labelSm,
-                fontWeight: FontWeight.w600,
-                color: LumiColors.text,
-              ),
-            ),
-          ),
-        ),
-
-        // Close button — top-right
-        Positioned(
-          top: LumiSpacing.sm,
-          right: LumiSpacing.sm,
-          child: Material(
-            color: LumiColors.surface.withValues(alpha: 0.82),
-            shape: const CircleBorder(),
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: () => Navigator.of(context).pop(),
-              child: const Padding(
-                padding: EdgeInsets.all(LumiSpacing.xs),
-                child: Icon(Icons.close, size: 20, color: LumiColors.text),
-              ),
-            ),
-          ),
-        ),
-
-        // Bottom overlay: materials → category + colors + edit
-        Positioned(
-          bottom: LumiSpacing.md,
-          left: LumiSpacing.md,
-          right: LumiSpacing.md,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Analysis status (when not yet done)
-              if (!item.analyzed)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: LumiSpacing.sm,
-                    vertical: LumiSpacing.xs,
-                  ),
-                  decoration: BoxDecoration(
-                    color: LumiColors.onPrimary.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(LumiRadii.pill),
-                    border: Border.all(
-                      color: LumiColors.onPrimary.withValues(alpha: 0.30),
-                    ),
-                  ),
-                  child: Text(
-                    item.analyzeError != null ? '分析失敗，可下拉重試' : 'AI 分析中…',
-                    style: const TextStyle(
-                      fontSize: LumiTypeScale.labelSm,
-                      color: LumiColors.onPrimary,
-                    ),
-                  ),
-                ),
-
-              // Material chips (translucent pills)
-              if (item.analyzed && item.materials.isNotEmpty) ...[
-                Wrap(
-                  spacing: LumiSpacing.xs,
-                  runSpacing: LumiSpacing.xs,
-                  children: item.materials
-                      .map(
-                        (m) => Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: LumiSpacing.sm,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: LumiColors.onPrimary.withValues(alpha: 0.15),
-                            borderRadius:
-                                BorderRadius.circular(LumiRadii.pill),
-                          ),
-                          child: Text(
-                            m,
-                            style: const TextStyle(
-                              fontSize: LumiTypeScale.labelSm,
-                              color: LumiColors.onPrimary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-                const SizedBox(height: LumiSpacing.sm),
-              ],
-
-              // Category badge + color dots + edit button
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Category white pill
-                  if (item.analyzed && item.category.isNotEmpty) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: LumiSpacing.md,
-                        vertical: LumiSpacing.xs,
-                      ),
-                      decoration: BoxDecoration(
-                        color: LumiColors.onPrimary.withValues(alpha: 0.92),
-                        borderRadius: BorderRadius.circular(LumiRadii.pill),
-                      ),
-                      child: Text(
-                        item.category,
-                        style: const TextStyle(
-                          fontSize: LumiTypeScale.labelMd,
-                          fontWeight: FontWeight.w600,
-                          color: LumiColors.text,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: LumiSpacing.xs),
+          // 上方暗 scrim（狀態列 + 關閉按鈕可讀性）
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: topPad + 130,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    LumiColors.text.withValues(alpha: 0.68),
+                    LumiColors.text.withValues(alpha: 0.0),
                   ],
+                ),
+              ),
+            ),
+          ),
 
-                  // Color dots (up to 5)
-                  if (item.analyzed)
-                    ...item.colors.take(5).map(
-                          (c) => Padding(
-                            padding: const EdgeInsets.only(right: 4),
-                            child: Container(
-                              width: 22,
-                              height: 22,
-                              decoration: BoxDecoration(
-                                color: _parseHex(c),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color:
-                                      LumiColors.onPrimary.withValues(alpha: 0.5),
-                                  width: 1.5,
+          // 下方暗 scrim（資訊疊層可讀性）
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: botPad + 320,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    LumiColors.text.withValues(alpha: 0.0),
+                    LumiColors.text.withValues(alpha: 0.88),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // 日期 chip — 左上，尊重狀態列
+          Positioned(
+            top: topPad + LumiSpacing.sm,
+            left: LumiSpacing.md,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: LumiSpacing.sm,
+                vertical: LumiSpacing.xs,
+              ),
+              decoration: BoxDecoration(
+                color: LumiColors.surface.withValues(alpha: 0.88),
+                borderRadius: BorderRadius.circular(LumiRadii.pill),
+              ),
+              child: Text(
+                _formatDate(item.createdAt),
+                style: const TextStyle(
+                  fontSize: LumiTypeScale.labelSm,
+                  fontWeight: FontWeight.w600,
+                  color: LumiColors.text,
+                ),
+              ),
+            ),
+          ),
+
+          // 關閉按鈕 — 右上
+          Positioned(
+            top: topPad + LumiSpacing.xs,
+            right: LumiSpacing.md,
+            child: Material(
+              color: LumiColors.surface.withValues(alpha: 0.82),
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => Navigator.of(context).pop(),
+                child: const Padding(
+                  padding: EdgeInsets.all(LumiSpacing.sm),
+                  child: Icon(Icons.close, size: 20, color: LumiColors.text),
+                ),
+              ),
+            ),
+          ),
+
+          // 下方資訊 overlay
+          Positioned(
+            bottom: botPad + LumiSpacing.xl,
+            left: LumiSpacing.md,
+            right: LumiSpacing.md,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 分析狀態（未完成時）
+                if (!item.analyzed) ...[
+                  _InfoPill(
+                    item.analyzeError != null ? '分析失敗，可下拉重試' : 'AI 分析中…',
+                  ),
+                  const SizedBox(height: LumiSpacing.sm),
+                ],
+
+                // 材質 pills
+                if (item.analyzed && item.materials.isNotEmpty) ...[
+                  Wrap(
+                    spacing: LumiSpacing.xs,
+                    runSpacing: LumiSpacing.xs,
+                    children: item.materials
+                        .map((m) => _InfoPill(m))
+                        .toList(),
+                  ),
+                  const SizedBox(height: LumiSpacing.sm),
+                ],
+
+                // 類型 + 顏色點 + 編輯按鈕
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    if (item.analyzed && item.category.isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: LumiSpacing.md,
+                          vertical: LumiSpacing.xs + 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: LumiColors.onPrimary.withValues(alpha: 0.92),
+                          borderRadius: BorderRadius.circular(LumiRadii.pill),
+                        ),
+                        child: Text(
+                          item.category,
+                          style: const TextStyle(
+                            fontSize: LumiTypeScale.labelMd,
+                            fontWeight: FontWeight.w600,
+                            color: LumiColors.text,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: LumiSpacing.xs),
+                    ],
+                    if (item.analyzed)
+                      ...item.colors.take(5).map(
+                            (c) => Padding(
+                              padding: const EdgeInsets.only(right: 4),
+                              child: Container(
+                                width: 22,
+                                height: 22,
+                                decoration: BoxDecoration(
+                                  color: _parseHex(c),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: LumiColors.onPrimary
+                                        .withValues(alpha: 0.5),
+                                    width: 1.5,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-
-                  const Spacer(),
-
-                  // Edit button (pencil circle) — only when analyzed
-                  if (item.analyzed)
-                    GestureDetector(
-                      onTap: () {
-                        _resetEdit(item);
-                        setState(() => _editing = true);
-                      },
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: LumiColors.onPrimary.withValues(alpha: 0.18),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: LumiColors.onPrimary.withValues(alpha: 0.40),
+                    const Spacer(),
+                    if (item.analyzed)
+                      Material(
+                        color: LumiColors.onPrimary.withValues(alpha: 0.18),
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: () {
+                            _resetEdit(item);
+                            setState(() => _editing = true);
+                          },
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color:
+                                    LumiColors.onPrimary.withValues(alpha: 0.4),
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.edit_outlined,
+                              size: 18,
+                              color: LumiColors.onPrimary,
+                            ),
                           ),
                         ),
-                        child: const Icon(
-                          Icons.edit_outlined,
-                          size: 16,
-                          color: LumiColors.onPrimary,
-                        ),
                       ),
-                    ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  // ── 編輯模式：縮圖 header + 表單 ─────────────────────────────────────────
+  // ── 編輯模式：滿版佈局 ─────────────────────────────────────────────────────
 
   Widget _buildEditLayout(BuildContext context, WardrobeItem item) {
+    final topPad = MediaQuery.of(context).padding.top;
+    final botPad = MediaQuery.of(context).padding.bottom;
+    final screenH = MediaQuery.of(context).size.height;
+    final photoH = (screenH * 0.30).clamp(220.0, 320.0);
+
     return Column(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        // Compact photo banner
+        // 照片 header — 比例式高度
         SizedBox(
-          height: 200,
+          height: photoH + topPad,
           child: Stack(
             fit: StackFit.expand,
             children: [
-              ColoredBox(
-                color: LumiColors.base,
-                child: _ModalImage(localFileName: item.localFileName),
-              ),
-              // Subtle bottom scrim
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      LumiColors.text.withValues(alpha: 0.0),
-                      LumiColors.text.withValues(alpha: 0.38),
-                    ],
+              _ModalImage(localFileName: item.localFileName),
+
+              // 底部暗 scrim
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: 100,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        LumiColors.text.withValues(alpha: 0.0),
+                        LumiColors.text.withValues(alpha: 0.5),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              // "編輯辨識結果" gradient chip — top-left
+
+              // 「編輯辨識結果」gradient chip
               Positioned(
-                top: LumiSpacing.sm,
-                left: LumiSpacing.sm,
+                top: topPad + LumiSpacing.sm,
+                left: LumiSpacing.md,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: LumiSpacing.sm,
@@ -405,10 +382,11 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
                   ),
                 ),
               ),
-              // Close button — top-right
+
+              // 關閉按鈕
               Positioned(
-                top: LumiSpacing.sm,
-                right: LumiSpacing.sm,
+                top: topPad + LumiSpacing.xs,
+                right: LumiSpacing.md,
                 child: Material(
                   color: LumiColors.surface.withValues(alpha: 0.82),
                   shape: const CircleBorder(),
@@ -416,7 +394,7 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
                     customBorder: const CircleBorder(),
                     onTap: () => Navigator.of(context).pop(),
                     child: const Padding(
-                      padding: EdgeInsets.all(LumiSpacing.xs),
+                      padding: EdgeInsets.all(LumiSpacing.sm),
                       child:
                           Icon(Icons.close, size: 20, color: LumiColors.text),
                     ),
@@ -427,16 +405,19 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
           ),
         ),
 
-        // Edit form
-        Flexible(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
-              LumiSpacing.lg,
-              LumiSpacing.md,
-              LumiSpacing.lg,
-              LumiSpacing.lg,
+        // 編輯表單
+        Expanded(
+          child: ColoredBox(
+            color: LumiColors.surface,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                LumiSpacing.lg,
+                LumiSpacing.lg,
+                LumiSpacing.lg,
+                LumiSpacing.lg + botPad,
+              ),
+              child: _buildEditSection(),
             ),
-            child: _buildEditSection(),
           ),
         ),
       ],
@@ -491,7 +472,7 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
           ),
         ),
 
-        const SizedBox(height: LumiSpacing.md),
+        const SizedBox(height: LumiSpacing.lg),
 
         // ── 顏色 ──────────────────────────────────────────────────────
         const _SectionLabel('顏色'),
@@ -556,7 +537,7 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
           }).toList(),
         ),
 
-        const SizedBox(height: LumiSpacing.md),
+        const SizedBox(height: LumiSpacing.lg),
 
         // ── 材質 ──────────────────────────────────────────────────────
         const _SectionLabel('材質'),
@@ -590,8 +571,7 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
                   style: TextStyle(
                     fontSize: LumiTypeScale.labelMd,
                     fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                    color:
-                        active ? LumiColors.onPrimary : LumiColors.text,
+                    color: active ? LumiColors.onPrimary : LumiColors.text,
                   ),
                 ),
               ),
@@ -599,7 +579,7 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
           }).toList(),
         ),
 
-        const SizedBox(height: LumiSpacing.lg),
+        const SizedBox(height: LumiSpacing.xl),
 
         // ── 操作按鈕 ──────────────────────────────────────────────────
         Row(
@@ -616,8 +596,9 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(LumiRadii.pill),
                   ),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: LumiSpacing.sm),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: LumiSpacing.sm + 2,
+                  ),
                 ),
                 child: const Text('取消'),
               ),
@@ -627,7 +608,7 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
               child: GestureDetector(
                 onTap: _saving ? null : _save,
                 child: Container(
-                  height: 40,
+                  height: 44,
                   decoration: BoxDecoration(
                     gradient: LumiColors.buttonGradient,
                     borderRadius: BorderRadius.circular(LumiRadii.pill),
@@ -691,9 +672,40 @@ class _Placeholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Icon(
-          Icons.checkroom_outlined, size: 56, color: LumiColors.subtext),
+    return const ColoredBox(
+      color: LumiColors.base,
+      child: Center(
+        child: Icon(Icons.checkroom_outlined, size: 64, color: LumiColors.subtext),
+      ),
+    );
+  }
+}
+
+// ── 資訊 Pill ─────────────────────────────────────────────────────────────────
+
+class _InfoPill extends StatelessWidget {
+  const _InfoPill(this.label);
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: LumiSpacing.sm,
+        vertical: 3,
+      ),
+      decoration: BoxDecoration(
+        color: LumiColors.onPrimary.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(LumiRadii.pill),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: LumiTypeScale.labelSm,
+          color: LumiColors.onPrimary,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 }

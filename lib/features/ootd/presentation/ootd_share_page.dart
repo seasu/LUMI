@@ -117,12 +117,17 @@ class _OotdSharePageState extends State<OotdSharePage> {
                 padding: const EdgeInsets.symmetric(
                   horizontal: LumiSpacing.md,
                 ),
-                child: RepaintBoundary(
-                  key: _brandedCardKey,
-                  child: _BrandedCard(
-                    photoBytes: widget.photoBytes,
-                    caption: widget.caption,
-                    dateStr: _dateStr,
+                // ClipRRect is OUTSIDE RepaintBoundary — visual only on screen.
+                // Captured PNG stays rectangular (no white-corner artifact on share).
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(LumiRadii.xl),
+                  child: RepaintBoundary(
+                    key: _brandedCardKey,
+                    child: _BrandedCard(
+                      photoBytes: widget.photoBytes,
+                      caption: widget.caption,
+                      dateStr: _dateStr,
+                    ),
                   ),
                 ),
               ),
@@ -175,165 +180,161 @@ class _BrandedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(LumiRadii.xl),
-      child: Column(
-        children: [
-          // Photo area — fills remaining space
-          Expanded(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.memory(photoBytes, fit: BoxFit.cover),
-                // Bottom gradient for legibility
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    height: 100,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          LumiColors.text.withValues(alpha: 0.0),
-                          LumiColors.text.withValues(alpha: 0.60),
-                        ],
-                      ),
+    return Column(
+      children: [
+        // Photo area — fills remaining space
+        Expanded(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.memory(photoBytes, fit: BoxFit.cover),
+              // Bottom gradient for legibility
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  height: 100,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        LumiColors.text.withValues(alpha: 0.0),
+                        LumiColors.text.withValues(alpha: 0.60),
+                      ],
                     ),
                   ),
                 ),
-                // "Lumi" gradient chip — top-left
-                Positioned(
-                  top: LumiSpacing.sm,
-                  left: LumiSpacing.sm,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: LumiSpacing.sm,
-                      vertical: LumiSpacing.xs,
+              ),
+              // "Lumi" gradient chip — top-left
+              Positioned(
+                top: LumiSpacing.sm,
+                left: LumiSpacing.sm,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: LumiSpacing.sm,
+                    vertical: LumiSpacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LumiColors.buttonGradient,
+                    borderRadius: BorderRadius.circular(LumiRadii.pill),
+                  ),
+                  child: const Text(
+                    'Lumi',
+                    style: TextStyle(
+                      fontSize: LumiTypeScale.labelSm,
+                      fontWeight: FontWeight.w700,
+                      color: LumiColors.onPrimary,
+                      fontStyle: FontStyle.italic,
                     ),
-                    decoration: BoxDecoration(
-                      gradient: LumiColors.buttonGradient,
-                      borderRadius: BorderRadius.circular(LumiRadii.pill),
-                    ),
-                    child: const Text(
-                      'Lumi',
+                  ),
+                ),
+              ),
+              // Caption + date at bottom
+              Positioned(
+                left: LumiSpacing.md,
+                right: LumiSpacing.sm,
+                bottom: LumiSpacing.xs,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (caption.isNotEmpty) ...[
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          caption,
+                          style: const TextStyle(
+                            fontSize: LumiTypeScale.body,
+                            color: LumiColors.onPrimary,
+                            fontWeight: FontWeight.w500,
+                            height: 1.4,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(height: LumiSpacing.xs),
+                    ],
+                    Text(
+                      dateStr,
                       style: TextStyle(
                         fontSize: LumiTypeScale.labelSm,
-                        fontWeight: FontWeight.w700,
-                        color: LumiColors.onPrimary,
-                        fontStyle: FontStyle.italic,
+                        color: LumiColors.onPrimary.withValues(alpha: 0.55),
+                        fontWeight: FontWeight.w400,
                       ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Branding strip — always part of exported image
+        Container(
+          height: 40,
+          decoration: const BoxDecoration(
+            gradient: LumiColors.buttonGradient,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: LumiColors.onPrimary.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Text(
+                    'L',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: LumiColors.onPrimary,
+                      fontStyle: FontStyle.italic,
                     ),
                   ),
                 ),
-                // Caption + date stacked at bottom-left / bottom-right
-                Positioned(
-                  left: LumiSpacing.md,
-                  right: LumiSpacing.sm,
-                  bottom: LumiSpacing.xs,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (caption.isNotEmpty) ...[
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            caption,
-                            style: const TextStyle(
-                              fontSize: LumiTypeScale.body,
-                              color: LumiColors.onPrimary,
-                              fontWeight: FontWeight.w500,
-                              height: 1.4,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(height: LumiSpacing.xs),
-                      ],
-                      Text(
-                        dateStr,
-                        style: TextStyle(
-                          fontSize: LumiTypeScale.labelSm,
-                          color:
-                              LumiColors.onPrimary.withValues(alpha: 0.55),
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
+              ),
+              const SizedBox(width: LumiSpacing.xs),
+              const Text(
+                'Lumi',
+                style: TextStyle(
+                  fontSize: LumiTypeScale.labelMd,
+                  fontWeight: FontWeight.w700,
+                  color: LumiColors.onPrimary,
+                  fontStyle: FontStyle.italic,
                 ),
-              ],
-            ),
+              ),
+              Container(
+                height: 12,
+                width: 1,
+                margin: const EdgeInsets.symmetric(
+                  horizontal: LumiSpacing.sm,
+                ),
+                color: LumiColors.onPrimary.withValues(alpha: 0.3),
+              ),
+              const Text(
+                '用AI記錄每日穿搭風格',
+                style: TextStyle(
+                  fontSize: LumiTypeScale.labelSm,
+                  color: LumiColors.onPrimary,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(width: LumiSpacing.xs),
+              Icon(
+                Icons.arrow_forward,
+                size: 11,
+                color: LumiColors.onPrimary.withValues(alpha: 0.8),
+              ),
+            ],
           ),
-          // Branding strip — always part of exported image
-          Container(
-            height: 40,
-            decoration: const BoxDecoration(
-              gradient: LumiColors.buttonGradient,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: LumiColors.onPrimary.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'L',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: LumiColors.onPrimary,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: LumiSpacing.xs),
-                const Text(
-                  'Lumi',
-                  style: TextStyle(
-                    fontSize: LumiTypeScale.labelMd,
-                    fontWeight: FontWeight.w700,
-                    color: LumiColors.onPrimary,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-                Container(
-                  height: 12,
-                  width: 1,
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: LumiSpacing.sm,
-                  ),
-                  color: LumiColors.onPrimary.withValues(alpha: 0.3),
-                ),
-                const Text(
-                  '用AI記錄每日穿搭風格',
-                  style: TextStyle(
-                    fontSize: LumiTypeScale.labelSm,
-                    color: LumiColors.onPrimary,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                const SizedBox(width: LumiSpacing.xs),
-                Icon(
-                  Icons.arrow_forward,
-                  size: 11,
-                  color: LumiColors.onPrimary.withValues(alpha: 0.8),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

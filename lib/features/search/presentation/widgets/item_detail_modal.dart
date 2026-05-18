@@ -731,7 +731,7 @@ Color _parseHex(String hex) {
 }
 
 bool _isLight(Color color) =>
-    (0.299 * color.red + 0.587 * color.green + 0.114 * color.blue) > 127;
+    (0.299 * color.r + 0.587 * color.g + 0.114 * color.b) > 0.5;
 
 List<String> _nearestBuckets(List<String> aiColors) {
   final result = <String>{};
@@ -748,9 +748,9 @@ String? _nearestBucket(String hex) {
   double minDist = double.infinity;
   for (final (_, bHex) in _kColorOptions) {
     final b = _parseHex(bHex);
-    final dr = (ai.red - b.red).toDouble();
-    final dg = (ai.green - b.green).toDouble();
-    final db = (ai.blue - b.blue).toDouble();
+    final dr = ai.r - b.r;
+    final dg = ai.g - b.g;
+    final db = ai.b - b.b;
     final dist = dr * dr + dg * dg + db * db;
     if (dist < minDist) {
       minDist = dist;

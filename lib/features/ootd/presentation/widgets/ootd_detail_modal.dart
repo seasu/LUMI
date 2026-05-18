@@ -13,10 +13,23 @@ import '../../domain/ootd_item.dart';
 import '../ootd_share_page.dart';
 
 void showOotdDetailModal(BuildContext context, OotdItem item) {
-  showDialog(
+  showGeneralDialog<void>(
     context: context,
-    barrierColor: LumiColors.overlayBarrier,
-    builder: (_) => _OotdDetailModal(item: item),
+    barrierDismissible: false,
+    barrierLabel: '',
+    barrierColor: Colors.transparent,
+    transitionDuration: const Duration(milliseconds: 360),
+    pageBuilder: (ctx, _, __) => _OotdDetailModal(item: item),
+    transitionBuilder: (ctx, anim, _, child) {
+      final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
+      return SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 1),
+          end: Offset.zero,
+        ).animate(curved),
+        child: child,
+      );
+    },
   );
 }
 
@@ -64,63 +77,115 @@ class _OotdDetailModal extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final screenHeight = MediaQuery.of(context).size.height;
+    final topPad = MediaQuery.of(context).padding.top;
+    final botPad = MediaQuery.of(context).padding.bottom;
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(
-        horizontal: LumiSpacing.md,
-        vertical: LumiSpacing.xl,
-      ),
-      child: Container(
-        constraints: BoxConstraints(maxHeight: screenHeight * 0.88),
-        decoration: BoxDecoration(
-          color: LumiColors.surface,
-          borderRadius: BorderRadius.circular(LumiRadii.xl),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Material(
+      color: LumiColors.base,
+      child: GestureDetector(
+        onVerticalDragEnd: (d) {
+          if ((d.primaryVelocity ?? 0) > 400) Navigator.of(context).pop();
+        },
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            // ── Photo hero ──────────────────────────────────────────────
-            Stack(
-              children: [
-                AspectRatio(
-                  aspectRatio: 3 / 4,
-                  child: ColoredBox(
-                    color: LumiColors.base,
-                    child: _ModalImage(itemId: item.id),
+            // 全幅照片
+            _ModalImage(itemId: item.id),
+
+            // 上方暗 scrim
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: topPad + 130,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      LumiColors.text.withValues(alpha: 0.68),
+                      LumiColors.text.withValues(alpha: 0.0),
+                    ],
                   ),
                 ),
+              ),
+            ),
 
-                // Gradient overlay — bottom third, makes text readable
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    height: 100,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          LumiColors.text.withValues(alpha: 0.0),
-                          LumiColors.text.withValues(alpha: 0.55),
-                        ],
-                      ),
-                    ),
+            // 下方暗 scrim
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: botPad + 280,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      LumiColors.text.withValues(alpha: 0.0),
+                      LumiColors.text.withValues(alpha: 0.88),
+                    ],
                   ),
                 ),
+              ),
+            ),
 
-                // Caption overlaid on photo
-                if (item.caption.isNotEmpty)
-                  Positioned(
-                    left: LumiSpacing.md,
-                    right: LumiSpacing.md,
-                    bottom: LumiSpacing.md,
-                    child: Text(
+            // 日期 chip — 左上
+            Positioned(
+              top: topPad + LumiSpacing.sm,
+              left: LumiSpacing.md,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: LumiSpacing.sm,
+                  vertical: LumiSpacing.xs,
+                ),
+                decoration: BoxDecoration(
+                  color: LumiColors.surface.withValues(alpha: 0.88),
+                  borderRadius: BorderRadius.circular(LumiRadii.pill),
+                ),
+                child: Text(
+                  _formatDate(item.date),
+                  style: const TextStyle(
+                    fontSize: LumiTypeScale.labelSm,
+                    fontWeight: FontWeight.w600,
+                    color: LumiColors.text,
+                  ),
+                ),
+              ),
+            ),
+
+            // 關閉按鈕 — 右上
+            Positioned(
+              top: topPad + LumiSpacing.xs,
+              right: LumiSpacing.md,
+              child: Material(
+                color: LumiColors.surface.withValues(alpha: 0.82),
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => Navigator.of(context).pop(),
+                  child: const Padding(
+                    padding: EdgeInsets.all(LumiSpacing.sm),
+                    child: Icon(Icons.close, size: 20, color: LumiColors.text),
+                  ),
+                ),
+              ),
+            ),
+
+            // 下方 overlay：文案 + 操作
+            Positioned(
+              bottom: botPad + LumiSpacing.lg,
+              left: LumiSpacing.md,
+              right: LumiSpacing.md,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 穿搭文案
+                  if (item.caption.isNotEmpty) ...[
+                    Text(
                       item.caption,
                       style: const TextStyle(
                         fontSize: LumiTypeScale.body,
@@ -131,55 +196,14 @@ class _OotdDetailModal extends ConsumerWidget {
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  ),
+                    const SizedBox(height: LumiSpacing.md),
+                  ],
 
-                // Date chip — top-left
-                Positioned(
-                  top: LumiSpacing.sm,
-                  left: LumiSpacing.sm,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: LumiSpacing.sm,
-                      vertical: LumiSpacing.xs,
-                    ),
-                    decoration: BoxDecoration(
-                      color: LumiColors.surface.withValues(alpha: 0.88),
-                      borderRadius: BorderRadius.circular(LumiRadii.pill),
-                    ),
-                    child: Text(
-                      _formatDate(item.date),
-                      style: const TextStyle(
-                        fontSize: LumiTypeScale.labelSm,
-                        color: LumiColors.text,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Close button — top-right
-                Positioned(
-                  top: LumiSpacing.sm,
-                  right: LumiSpacing.sm,
-                  child: _CloseButton(
-                    onTap: () => Navigator.of(context).pop(),
-                  ),
-                ),
-              ],
-            ),
-
-            // ── Actions ──────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                LumiSpacing.lg,
-                LumiSpacing.lg,
-                LumiSpacing.lg,
-                LumiSpacing.md,
-              ),
-              child: Column(
-                children: [
+                  // 分享按鈕
                   _ShareButton(item: item),
                   const SizedBox(height: LumiSpacing.xs),
+
+                  // 刪除按鈕
                   _DeleteButton(
                     onTap: () => _deleteItem(context, ref),
                   ),
@@ -188,31 +212,6 @@ class _OotdDetailModal extends ConsumerWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ── Close Button ──────────────────────────────────────────────────────────────
-
-class _CloseButton extends StatelessWidget {
-  const _CloseButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      customBorder: const CircleBorder(),
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: LumiColors.surface.withValues(alpha: 0.88),
-        ),
-        child: const Icon(Icons.close, size: 18, color: LumiColors.text),
       ),
     );
   }
@@ -247,8 +246,11 @@ class _Placeholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Icon(Icons.style_outlined, size: 56, color: LumiColors.subtext),
+    return const ColoredBox(
+      color: LumiColors.base,
+      child: Center(
+        child: Icon(Icons.style_outlined, size: 64, color: LumiColors.subtext),
+      ),
     );
   }
 }
@@ -261,7 +263,6 @@ class _ShareButton extends StatelessWidget {
   final OotdItem item;
 
   Future<void> _share(BuildContext context) async {
-    // Capture context-dependent objects before first await
     final messenger = ScaffoldMessenger.of(context);
     final nav = Navigator.of(context);
 
@@ -270,15 +271,28 @@ class _ShareButton extends StatelessWidget {
       if (file == null) throw Exception('找不到圖片');
       final bytes = await file.readAsBytes();
 
-      // Close the detail modal then open the shared share page
       nav.pop();
-      nav.push(MaterialPageRoute<void>(
-        builder: (_) => OotdSharePage(
-          photoBytes: bytes,
-          caption: item.caption,
-          date: item.date,
+      nav.push(
+        PageRouteBuilder<void>(
+          pageBuilder: (_, __, ___) => OotdSharePage(
+            photoBytes: bytes,
+            caption: item.caption,
+            date: item.date,
+          ),
+          transitionDuration: const Duration(milliseconds: 360),
+          transitionsBuilder: (_, anim, __, child) {
+            final curved =
+                CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
+            return SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 1),
+                end: Offset.zero,
+              ).animate(curved),
+              child: child,
+            );
+          },
         ),
-      ));
+      );
     } catch (_) {
       messenger.showSnackBar(
         const SnackBar(content: Text('無法開啟分享，找不到圖片')),
@@ -288,29 +302,35 @@ class _ShareButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _share(context),
-      child: Container(
-        width: double.infinity,
-        height: 52,
-        decoration: BoxDecoration(
-          gradient: LumiColors.buttonGradient,
-          borderRadius: BorderRadius.circular(LumiRadii.pill),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.ios_share, size: 18, color: LumiColors.onPrimary),
-            SizedBox(width: LumiSpacing.sm),
-            Text(
-              '分享穿搭',
-              style: TextStyle(
-                fontSize: LumiTypeScale.body,
-                fontWeight: FontWeight.w600,
-                color: LumiColors.onPrimary,
-              ),
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(LumiRadii.pill),
+      child: InkWell(
+        onTap: () => _share(context),
+        borderRadius: BorderRadius.circular(LumiRadii.pill),
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: LumiColors.buttonGradient,
+            borderRadius: BorderRadius.circular(LumiRadii.pill),
+          ),
+          child: const SizedBox(
+            height: 52,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.ios_share, size: 18, color: LumiColors.onPrimary),
+                SizedBox(width: LumiSpacing.sm),
+                Text(
+                  '分享穿搭',
+                  style: TextStyle(
+                    fontSize: LumiTypeScale.body,
+                    fontWeight: FontWeight.w600,
+                    color: LumiColors.onPrimary,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -331,10 +351,18 @@ class _DeleteButton extends StatelessWidget {
       height: 44,
       child: TextButton.icon(
         onPressed: onTap,
-        icon: const Icon(Icons.delete_outline, size: 16),
-        label: const Text('刪除這套穿搭'),
+        icon: Icon(
+          Icons.delete_outline,
+          size: 16,
+          color: LumiColors.onPrimary.withValues(alpha: 0.55),
+        ),
+        label: Text(
+          '刪除這套穿搭',
+          style: TextStyle(
+            color: LumiColors.onPrimary.withValues(alpha: 0.55),
+          ),
+        ),
         style: TextButton.styleFrom(
-          foregroundColor: LumiColors.subtext,
           textStyle: const TextStyle(
             fontSize: LumiTypeScale.labelMd,
             fontWeight: FontWeight.w400,

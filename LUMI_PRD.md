@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.46+135
+**前端版本 (Flutter App)：** 1.0.47+136
 **後端版本 (Cloud Functions)：** 1.0.12
 **開發框架：** Flutter (Cross-platform)
 
@@ -329,6 +329,7 @@ users/{userId}/
 | 2026-05-09 | 1.0.33+122 | 1.0.8 | 修正兩個 crash：（1）移除 `analyzeClothing` CF 中的 embedding 步驟（`text-embedding-004` v1beta 404 錯誤），改回傳空 embedding；（2）`SnapPage.initState()` 與 `OotdAddPage.initState()` 補 `reset()` 呼叫，防止跨 session 殘留狀態（`SnapDone`／`OotdAddResult`）導致頁面開啟後立即自動返回；`OotdAddNotifier.pickPhoto()` 加入 try-catch 防止相機不可用時 Future 拋出未捕捉例外 | Snap / OOTD / Cloud Functions |
 | 2026-05-09 | 1.0.32+121 | 1.0.8 | 全面本地化衣櫥資料：移除 Firestore wardrobe 集合，改以 JSON sidecar 檔案（`{uuid}.json`）與圖片並排存於 `lumi_wardrobe/`，由 iCloud/Google Auto Backup 自動備份；新增 `LocalWardrobeStore`（AsyncNotifier）、`WardrobeItem.toJson/fromJson`、`LocalImageStorage` JSON 方法；刪除 `WardrobeRepository`（Firestore）；Lumi-Check 改為 client 端 cosine similarity（新增 `similarity.dart`）取代 `compareClothing` CF；下拉重新整理觸發失敗項目重新分析；移除 `compareClothing` Cloud Function | Architecture / Storage / Check / Cloud Functions |
 | 2026-05-09 | 1.0.31+120 | 1.0.7 | 新增 `getServerInfo` Cloud Function（回傳 `version`）；新增 `CloudFunctionsService.getServerVersion()`；Debug Log 頁面改為 `ConsumerStatefulWidget`，AppBar 標題下方顯示 Server 版本號（頁面開啟後非同步載入）；新增 `functions/src/serverInfo.ts`；移除 `@google/generative-ai` SDK 改以直接 REST 呼叫 Gemini Developer API（`gemini-2.5-flash` / `gemini-embedding-exp-03-07`）；`defineString` 管理模型名稱，修正 `text-embedding-001`/`text-embedding-004` 404 根本原因；修正 iOS 登出時 `ref-after-disposed` crash | Cloud Functions / Debug / Auth |
+| 2026-05-18 | 1.0.47+136 | 1.0.12 | 穿搭 detail modal 改為 showGeneralDialog 全幅佈局（同衣櫥 detail）：slide-from-bottom 轉場、下滑關閉、照片滿版、操作按鈕壓在圖上。Share page 移除獨立 header bar，改為浮動「← 返回」膠囊按鈕；進入動畫也換成 slide-from-bottom 保持一致 | OOTD / UI |
 | 2026-05-18 | 1.0.46+135 | 1.0.12 | 衣物 detail modal 改為全幅 showGeneralDialog（slide-from-bottom）；下滑手勢關閉；編輯模式亦全幅佈局（比例式照片 header + 表單 Expanded）。OOTD 分享卡 ClipRRect 移至 RepaintBoundary 外側，修正分享圖片圓角白邊問題 | Wardrobe / OOTD / UI |
 | 2026-05-17 | 1.0.45+134 | 1.0.12 | 衣物 detail modal UI 重新設計：移除圖片下方白色資訊區塊，改以漸層 scrim 將類型、顏色、材質資訊疊壓在圖片上；編輯按鈕改為圖片右下角半透明鉛筆圓圈；Dialog 呈現全幅 3:4 照片 | Wardrobe / UI |
 | 2026-05-16 | 1.0.44+133 | 1.0.12 | 衣物 detail modal 新增行內編輯模式：可調整種類（6個預設選項 pill 選擇）、顏色（12色桶圓形色票多選）、材質（12種常用材質多選）；儲存後即時更新本機 JSON sidecar；AI 顏色自動對應最近色桶預選 | Wardrobe / UI |

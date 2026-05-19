@@ -27,9 +27,9 @@ class CheckNotifier extends Notifier<CheckState> {
     if (file == null) return;
 
     try {
-      state = const CheckAnalyzing();
-
       final bytes = await file.readAsBytes();
+      state = CheckAnalyzing(imageBytes: bytes);
+
       final imageBase64 = base64Encode(bytes);
       final mimeType = file.mimeType ?? 'image/jpeg';
 

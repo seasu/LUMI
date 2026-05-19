@@ -21,30 +21,7 @@ class CheckPage extends ConsumerStatefulWidget {
   ConsumerState<CheckPage> createState() => _CheckPageState();
 }
 
-class _CheckPageState extends ConsumerState<CheckPage>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _glowController;
-  late final Animation<double> _glowAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _glowController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..repeat(reverse: true);
-    _glowAnimation = CurvedAnimation(
-      parent: _glowController,
-      curve: Curves.easeInOut,
-    );
-  }
-
-  @override
-  void dispose() {
-    _glowController.dispose();
-    super.dispose();
-  }
-
+class _CheckPageState extends ConsumerState<CheckPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(checkProvider);
@@ -95,7 +72,9 @@ class _CheckPageState extends ConsumerState<CheckPage>
                   .check(source: ImageSource.gallery),
               onCancel: () => context.pop(),
             ),
-          CheckAnalyzing() => _GlowView(animation: _glowAnimation),
+          CheckAnalyzing(:final imageBytes) => _GlowView(
+              imageBytes: Uint8List.fromList(imageBytes),
+            ),
           CheckHighSimilarity(
             :final topMatches,
             :final newImageBytes,
@@ -268,44 +247,155 @@ class _IdleView extends StatelessWidget {
   }
 }
 
-// ── AI 分析中（Glow Orb）────────────────────────────────────────────────────
+// ── AI 分析中：照片背景 + Sonar 脈衝動畫 ────────────────────────────────────
 
-class _GlowView extends StatelessWidget {
-  const _GlowView({required this.animation});
-  final Animation<double> animation;
+class _GlowView extends StatefulWidget {
+  const _GlowView({required this.imageBytes});
+  final Uint8List imageBytes;
+
+  @override
+  State<_GlowView> createState() => _GlowViewState();
+}
+
+class _GlowViewState extends State<_GlowView>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+    duration: const Duration(milliseconds: 2200),
+    vsync: this,
+  )..repeat();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedBuilder(
-            animation: animation,
-            builder: (_, __) => Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    LumiColors.glow
-                        .withValues(alpha: 0.3 + animation.value * 0.7),
-                    Colors.transparent,
+    final botPad = MediaQuery.of(context).padding.bottom;
+    final hasPhoto = widget.imageBytes.isNotEmpty;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // ── 照片背景 ──────────────────────────────────────────────────────
+        if (hasPhoto)
+          Image.memory(widget.imageBytes, fit: BoxFit.cover)
+        else
+          const ColoredBox(color: LumiColors.base),
+
+        // ── 半透明暗色遮罩 ─────────────────────────────────────────────────
+        Container(color: LumiColors.text.withValues(alpha: 0.52)),
+
+        // ── Sonar 脈衝（3 圈交錯，1 控制器） ──────────────────────────────
+        Center(
+          child: AnimatedBuilder(
+            animation: _ctrl,
+            builder: (_, __) {
+              final v = _ctrl.value;
+              return SizedBox(
+                width: 220,
+                height: 220,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    _SonarRing(value: v),
+                    _SonarRing(value: (v + 1 / 3) % 1.0),
+                    _SonarRing(value: (v + 2 / 3) % 1.0),
+                    // 核心光點
+                    Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: LumiColors.glow,
+                        boxShadow: [
+                          BoxShadow(
+                            color: LumiColors.glow.withValues(alpha: 0.55),
+                            blurRadius: 18,
+                            spreadRadius: 4,
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
+              );
+            },
+          ),
+        ),
+
+        // ── 底部漸層 scrim + 文字 ──────────────────────────────────────────
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            padding: EdgeInsets.fromLTRB(
+              LumiSpacing.lg,
+              LumiSpacing.xl * 2,
+              LumiSpacing.lg,
+              botPad + LumiSpacing.xl,
+            ),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  LumiColors.text.withValues(alpha: 0.72),
+                  Colors.transparent,
+                ],
               ),
             ),
-          ),
-          const SizedBox(height: LumiSpacing.lg),
-          const Text(
-            'AI 比對中...',
-            style: TextStyle(
-              fontSize: LumiTypeScale.body,
-              color: LumiColors.subtext,
+            child: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'AI 比對中',
+                  style: TextStyle(
+                    fontSize: LumiTypeScale.titleLg,
+                    fontWeight: FontWeight.w700,
+                    color: LumiColors.onPrimary,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                SizedBox(height: LumiSpacing.sm),
+                Text(
+                  '正在從衣櫥中尋找相似款式...',
+                  style: TextStyle(
+                    fontSize: LumiTypeScale.labelMd,
+                    color: LumiColors.onPrimary,
+                    height: 1.5,
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SonarRing extends StatelessWidget {
+  const _SonarRing({required this.value});
+  final double value; // 0.0 → 1.0，循環
+
+  @override
+  Widget build(BuildContext context) {
+    final diameter = value * 200;
+    final opacity = (0.70 * (1 - value)).clamp(0.0, 0.70);
+    return SizedBox(
+      width: diameter,
+      height: diameter,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: LumiColors.glow.withValues(alpha: opacity),
+            width: 2,
+          ),
+        ),
       ),
     );
   }

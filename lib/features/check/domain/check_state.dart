@@ -9,7 +9,8 @@ class CheckIdle extends CheckState {
 }
 
 class CheckAnalyzing extends CheckState {
-  const CheckAnalyzing();
+  const CheckAnalyzing({this.imageBytes = const []});
+  final List<int> imageBytes;
 }
 
 /// similarity >= 0.8 for the top match

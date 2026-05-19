@@ -99,7 +99,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/check',
-        builder: (context, state) => const CheckPage(),
+        builder: (context, state) {
+          final src = state.uri.queryParameters['source'];
+          ImageSource? autoSource;
+          if (src == 'camera') autoSource = ImageSource.camera;
+          if (src == 'gallery') autoSource = ImageSource.gallery;
+          return CheckPage(autoSource: autoSource);
+        },
       ),
       GoRoute(
         path: '/ootd/add',

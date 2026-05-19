@@ -156,7 +156,7 @@ class _SnapFab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push('/check'),
+      onTap: () => _showCheckSheet(context),
       child: Container(
         width: 56,
         height: 56,
@@ -173,6 +173,107 @@ class _SnapFab extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showCheckSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: LumiColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(LumiRadii.xl),
+        ),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            LumiSpacing.lg,
+            LumiSpacing.md,
+            LumiSpacing.lg,
+            LumiSpacing.lg,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '似曾相識',
+                style: TextStyle(
+                  fontSize: LumiTypeScale.titleLg,
+                  fontWeight: FontWeight.w700,
+                  color: LumiColors.text,
+                ),
+              ),
+              const SizedBox(height: LumiSpacing.xs),
+              const Text(
+                '拍下想買的衣物，AI 立即為妳比對衣櫥',
+                style: TextStyle(
+                  fontSize: LumiTypeScale.labelMd,
+                  color: LumiColors.subtext,
+                ),
+              ),
+              const SizedBox(height: LumiSpacing.sm),
+              _CheckSourceOption(
+                icon: Icons.camera_alt_outlined,
+                label: '拍照',
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  context.push('/check?source=camera');
+                },
+              ),
+              _CheckSourceOption(
+                icon: Icons.photo_library_outlined,
+                label: '從相簿選取',
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  context.push('/check?source=gallery');
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CheckSourceOption extends StatelessWidget {
+  const _CheckSourceOption({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(LumiRadii.lg),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          vertical: LumiSpacing.md,
+          horizontal: LumiSpacing.sm,
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: LumiColors.primary, size: 24),
+            const SizedBox(width: LumiSpacing.md),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: LumiTypeScale.body,
+                fontWeight: FontWeight.w500,
+                color: LumiColors.text,
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -15,13 +15,27 @@ import '../domain/check_state.dart';
 import 'providers/check_provider.dart';
 
 class CheckPage extends ConsumerStatefulWidget {
-  const CheckPage({super.key});
+  const CheckPage({super.key, this.autoSource});
+
+  final ImageSource? autoSource;
 
   @override
   ConsumerState<CheckPage> createState() => _CheckPageState();
 }
 
 class _CheckPageState extends ConsumerState<CheckPage> {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.autoSource != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref
+            .read(checkProvider.notifier)
+            .check(source: widget.autoSource!);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(checkProvider);

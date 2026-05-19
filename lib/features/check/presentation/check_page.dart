@@ -154,7 +154,6 @@ class _IdleView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // 上半：購物情境色塊
         Container(
           height: MediaQuery.sizeOf(context).height * 0.40,
           decoration: const BoxDecoration(
@@ -172,7 +171,6 @@ class _IdleView extends StatelessWidget {
             ),
           ),
         ),
-        // 下半：白色圓角卡片
         Expanded(
           child: Container(
             width: double.infinity,
@@ -180,7 +178,12 @@ class _IdleView extends StatelessWidget {
               color: LumiColors.surface,
               borderRadius: BorderRadius.vertical(top: Radius.circular(LumiRadii.xl)),
             ),
-            padding: const EdgeInsets.fromLTRB(LumiSpacing.lg, LumiSpacing.lg + LumiSpacing.xs, LumiSpacing.lg, 0),
+            padding: const EdgeInsets.fromLTRB(
+              LumiSpacing.lg,
+              LumiSpacing.lg + LumiSpacing.xs,
+              LumiSpacing.lg,
+              0,
+            ),
             child: Column(
               children: [
                 const Text(
@@ -202,7 +205,6 @@ class _IdleView extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                // 相機插圖
                 Stack(
                   alignment: Alignment.center,
                   children: [
@@ -236,8 +238,7 @@ class _IdleView extends StatelessWidget {
                       side: BorderSide(
                           color: LumiColors.primary.withValues(alpha: 0.5)),
                       shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(LumiRadii.pill),
+                        borderRadius: BorderRadius.circular(LumiRadii.pill),
                       ),
                       textStyle: const TextStyle(
                         fontSize: LumiTypeScale.labelMd,
@@ -251,7 +252,10 @@ class _IdleView extends StatelessWidget {
                   onPressed: onCancel,
                   child: const Text(
                     '取消',
-                    style: TextStyle(fontSize: LumiTypeScale.body, color: LumiColors.subtext),
+                    style: TextStyle(
+                      fontSize: LumiTypeScale.body,
+                      color: LumiColors.subtext,
+                    ),
                   ),
                 ),
                 const SizedBox(height: LumiSpacing.lg),
@@ -285,7 +289,8 @@ class _GlowView extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    LumiColors.glow.withValues(alpha: 0.3 + animation.value * 0.7),
+                    LumiColors.glow
+                        .withValues(alpha: 0.3 + animation.value * 0.7),
                     Colors.transparent,
                   ],
                 ),
@@ -306,9 +311,9 @@ class _GlowView extends StatelessWidget {
   }
 }
 
-// ── 比對結果（≥50%）：側並側照片比較 ──────────────────────────────────────────
+// ── 比對結果（≥50%）：上新品 / 下衣櫥相似可滑動 ──────────────────────────────
 
-class _CompareView extends StatelessWidget {
+class _CompareView extends StatefulWidget {
   const _CompareView({
     required this.newImageBytes,
     required this.topMatches,
@@ -324,327 +329,284 @@ class _CompareView extends StatelessWidget {
   final VoidCallback onAdd;
 
   @override
+  State<_CompareView> createState() => _CompareViewState();
+}
+
+class _CompareViewState extends State<_CompareView> {
+  late final PageController _pageController;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final bestMatch = topMatches.first;
-    final pct = (bestMatch.similarity * 100).toStringAsFixed(0);
-    final secondaryMatches =
-        topMatches.length > 1 ? topMatches.sublist(1) : <MatchedClothingItem>[];
+    final screenH = MediaQuery.sizeOf(context).height;
+    final newItemH = (screenH * 0.24).clamp(160.0, 210.0);
+    final matchH = (screenH * 0.32).clamp(220.0, 290.0);
 
-    final accentColor = isHighSimilarity ? LumiColors.warning : LumiColors.primary;
-    final bannerText = isHighSimilarity
-        ? '衣櫥已有 $pct% 相似款，確認再入手！'
-        : '衣櫥有 $pct% 相似款，可以再比較看看。';
+    final topPct =
+        (widget.topMatches.first.similarity * 100).toStringAsFixed(0);
+    final accentColor =
+        widget.isHighSimilarity ? LumiColors.warning : LumiColors.primary;
+    final bannerText = widget.isHighSimilarity
+        ? '衣櫥已有 $topPct% 相似款，確認再入手！'
+        : '衣櫥有 $topPct% 相似款，可以再比較看看。';
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(
-        LumiSpacing.md,
-        LumiSpacing.md,
-        LumiSpacing.md,
-        LumiSpacing.xl,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── 側並側照片比較 ──────────────────────────────────────────────
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final cardWidth = (constraints.maxWidth - LumiSpacing.sm) / 2;
-              final cardHeight = cardWidth * 4 / 3;
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _NewPhotoCard(
-                    imageBytes: newImageBytes,
-                    width: cardWidth,
-                    height: cardHeight,
-                  ),
-                  const SizedBox(width: LumiSpacing.sm),
-                  _BestMatchCard(
-                    item: bestMatch,
-                    width: cardWidth,
-                    height: cardHeight,
-                    pct: pct,
-                    accentColor: accentColor,
-                  ),
-                ],
-              );
-            },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── 上：新品照片 ───────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            LumiSpacing.md, LumiSpacing.md, LumiSpacing.md, 0,
           ),
-
-          // ── 其他相似衣物縮圖 ────────────────────────────────────────────
-          if (secondaryMatches.isNotEmpty) ...[
-            const SizedBox(height: LumiSpacing.md),
-            const Text(
-              '其他相似衣物',
-              style: TextStyle(
-                fontSize: LumiTypeScale.labelMd,
-                color: LumiColors.subtext,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: LumiSpacing.sm),
-            SizedBox(
-              height: 96,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: secondaryMatches.length,
-                separatorBuilder: (_, __) => const SizedBox(width: LumiSpacing.sm),
-                itemBuilder: (_, i) =>
-                    _SecondaryMatchThumbnail(item: secondaryMatches[i]),
-              ),
-            ),
-          ],
-
-          const SizedBox(height: LumiSpacing.md),
-
-          // ── 摘要提示橫幅 ────────────────────────────────────────────────
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-              horizontal: LumiSpacing.md,
-              vertical: LumiSpacing.sm + 2,
-            ),
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(LumiRadii.lg),
-            ),
-            child: Text(
-              bannerText,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: LumiTypeScale.labelMd,
-                color: accentColor,
-                fontWeight: FontWeight.w600,
-                height: 1.5,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: LumiSpacing.lg),
-
-          // ── 操作按鈕 ────────────────────────────────────────────────────
-          Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: onReset,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: LumiColors.text,
-                    side: const BorderSide(color: LumiColors.subtext),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(LumiRadii.pill),
-                    ),
-                    padding:
-                        const EdgeInsets.symmetric(vertical: LumiSpacing.md),
-                  ),
-                  child: const Text('已經有了'),
+              const Text(
+                '想買的',
+                style: TextStyle(
+                  fontSize: LumiTypeScale.labelMd,
+                  color: LumiColors.subtext,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(width: LumiSpacing.sm),
-              Expanded(
-                child: _PrimaryButton(label: '加入新品', onTap: onAdd),
+              const SizedBox(height: LumiSpacing.xs),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(LumiRadii.lg),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: newItemH,
+                  child: Image.memory(
+                    widget.newImageBytes,
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-}
+        ),
 
-// ── 新品照片卡（左側）────────────────────────────────────────────────────────
+        const SizedBox(height: LumiSpacing.md),
 
-class _NewPhotoCard extends StatelessWidget {
-  const _NewPhotoCard({
-    required this.imageBytes,
-    required this.width,
-    required this.height,
-  });
-
-  final Uint8List imageBytes;
-  final double width;
-  final double height;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '想買的',
-            style: TextStyle(
-              fontSize: LumiTypeScale.labelMd,
-              color: LumiColors.subtext,
-              fontWeight: FontWeight.w500,
-            ),
+        // ── 下：標籤 + 頁碼 ────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.md),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '衣櫥最相似',
+                style: TextStyle(
+                  fontSize: LumiTypeScale.labelMd,
+                  color: LumiColors.subtext,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (widget.topMatches.length > 1)
+                Text(
+                  '${_currentPage + 1} / ${widget.topMatches.length}',
+                  style: const TextStyle(
+                    fontSize: LumiTypeScale.labelMd,
+                    color: LumiColors.subtext,
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(height: LumiSpacing.xs),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(LumiRadii.lg),
-            child: SizedBox(
-              width: width,
-              height: height,
-              child: Image.memory(imageBytes, fit: BoxFit.cover),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+        ),
 
-// ── 最相似衣物卡（右側，含漸層遮罩與徽章）────────────────────────────────────
+        const SizedBox(height: LumiSpacing.sm),
 
-class _BestMatchCard extends StatelessWidget {
-  const _BestMatchCard({
-    required this.item,
-    required this.width,
-    required this.height,
-    required this.pct,
-    required this.accentColor,
-  });
-
-  final MatchedClothingItem item;
-  final double width;
-  final double height;
-  final String pct;
-  final Color accentColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '衣櫥最相似',
-            style: TextStyle(
-              fontSize: LumiTypeScale.labelMd,
-              color: LumiColors.subtext,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: LumiSpacing.xs),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(LumiRadii.lg),
-            child: SizedBox(
-              width: width,
-              height: height,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  _SimilarCardImage(localFileName: item.localFileName),
-                  // Bottom scrim
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      height: 72,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [
-                            LumiColors.text.withValues(alpha: 0.65),
-                            Colors.transparent,
-                          ],
+        // ── 下：相似衣物可左右滑動卡片 ─────────────────────────────────────
+        SizedBox(
+          height: matchH,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: widget.topMatches.length,
+            onPageChanged: (i) => setState(() => _currentPage = i),
+            itemBuilder: (_, i) {
+              final item = widget.topMatches[i];
+              final itemPct =
+                  (item.similarity * 100).toStringAsFixed(0);
+              final badgeColor = item.similarity >= 0.8
+                  ? LumiColors.warning
+                  : LumiColors.primary;
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: LumiSpacing.md,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(LumiRadii.lg),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      _SimilarCardImage(localFileName: item.localFileName),
+                      // Bottom scrim
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 88,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [
+                                LumiColors.text.withValues(alpha: 0.70),
+                                Colors.transparent,
+                              ],
+                            ),
+                          ),
                         ),
                       ),
+                      // Category label
+                      if (item.category.isNotEmpty)
+                        Positioned(
+                          bottom: LumiSpacing.md,
+                          left: LumiSpacing.md,
+                          right: 80,
+                          child: Text(
+                            item.category,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: LumiTypeScale.titleSm,
+                              fontWeight: FontWeight.w700,
+                              color: LumiColors.onPrimary,
+                            ),
+                          ),
+                        ),
+                      // Similarity badge (top-right)
+                      Positioned(
+                        top: LumiSpacing.sm,
+                        right: LumiSpacing.sm,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: LumiSpacing.sm,
+                            vertical: LumiSpacing.xs,
+                          ),
+                          decoration: BoxDecoration(
+                            color: badgeColor,
+                            borderRadius:
+                                BorderRadius.circular(LumiRadii.pill),
+                          ),
+                          child: Text(
+                            '$itemPct% 相似',
+                            style: const TextStyle(
+                              fontSize: LumiTypeScale.labelSm,
+                              fontWeight: FontWeight.w700,
+                              color: LumiColors.onPrimary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+
+        // ── 分頁指示點 ───────────────────────────────────────────────────────
+        if (widget.topMatches.length > 1)
+          Padding(
+            padding: const EdgeInsets.only(top: LumiSpacing.sm),
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(widget.topMatches.length, (i) {
+                  final active = i == _currentPage;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: active ? 16 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(LumiRadii.pill),
+                      color: active
+                          ? LumiColors.primary
+                          : LumiColors.subtext.withValues(alpha: 0.30),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ),
+
+        const Spacer(),
+
+        // ── 摘要橫幅 + 雙按鈕 ───────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            LumiSpacing.md, 0, LumiSpacing.md, LumiSpacing.lg,
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: LumiSpacing.md,
+                  vertical: LumiSpacing.sm + 2,
+                ),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(LumiRadii.lg),
+                ),
+                child: Text(
+                  bannerText,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: LumiTypeScale.labelMd,
+                    color: accentColor,
+                    fontWeight: FontWeight.w600,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: LumiSpacing.md),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: widget.onReset,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: LumiColors.text,
+                        side: const BorderSide(color: LumiColors.subtext),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(LumiRadii.pill),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: LumiSpacing.md,
+                        ),
+                      ),
+                      child: const Text('已經有了'),
                     ),
                   ),
-                  // Category label
-                  if (item.category.isNotEmpty)
-                    Positioned(
-                      bottom: LumiSpacing.sm,
-                      left: LumiSpacing.sm,
-                      right: LumiSpacing.sm,
-                      child: Text(
-                        item.category,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: LumiTypeScale.labelSm,
-                          fontWeight: FontWeight.w600,
-                          color: LumiColors.onPrimary,
-                        ),
-                      ),
-                    ),
-                  // Similarity badge (top-right)
-                  Positioned(
-                    top: LumiSpacing.sm,
-                    right: LumiSpacing.sm,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: LumiSpacing.sm,
-                        vertical: LumiSpacing.xs,
-                      ),
-                      decoration: BoxDecoration(
-                        color: accentColor,
-                        borderRadius: BorderRadius.circular(LumiRadii.pill),
-                      ),
-                      child: Text(
-                        '$pct% 相似',
-                        style: const TextStyle(
-                          fontSize: LumiTypeScale.labelSm,
-                          fontWeight: FontWeight.w700,
-                          color: LumiColors.onPrimary,
-                        ),
-                      ),
+                  const SizedBox(width: LumiSpacing.sm),
+                  Expanded(
+                    child: _PrimaryButton(
+                      label: '加入新品',
+                      onTap: widget.onAdd,
                     ),
                   ),
                 ],
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── 次要相似衣物縮圖 ──────────────────────────────────────────────────────────
-
-class _SecondaryMatchThumbnail extends StatelessWidget {
-  const _SecondaryMatchThumbnail({required this.item});
-
-  final MatchedClothingItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final pct = (item.similarity * 100).toStringAsFixed(0);
-    return SizedBox(
-      width: 66,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(LumiRadii.md),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            _SimilarCardImage(localFileName: item.localFileName),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                color: LumiColors.text.withValues(alpha: 0.55),
-                child: Text(
-                  '$pct%',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: LumiTypeScale.labelSm,
-                    fontWeight: FontWeight.w700,
-                    color: LumiColors.onPrimary,
-                  ),
-                ),
-              ),
-            ),
-          ],
         ),
-      ),
+      ],
     );
   }
 }
@@ -662,7 +624,11 @@ class _SimilarCardImage extends StatelessWidget {
       return const ColoredBox(
         color: LumiColors.surface,
         child: Center(
-          child: Icon(Icons.checkroom_outlined, color: LumiColors.subtext, size: 36),
+          child: Icon(
+            Icons.checkroom_outlined,
+            color: LumiColors.subtext,
+            size: 36,
+          ),
         ),
       );
     }
@@ -674,7 +640,11 @@ class _SimilarCardImage extends StatelessWidget {
           return const ColoredBox(
             color: LumiColors.surface,
             child: Center(
-              child: Icon(Icons.checkroom_outlined, color: LumiColors.subtext, size: 36),
+              child: Icon(
+                Icons.checkroom_outlined,
+                color: LumiColors.subtext,
+                size: 36,
+              ),
             ),
           );
         }
@@ -684,7 +654,11 @@ class _SimilarCardImage extends StatelessWidget {
           errorBuilder: (_, __, ___) => const ColoredBox(
             color: LumiColors.surface,
             child: Center(
-              child: Icon(Icons.checkroom_outlined, color: LumiColors.subtext, size: 36),
+              child: Icon(
+                Icons.checkroom_outlined,
+                color: LumiColors.subtext,
+                size: 36,
+              ),
             ),
           ),
         );
@@ -722,7 +696,10 @@ class _NoneView extends StatelessWidget {
             '這件衣物在妳的衣櫥裡找不到相似款，\n可以安心入手！',
             textAlign: TextAlign.center,
             style: TextStyle(
-                fontSize: LumiTypeScale.labelMd, color: LumiColors.subtext, height: 1.6),
+              fontSize: LumiTypeScale.labelMd,
+              color: LumiColors.subtext,
+              height: 1.6,
+            ),
           ),
           const Spacer(),
           _PrimaryButton(label: '再比一件', onTap: onReset),

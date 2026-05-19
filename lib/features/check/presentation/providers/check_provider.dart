@@ -53,8 +53,8 @@ class CheckNotifier extends Notifier<CheckState> {
         );
       } else if (topSimilarity >= 0.5) {
         state = CheckMediumSimilarity(
-          similarity: topSimilarity,
-          matchedCategory: matches.first.category,
+          topMatches: matches,
+          newImageBytes: bytes,
         );
       } else {
         state = const CheckNone();

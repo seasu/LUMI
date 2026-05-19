@@ -10,6 +10,7 @@ import '../../../shared/constants/lumi_spacing.dart';
 import '../../../shared/constants/lumi_type_scale.dart';
 import '../../snap/presentation/providers/snap_provider.dart';
 import '../../wardrobe/data/wardrobe_item.dart';
+import '../domain/wardrobe_filter.dart';
 import 'providers/search_provider.dart';
 import 'widgets/filter_bar.dart';
 import 'widgets/wardrobe_card.dart';
@@ -214,8 +215,46 @@ class _WardrobeGrid extends StatelessWidget {
 
 // ── Empty state ───────────────────────────────────────────────────────────────
 
-class _EmptyState extends StatelessWidget {
+class _EmptyState extends ConsumerWidget {
   const _EmptyState();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final allItems = ref.watch(localWardrobeProvider).valueOrNull ?? [];
+    final filter = ref.watch(wardrobeFilterProvider);
+
+    // 真空衣櫥
+    if (allItems.isEmpty) {
+      return const _TrueEmptyState();
+    }
+
+    // 在「未分類」tab，但衣物已被 AI 移至各分類
+    if (filter.category == WardrobeFilter.uncategorizedOnly) {
+      return _FilteredEmptyState(
+        icon: Icons.auto_awesome_outlined,
+        iconColor: LumiColors.primary,
+        title: 'AI 辨識完成！',
+        subtitle: '衣物已歸類到對應分類\n快點擊下方按鈕去看看吧',
+        ctaLabel: '查看全部衣物',
+        onCta: () =>
+            ref.read(wardrobeFilterProvider.notifier).setCategory(null),
+      );
+    }
+
+    // 其他篩選條件無結果
+    return _FilteredEmptyState(
+      icon: Icons.search_off_outlined,
+      iconColor: LumiColors.subtext,
+      title: '這個分類目前沒有衣物',
+      subtitle: '換個分類看看，或清除篩選條件',
+      ctaLabel: '查看全部衣物',
+      onCta: () => ref.read(wardrobeFilterProvider.notifier).clearAll(),
+    );
+  }
+}
+
+class _TrueEmptyState extends StatelessWidget {
+  const _TrueEmptyState();
 
   @override
   Widget build(BuildContext context) {
@@ -228,7 +267,7 @@ class _EmptyState extends StatelessWidget {
             size: 76,
             color: LumiColors.subtext.withValues(alpha: 0.35),
           ),
-          const SizedBox(height: LumiSpacing.md + LumiSpacing.xs), // 20
+          const SizedBox(height: LumiSpacing.md + LumiSpacing.xs),
           const Text(
             '妳的衣櫥目前空空如也',
             textAlign: TextAlign.center,
@@ -246,6 +285,89 @@ class _EmptyState extends StatelessWidget {
               fontSize: LumiTypeScale.labelMd,
               color: LumiColors.subtext,
               height: 1.7,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilteredEmptyState extends StatelessWidget {
+  const _FilteredEmptyState({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.ctaLabel,
+    required this.onCta,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final String ctaLabel;
+  final VoidCallback onCta;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.expand(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 68,
+            color: iconColor.withValues(alpha: 0.40),
+          ),
+          const SizedBox(height: LumiSpacing.lg),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: LumiTypeScale.titleSm,
+              fontWeight: FontWeight.w800,
+              color: LumiColors.text,
+            ),
+          ),
+          const SizedBox(height: LumiSpacing.sm),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: LumiTypeScale.labelMd,
+              color: LumiColors.subtext,
+              height: 1.7,
+            ),
+          ),
+          const SizedBox(height: LumiSpacing.xl),
+          Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(LumiRadii.pill),
+            child: InkWell(
+              onTap: onCta,
+              borderRadius: BorderRadius.circular(LumiRadii.pill),
+              child: Ink(
+                decoration: BoxDecoration(
+                  gradient: LumiColors.buttonGradient,
+                  borderRadius: BorderRadius.circular(LumiRadii.pill),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: LumiSpacing.xl,
+                    vertical: LumiSpacing.sm + 2,
+                  ),
+                  child: Text(
+                    ctaLabel,
+                    style: const TextStyle(
+                      fontSize: LumiTypeScale.body,
+                      fontWeight: FontWeight.w600,
+                      color: LumiColors.onPrimary,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ],

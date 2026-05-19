@@ -26,12 +26,12 @@ class CheckHighSimilarity extends CheckState {
 /// 0.5 <= similarity < 0.8 for the top match
 class CheckMediumSimilarity extends CheckState {
   const CheckMediumSimilarity({
-    required this.similarity,
-    required this.matchedCategory,
+    required this.topMatches,
+    required this.newImageBytes,
   });
 
-  final double similarity;
-  final String matchedCategory;
+  final List<MatchedClothingItem> topMatches;
+  final List<int> newImageBytes;
 }
 
 /// similarity < 0.5

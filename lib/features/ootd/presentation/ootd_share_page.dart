@@ -90,101 +90,128 @@ class _OotdSharePageState extends State<OotdSharePage> {
   Widget build(BuildContext context) {
     final topPad = MediaQuery.of(context).padding.top;
     final botPad = MediaQuery.of(context).padding.bottom;
+    final keyboardUp = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Scaffold(
       backgroundColor: LumiColors.overlayDark,
-      resizeToAvoidBottomInset: false,
+      // Let Scaffold shrink body when keyboard appears — most reliable approach.
+      // The photo card (Expanded) absorbs the height change; the input row
+      // stays pinned directly above the keyboard at all times.
+      resizeToAvoidBottomInset: true,
       body: Stack(
-        fit: StackFit.expand,
         children: [
-          // ── Full-screen branded card ───────────────────────────────────
-          // ClipRRect is OUTSIDE RepaintBoundary — rounds corners on screen only.
-          // Captured PNG is rectangular (no white-corner artifact when shared).
-          RepaintBoundary(
-            key: _brandedCardKey,
-            child: _BrandedCard(
-              photoBytes: widget.photoBytes,
-              caption: _caption,
-              dateStr: _dateStr,
-            ),
-          ),
-
-          // ── Bottom overlay: gradient + caption input + action buttons ──
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Gradient scrim fading into dark panel
-                Container(
-                  height: 72,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        LumiColors.overlayDark.withValues(alpha: 0.0),
-                        LumiColors.overlayDark.withValues(alpha: 0.92),
-                      ],
+          // ── Main column layout ─────────────────────────────────────────
+          Column(
+            children: [
+              // Photo card — fills available space, shrinks when keyboard up
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    RepaintBoundary(
+                      key: _brandedCardKey,
+                      child: _BrandedCard(
+                        photoBytes: widget.photoBytes,
+                        caption: _caption,
+                        dateStr: _dateStr,
+                      ),
                     ),
-                  ),
-                ),
-                // Caption input row
-                ColoredBox(
-                  color: LumiColors.overlayDark.withValues(alpha: 0.92),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      LumiSpacing.md,
-                      LumiSpacing.sm,
-                      LumiSpacing.md,
-                      LumiSpacing.sm,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.edit_outlined,
-                          size: 18,
-                          color: LumiColors.onPrimary.withValues(alpha: 0.6),
+                    // Gradient scrim at card bottom (screen-only, not captured)
+                    if (!keyboardUp)
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 72,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                LumiColors.overlayDark.withValues(alpha: 0.0),
+                                LumiColors.overlayDark.withValues(alpha: 0.92),
+                              ],
+                            ),
+                          ),
                         ),
-                        const SizedBox(width: LumiSpacing.sm),
-                        Expanded(
-                          child: TextField(
-                            controller: _captionController,
-                            style: const TextStyle(
+                      ),
+                  ],
+                ),
+              ),
+
+              // Caption input — always visible above keyboard
+              ColoredBox(
+                color: LumiColors.overlayDark,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    LumiSpacing.md,
+                    LumiSpacing.sm,
+                    LumiSpacing.md,
+                    LumiSpacing.sm,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.edit_outlined,
+                        size: 18,
+                        color: LumiColors.onPrimary.withValues(alpha: 0.6),
+                      ),
+                      const SizedBox(width: LumiSpacing.sm),
+                      Expanded(
+                        child: TextField(
+                          controller: _captionController,
+                          style: const TextStyle(
+                            fontSize: LumiTypeScale.body,
+                            color: LumiColors.onPrimary,
+                            height: 1.4,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: '新增說明文字...',
+                            hintStyle: TextStyle(
                               fontSize: LumiTypeScale.body,
-                              color: LumiColors.onPrimary,
-                              height: 1.4,
+                              color:
+                                  LumiColors.onPrimary.withValues(alpha: 0.35),
                             ),
-                            decoration: InputDecoration(
-                              hintText: '新增說明文字...',
-                              hintStyle: TextStyle(
-                                fontSize: LumiTypeScale.body,
-                                color: LumiColors.onPrimary.withValues(alpha: 0.35),
-                              ),
-                              border: InputBorder.none,
-                              isDense: true,
-                              contentPadding: EdgeInsets.zero,
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          maxLines: 2,
+                          minLines: 1,
+                          onChanged: (v) => setState(() => _caption = v),
+                          cursorColor: LumiColors.glow,
+                        ),
+                      ),
+                      // Inline dismiss when keyboard is up
+                      if (keyboardUp) ...[
+                        const SizedBox(width: LumiSpacing.sm),
+                        GestureDetector(
+                          onTap: () => FocusScope.of(context).unfocus(),
+                          child: const Text(
+                            '完成',
+                            style: TextStyle(
+                              fontSize: LumiTypeScale.labelMd,
+                              fontWeight: FontWeight.w600,
+                              color: LumiColors.glow,
                             ),
-                            maxLines: 2,
-                            minLines: 1,
-                            onChanged: (v) => setState(() => _caption = v),
-                            cursorColor: LumiColors.glow,
                           ),
                         ),
                       ],
-                    ),
+                    ],
                   ),
                 ),
-                // Action buttons
+              ),
+
+              // Action buttons — hidden while keyboard is up
+              if (!keyboardUp)
                 ColoredBox(
                   color: LumiColors.overlayDark,
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(
                       LumiSpacing.md,
-                      LumiSpacing.sm,
+                      LumiSpacing.xs,
                       LumiSpacing.md,
                       LumiSpacing.md + botPad,
                     ),
@@ -207,8 +234,7 @@ class _OotdSharePageState extends State<OotdSharePage> {
                     ),
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
 
           // ── Floating header overlay ────────────────────────────────────
@@ -243,7 +269,8 @@ class _OotdSharePageState extends State<OotdSharePage> {
                             style: TextStyle(
                               fontSize: LumiTypeScale.labelMd,
                               fontWeight: FontWeight.w600,
-                              color: LumiColors.onPrimary.withValues(alpha: 0.9),
+                              color:
+                                  LumiColors.onPrimary.withValues(alpha: 0.9),
                             ),
                           ),
                         ],

@@ -90,6 +90,8 @@ class _OotdSharePageState extends State<OotdSharePage> {
   Widget build(BuildContext context) {
     final topPad = MediaQuery.of(context).padding.top;
     final botPad = MediaQuery.of(context).padding.bottom;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final keyboardUp = keyboardHeight > 0;
 
     return Scaffold(
       backgroundColor: LumiColors.overlayDark,
@@ -98,8 +100,6 @@ class _OotdSharePageState extends State<OotdSharePage> {
         fit: StackFit.expand,
         children: [
           // ── Full-screen branded card ───────────────────────────────────
-          // ClipRRect is OUTSIDE RepaintBoundary — rounds corners on screen only.
-          // Captured PNG is rectangular (no white-corner artifact when shared).
           RepaintBoundary(
             key: _brandedCardKey,
             child: _BrandedCard(
@@ -109,28 +109,31 @@ class _OotdSharePageState extends State<OotdSharePage> {
             ),
           ),
 
-          // ── Bottom overlay: gradient + caption input + action buttons ──
+          // ── Bottom overlay — slides above keyboard ──────────────────────
+          // Positioned.bottom tracks viewInsets.bottom so the panel stays
+          // visible above the keyboard at all times.
           Positioned(
-            bottom: 0,
+            bottom: keyboardHeight,
             left: 0,
             right: 0,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Gradient scrim fading into dark panel
-                Container(
-                  height: 72,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        LumiColors.overlayDark.withValues(alpha: 0.0),
-                        LumiColors.overlayDark.withValues(alpha: 0.92),
-                      ],
+                // Gradient scrim — hidden when keyboard is up (not needed)
+                if (!keyboardUp)
+                  Container(
+                    height: 72,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          LumiColors.overlayDark.withValues(alpha: 0.0),
+                          LumiColors.overlayDark.withValues(alpha: 0.92),
+                        ],
+                      ),
                     ),
                   ),
-                ),
                 // Caption input row
                 ColoredBox(
                   color: LumiColors.overlayDark.withValues(alpha: 0.92),
@@ -174,39 +177,55 @@ class _OotdSharePageState extends State<OotdSharePage> {
                             cursorColor: LumiColors.glow,
                           ),
                         ),
+                        // "完成" dismiss key shown inline when keyboard is up
+                        if (keyboardUp) ...[
+                          const SizedBox(width: LumiSpacing.sm),
+                          GestureDetector(
+                            onTap: () => FocusScope.of(context).unfocus(),
+                            child: const Text(
+                              '完成',
+                              style: TextStyle(
+                                fontSize: LumiTypeScale.labelMd,
+                                fontWeight: FontWeight.w600,
+                                color: LumiColors.glow,
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
                 ),
-                // Action buttons
-                ColoredBox(
-                  color: LumiColors.overlayDark,
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      LumiSpacing.md,
-                      LumiSpacing.sm,
-                      LumiSpacing.md,
-                      LumiSpacing.md + botPad,
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _OutlinedButton(
-                            label: '分享穿搭',
-                            onTap: () => _share(context),
+                // Action buttons — hidden while keyboard is up
+                if (!keyboardUp)
+                  ColoredBox(
+                    color: LumiColors.overlayDark,
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        LumiSpacing.md,
+                        LumiSpacing.sm,
+                        LumiSpacing.md,
+                        LumiSpacing.md + botPad,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _OutlinedButton(
+                              label: '分享穿搭',
+                              onTap: () => _share(context),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: LumiSpacing.sm),
-                        Expanded(
-                          child: _GradientButton(
-                            label: '完成',
-                            onTap: () => Navigator.of(context).pop(),
+                          const SizedBox(width: LumiSpacing.sm),
+                          Expanded(
+                            child: _GradientButton(
+                              label: '完成',
+                              onTap: () => Navigator.of(context).pop(),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),

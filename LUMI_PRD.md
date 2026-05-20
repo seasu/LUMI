@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.49+138
+**前端版本 (Flutter App)：** 1.0.50+139
 **後端版本 (Cloud Functions)：** 1.0.12
 **開發框架：** Flutter (Cross-platform)
 
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-05-20 | 1.0.50+139 | 1.0.12 | 精簡 OOTD 新增流程：(1) `ootd_add_page.dart` 移除中間編輯畫面，選完照片後直接 auto-save 並 slide-from-bottom 跳至分享頁；(2) `ootd_share_page.dart` 改為滿版（edge-to-edge）呈現，移除 16px 水平 padding，照片填滿全屏，底部 overlay 浮層加入說明文字輸入（即時更新卡片內 caption），修正 `_OutlinedButton` label hardcode 問題；(3) 「似曾相識」入口改為 bottom sheet 統一入口，選照片後全滿版 AI 分析動畫（照片背景 + sonar rings） | OOTD / Lumi-Check / UI / Share |
 | 2026-05-13 | 1.0.42+131 | 1.0.12 | UI/UX 全面重設計：(1) OOTD Detail Modal — caption 疊圖底部漸層、日期改 pill chip、分享按鈕改 gradient、刪除改低調文字；(2) Post-save 流程改兩段式：儲存成功預覽頁（亮色 base）顯示卡片縮圖與 hint，按「分享穿搭」才進入暗色互動編輯器（可縮放旋轉照片、拖拉文字），增加 `_EditorHintChip` 提示操作 | OOTD / UI / Share |
 | 2026-05-12 | 1.0.41+130 | 1.0.12 | 完成 OOTD 本地儲存遷移：`ootd_detail_modal.dart` 移除 `imageBase64`/`base64Decode`/`authStateProvider`/`ootdRepositoryProvider`，改用 `LocalOotdStorage.getImageFile(id)` + `FutureBuilder<File?>` 顯示圖片，刪除功能改為 `ootdLocalProvider.notifier.delete(id)`；OOTD 圖片壓縮改為 800×1200 Q70；衣櫥 Snap 圖片壓縮改為 1280×1280 Q75 | OOTD / Storage / Snap |
 | 2026-05-12 | 1.0.40+129 | 1.0.12 | 重寫穿搭分享畫面：以 `SizedBox(4:3)` + `RepaintBoundary` 修正超長照片破版；照片支援雙指縮放/旋轉（`GestureDetector onScaleUpdate` + `Matrix4 Transform`）；文字疊層可拖拉至任意位置；Lumi watermark 固定右下角；分享時以 `boundary.toImage(pixelRatio:3)` 合成 PNG 後透過 `Share.shareXFiles` 輸出 | OOTD / UI / Share |

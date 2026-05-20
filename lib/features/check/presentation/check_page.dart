@@ -40,223 +40,89 @@ class _CheckPageState extends ConsumerState<CheckPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(checkProvider);
     final isAnalyzing = state is CheckAnalyzing;
-    final canGoBackToIdle = state is! CheckIdle && state is! CheckAnalyzing;
+
+    // 分析中：移除 AppBar，讓照片全幅覆蓋整個畫面
+    final appBar = isAnalyzing
+        ? null
+        : AppBar(
+            backgroundColor: LumiColors.base,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            leading: TextButton(
+              onPressed: () => context.pop(),
+              child: const Text(
+                '< 回衣櫥',
+                style: TextStyle(
+                  fontSize: LumiTypeScale.labelMd,
+                  color: LumiColors.primary,
+                ),
+              ),
+            ),
+            leadingWidth: 100,
+            title: const Text(
+              '似曾相識',
+              style: TextStyle(
+                fontSize: LumiTypeScale.titleSm,
+                fontWeight: FontWeight.w700,
+                color: LumiColors.text,
+              ),
+            ),
+            centerTitle: true,
+          );
+
+    final Widget body = switch (state) {
+      // 短暫過渡：autoSource 觸發後立即轉 CheckAnalyzing，不顯示任何 UI
+      CheckIdle() => const SizedBox.expand(),
+
+      // 分析中：全幅照片背景，無 SafeArea 限制
+      CheckAnalyzing(:final imageBytes) => _GlowView(
+          imageBytes: Uint8List.fromList(imageBytes),
+        ),
+
+      // 結果：完成後 pop 回衣櫥
+      CheckHighSimilarity(:final topMatches, :final newImageBytes) => SafeArea(
+          child: _CompareView(
+            newImageBytes: Uint8List.fromList(newImageBytes),
+            topMatches: topMatches,
+            isHighSimilarity: true,
+            onReset: () => context.pop(),
+            onAdd: () {
+              context.pop();
+              context.push('/snap');
+            },
+          ),
+        ),
+      CheckMediumSimilarity(:final topMatches, :final newImageBytes) =>
+        SafeArea(
+          child: _CompareView(
+            newImageBytes: Uint8List.fromList(newImageBytes),
+            topMatches: topMatches,
+            isHighSimilarity: false,
+            onReset: () => context.pop(),
+            onAdd: () {
+              context.pop();
+              context.push('/snap');
+            },
+          ),
+        ),
+      CheckNone() => SafeArea(
+          child: _NoneView(onDone: () => context.pop()),
+        ),
+      CheckError(:final message) => SafeArea(
+          child: _ErrorView(
+            message: message,
+            onRetry: () => ref.read(checkProvider.notifier).check(
+                  source: widget.autoSource ?? ImageSource.camera,
+                ),
+          ),
+        ),
+    };
 
     return Scaffold(
       backgroundColor: LumiColors.base,
-      appBar: AppBar(
-        backgroundColor: LumiColors.base,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: TextButton(
-          onPressed: isAnalyzing
-              ? null
-              : () {
-                  if (canGoBackToIdle) {
-                    ref.read(checkProvider.notifier).reset();
-                  } else {
-                    context.pop();
-                  }
-                },
-          child: Text(
-            canGoBackToIdle ? '< 上一步' : '< 回衣櫥',
-            style: const TextStyle(
-              fontSize: LumiTypeScale.labelMd,
-              color: LumiColors.primary,
-            ),
-          ),
-        ),
-        leadingWidth: 100,
-        title: const Text(
-          '似曾相識',
-          style: TextStyle(
-            fontSize: LumiTypeScale.titleSm,
-            fontWeight: FontWeight.w700,
-            color: LumiColors.text,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: switch (state) {
-          CheckIdle() => _IdleView(
-              onCamera: () => ref.read(checkProvider.notifier).check(),
-              onGallery: () => ref
-                  .read(checkProvider.notifier)
-                  .check(source: ImageSource.gallery),
-              onCancel: () => context.pop(),
-            ),
-          CheckAnalyzing(:final imageBytes) => _GlowView(
-              imageBytes: Uint8List.fromList(imageBytes),
-            ),
-          CheckHighSimilarity(
-            :final topMatches,
-            :final newImageBytes,
-          ) =>
-            _CompareView(
-              newImageBytes: Uint8List.fromList(newImageBytes),
-              topMatches: topMatches,
-              isHighSimilarity: true,
-              onReset: () => ref.read(checkProvider.notifier).reset(),
-              onAdd: () {
-                ref.read(checkProvider.notifier).reset();
-                context.push('/snap');
-              },
-            ),
-          CheckMediumSimilarity(
-            :final topMatches,
-            :final newImageBytes,
-          ) =>
-            _CompareView(
-              newImageBytes: Uint8List.fromList(newImageBytes),
-              topMatches: topMatches,
-              isHighSimilarity: false,
-              onReset: () => ref.read(checkProvider.notifier).reset(),
-              onAdd: () {
-                ref.read(checkProvider.notifier).reset();
-                context.push('/snap');
-              },
-            ),
-          CheckNone() => _NoneView(
-              onReset: () => ref.read(checkProvider.notifier).reset(),
-            ),
-          CheckError(:final message) => _ErrorView(
-              message: message,
-              onRetry: () => ref.read(checkProvider.notifier).check(),
-            ),
-        },
-      ),
-    );
-  }
-}
-
-// ── Idle（入口）──────────────────────────────────────────────────────────────
-
-class _IdleView extends StatelessWidget {
-  const _IdleView({
-    required this.onCamera,
-    required this.onGallery,
-    required this.onCancel,
-  });
-
-  final VoidCallback onCamera;
-  final VoidCallback onGallery;
-  final VoidCallback onCancel;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          height: MediaQuery.sizeOf(context).height * 0.40,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [LumiColors.baseAlt, LumiColors.base],
-            ),
-          ),
-          child: const Center(
-            child: Icon(
-              Icons.shopping_bag_outlined,
-              size: 76,
-              color: LumiColors.primary,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              color: LumiColors.surface,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(LumiRadii.xl)),
-            ),
-            padding: const EdgeInsets.fromLTRB(
-              LumiSpacing.lg,
-              LumiSpacing.lg + LumiSpacing.xs,
-              LumiSpacing.lg,
-              0,
-            ),
-            child: Column(
-              children: [
-                const Text(
-                  '開始比對',
-                  style: TextStyle(
-                    fontSize: LumiTypeScale.titleLg,
-                    fontWeight: FontWeight.w700,
-                    color: LumiColors.text,
-                  ),
-                ),
-                const SizedBox(height: LumiSpacing.sm),
-                const Text(
-                  '拍下妳想買的衣物，Lumi 將立即為妳從衣櫥中\n尋找相似款式，讓妳購物更有底氣。',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: LumiTypeScale.labelMd,
-                    color: LumiColors.subtext,
-                    height: 1.6,
-                  ),
-                ),
-                const Spacer(),
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: 84,
-                      height: 84,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: LumiColors.glow.withValues(alpha: 0.22),
-                      ),
-                    ),
-                    const Icon(
-                      Icons.camera_alt_outlined,
-                      size: 40,
-                      color: LumiColors.primary,
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                _PrimaryButton(label: '開始拍照', onTap: onCamera),
-                const SizedBox(height: LumiSpacing.sm),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: OutlinedButton.icon(
-                    onPressed: onGallery,
-                    icon: const Icon(Icons.photo_library_outlined, size: 18),
-                    label: const Text('從相簿選取'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: LumiColors.primary,
-                      side: BorderSide(
-                          color: LumiColors.primary.withValues(alpha: 0.5)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(LumiRadii.pill),
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: LumiTypeScale.labelMd,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: LumiSpacing.xs),
-                TextButton(
-                  onPressed: onCancel,
-                  child: const Text(
-                    '取消',
-                    style: TextStyle(
-                      fontSize: LumiTypeScale.body,
-                      color: LumiColors.subtext,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: LumiSpacing.lg),
-              ],
-            ),
-          ),
-        ),
-      ],
+      extendBodyBehindAppBar: isAnalyzing,
+      appBar: appBar,
+      body: body,
     );
   }
 }
@@ -774,8 +640,8 @@ class _SimilarCardImage extends StatelessWidget {
 // ── 無相似 ────────────────────────────────────────────────────────────────────
 
 class _NoneView extends StatelessWidget {
-  const _NoneView({required this.onReset});
-  final VoidCallback onReset;
+  const _NoneView({required this.onDone});
+  final VoidCallback onDone;
 
   @override
   Widget build(BuildContext context) {
@@ -806,7 +672,7 @@ class _NoneView extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          _PrimaryButton(label: '再比一件', onTap: onReset),
+          _PrimaryButton(label: '返回衣櫥', onTap: onDone),
           const SizedBox(height: LumiSpacing.xl),
         ],
       ),

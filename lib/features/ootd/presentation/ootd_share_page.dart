@@ -75,11 +75,51 @@ class _OotdSharePageState extends State<OotdSharePage> {
         width: 1,
         height: 1,
       );
-      await Share.shareXFiles(
+      final result = await Share.shareXFiles(
         [XFile(file.path)],
         subject: '我的 Lumi 穿搭',
         sharePositionOrigin: shareOrigin,
       );
+
+      if (!mounted) return;
+      if (result.status == ShareResultStatus.success) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.check_circle_outline,
+                  color: LumiColors.onPrimary,
+                  size: 18,
+                ),
+                SizedBox(width: LumiSpacing.xs),
+                Text(
+                  '穿搭已成功分享！',
+                  style: TextStyle(
+                    fontSize: LumiTypeScale.body,
+                    fontWeight: FontWeight.w600,
+                    color: LumiColors.onPrimary,
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: LumiColors.primary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(LumiRadii.pill),
+            ),
+            margin: const EdgeInsets.fromLTRB(
+              LumiSpacing.xl,
+              0,
+              LumiSpacing.xl,
+              LumiSpacing.xl,
+            ),
+            duration: const Duration(seconds: 2),
+            elevation: 0,
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       messenger.showSnackBar(SnackBar(content: Text('分享失敗：$e')));

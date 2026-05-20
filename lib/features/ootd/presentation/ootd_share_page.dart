@@ -30,6 +30,21 @@ class OotdSharePage extends StatefulWidget {
 
 class _OotdSharePageState extends State<OotdSharePage> {
   final _brandedCardKey = GlobalKey();
+  late String _caption;
+  late final TextEditingController _captionController;
+
+  @override
+  void initState() {
+    super.initState();
+    _caption = widget.caption;
+    _captionController = TextEditingController(text: _caption);
+  }
+
+  @override
+  void dispose() {
+    _captionController.dispose();
+    super.dispose();
+  }
 
   String get _dateStr {
     final d = widget.date;
@@ -46,8 +61,7 @@ class _OotdSharePageState extends State<OotdSharePage> {
       if (boundary == null) throw Exception('截圖初始化失敗');
 
       final image = await boundary.toImage(pixelRatio: 3.0);
-      final byteData =
-          await image.toByteData(format: ui.ImageByteFormat.png);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) throw Exception('截圖轉換失敗');
 
       final bytes = byteData.buffer.asUint8List();
@@ -79,77 +93,131 @@ class _OotdSharePageState extends State<OotdSharePage> {
 
     return Scaffold(
       backgroundColor: LumiColors.overlayDark,
+      resizeToAvoidBottomInset: false,
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          // ── Main layout ────────────────────────────────────────────────
-          Positioned.fill(
-            child: Column(
-              children: [
-                // Space for floating header
-                SizedBox(height: topPad + LumiSpacing.xl + LumiSpacing.sm),
+          // ── Full-screen branded card ───────────────────────────────────
+          // ClipRRect is OUTSIDE RepaintBoundary — rounds corners on screen only.
+          // Captured PNG is rectangular (no white-corner artifact when shared).
+          RepaintBoundary(
+            key: _brandedCardKey,
+            child: _BrandedCard(
+              photoBytes: widget.photoBytes,
+              caption: _caption,
+              dateStr: _dateStr,
+            ),
+          ),
 
-                // Branded card
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: LumiSpacing.md,
-                    ),
-                    // ClipRRect is OUTSIDE RepaintBoundary — visual only on screen.
-                    // Captured PNG stays rectangular (no white-corner artifact on share).
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(LumiRadii.xl),
-                      child: RepaintBoundary(
-                        key: _brandedCardKey,
-                        child: _BrandedCard(
-                          photoBytes: widget.photoBytes,
-                          caption: widget.caption,
-                          dateStr: _dateStr,
-                        ),
-                      ),
+          // ── Bottom overlay: gradient + caption input + action buttons ──
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Gradient scrim fading into dark panel
+                Container(
+                  height: 72,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        LumiColors.overlayDark.withValues(alpha: 0.0),
+                        LumiColors.overlayDark.withValues(alpha: 0.92),
+                      ],
                     ),
                   ),
                 ),
-
-                const SizedBox(height: LumiSpacing.md),
-
-                // Action buttons
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    LumiSpacing.md,
-                    0,
-                    LumiSpacing.md,
-                    LumiSpacing.md + botPad,
+                // Caption input row
+                ColoredBox(
+                  color: LumiColors.overlayDark.withValues(alpha: 0.92),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      LumiSpacing.md,
+                      LumiSpacing.sm,
+                      LumiSpacing.md,
+                      LumiSpacing.sm,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.edit_outlined,
+                          size: 18,
+                          color: LumiColors.onPrimary.withValues(alpha: 0.6),
+                        ),
+                        const SizedBox(width: LumiSpacing.sm),
+                        Expanded(
+                          child: TextField(
+                            controller: _captionController,
+                            style: const TextStyle(
+                              fontSize: LumiTypeScale.body,
+                              color: LumiColors.onPrimary,
+                              height: 1.4,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: '新增說明文字...',
+                              hintStyle: TextStyle(
+                                fontSize: LumiTypeScale.body,
+                                color: LumiColors.onPrimary.withValues(alpha: 0.35),
+                              ),
+                              border: InputBorder.none,
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                            maxLines: 2,
+                            minLines: 1,
+                            onChanged: (v) => setState(() => _caption = v),
+                            cursorColor: LumiColors.glow,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _OutlinedButton(
-                          label: '分享穿搭',
-                          onTap: () => _share(context),
+                ),
+                // Action buttons
+                ColoredBox(
+                  color: LumiColors.overlayDark,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      LumiSpacing.md,
+                      LumiSpacing.sm,
+                      LumiSpacing.md,
+                      LumiSpacing.md + botPad,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _OutlinedButton(
+                            label: '分享穿搭',
+                            onTap: () => _share(context),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: LumiSpacing.sm),
-                      Expanded(
-                        child: _GradientButton(
-                          label: '完成',
-                          onTap: () => Navigator.of(context).pop(),
+                        const SizedBox(width: LumiSpacing.sm),
+                        Expanded(
+                          child: _GradientButton(
+                            label: '完成',
+                            onTap: () => Navigator.of(context).pop(),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
           ),
 
-          // ── Floating header ────────────────────────────────────────────
+          // ── Floating header overlay ────────────────────────────────────
           Positioned(
             top: topPad + LumiSpacing.xs,
             left: LumiSpacing.md,
             right: LumiSpacing.md,
             child: Row(
               children: [
-                // 返回按鈕（icon + 文字，符合 Lumi 設計規範）
                 Material(
                   color: LumiColors.onPrimary.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(LumiRadii.pill),
@@ -175,8 +243,7 @@ class _OotdSharePageState extends State<OotdSharePage> {
                             style: TextStyle(
                               fontSize: LumiTypeScale.labelMd,
                               fontWeight: FontWeight.w600,
-                              color:
-                                  LumiColors.onPrimary.withValues(alpha: 0.9),
+                              color: LumiColors.onPrimary.withValues(alpha: 0.9),
                             ),
                           ),
                         ],
@@ -184,10 +251,7 @@ class _OotdSharePageState extends State<OotdSharePage> {
                     ),
                   ),
                 ),
-
                 const Spacer(),
-
-                // 頁面標題
                 Text(
                   '分享穿搭',
                   style: TextStyle(
@@ -234,22 +298,22 @@ class _BrandedCard extends StatelessWidget {
                 right: 0,
                 bottom: 0,
                 child: Container(
-                  height: 100,
+                  height: 120,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
                         LumiColors.text.withValues(alpha: 0.0),
-                        LumiColors.text.withValues(alpha: 0.60),
+                        LumiColors.text.withValues(alpha: 0.65),
                       ],
                     ),
                   ),
                 ),
               ),
-              // "Lumi" gradient chip — top-left
+              // "Lumi" gradient chip — top-left (respects status bar)
               Positioned(
-                top: LumiSpacing.sm,
+                top: MediaQuery.of(context).padding.top + LumiSpacing.sm,
                 left: LumiSpacing.sm,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -271,29 +335,26 @@ class _BrandedCard extends StatelessWidget {
                   ),
                 ),
               ),
-              // Caption + date at bottom
+              // Caption + date at bottom of photo
               Positioned(
                 left: LumiSpacing.md,
-                right: LumiSpacing.sm,
-                bottom: LumiSpacing.xs,
+                right: LumiSpacing.md,
+                bottom: LumiSpacing.md,
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (caption.isNotEmpty) ...[
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          caption,
-                          style: const TextStyle(
-                            fontSize: LumiTypeScale.body,
-                            color: LumiColors.onPrimary,
-                            fontWeight: FontWeight.w500,
-                            height: 1.4,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        caption,
+                        style: const TextStyle(
+                          fontSize: LumiTypeScale.body,
+                          color: LumiColors.onPrimary,
+                          fontWeight: FontWeight.w500,
+                          height: 1.4,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: LumiSpacing.xs),
                     ],
@@ -352,9 +413,7 @@ class _BrandedCard extends StatelessWidget {
               Container(
                 height: 12,
                 width: 1,
-                margin: const EdgeInsets.symmetric(
-                  horizontal: LumiSpacing.sm,
-                ),
+                margin: const EdgeInsets.symmetric(horizontal: LumiSpacing.sm),
                 color: LumiColors.onPrimary.withValues(alpha: 0.3),
               ),
               const Text(
@@ -399,10 +458,10 @@ class _OutlinedButton extends StatelessWidget {
           ),
           borderRadius: BorderRadius.circular(LumiRadii.pill),
         ),
-        child: const Center(
+        child: Center(
           child: Text(
-            '分享穿搭',
-            style: TextStyle(
+            label,
+            style: const TextStyle(
               fontSize: LumiTypeScale.body,
               fontWeight: FontWeight.w600,
               color: LumiColors.onPrimary,

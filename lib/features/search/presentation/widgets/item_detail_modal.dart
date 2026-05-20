@@ -28,14 +28,21 @@ const _kMaterials = [
 
 // ── 進入點 ────────────────────────────────────────────────────────────────────
 
-void showItemDetailModal(BuildContext context, WardrobeItem item) {
+void showItemDetailModal(
+  BuildContext context,
+  List<WardrobeItem> items,
+  int initialIndex,
+) {
   showGeneralDialog<void>(
     context: context,
     barrierDismissible: false,
     barrierLabel: '',
     barrierColor: Colors.transparent,
     transitionDuration: const Duration(milliseconds: 360),
-    pageBuilder: (ctx, _, __) => _ItemDetailModal(item: item),
+    pageBuilder: (ctx, _, __) => _ItemDetailModal(
+      items: items,
+      initialIndex: initialIndex,
+    ),
     transitionBuilder: (ctx, anim, _, child) {
       final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
       return SlideTransition(
@@ -49,27 +56,42 @@ void showItemDetailModal(BuildContext context, WardrobeItem item) {
   );
 }
 
-// ── Modal ─────────────────────────────────────────────────────────────────────
+// ── Modal (manages PageView + edit state) ─────────────────────────────────────
 
 class _ItemDetailModal extends ConsumerStatefulWidget {
-  const _ItemDetailModal({required this.item});
-  final WardrobeItem item;
+  const _ItemDetailModal({required this.items, required this.initialIndex});
+  final List<WardrobeItem> items;
+  final int initialIndex;
 
   @override
   ConsumerState<_ItemDetailModal> createState() => _ItemDetailModalState();
 }
 
 class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
+  late final PageController _pageController;
+  late final List<WardrobeItem> _items;
+  late int _currentIndex;
   bool _editing = false;
   bool _saving = false;
   late String _editCategory;
   late Set<String> _editColors;
   late List<String> _editMaterials;
 
+  WardrobeItem get _currentItem => _items[_currentIndex];
+
   @override
   void initState() {
     super.initState();
-    _resetEdit(widget.item);
+    _items = List<WardrobeItem>.from(widget.items);
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+    _resetEdit(_items[widget.initialIndex]);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   void _resetEdit(WardrobeItem item) {
@@ -83,7 +105,7 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
     setState(() => _saving = true);
     try {
       await ref.read(localWardrobeProvider.notifier).updateUserEdit(
-            widget.item.docId,
+            _currentItem.docId,
             category: _editCategory,
             colors: _editColors.toList(),
             materials: _editMaterials,
@@ -96,17 +118,33 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
 
   @override
   Widget build(BuildContext context) {
-    final items = ref.watch(localWardrobeProvider).valueOrNull ?? [];
-    final item = items.firstWhere(
-      (i) => i.docId == widget.item.docId,
-      orElse: () => widget.item,
-    );
+    final liveStore = ref.watch(localWardrobeProvider).valueOrNull ?? [];
 
     return Material(
       color: LumiColors.base,
-      child: _editing
-          ? _buildEditLayout(context, item)
-          : _buildViewLayout(context, item),
+      child: PageView.builder(
+        controller: _pageController,
+        physics: _editing
+            ? const NeverScrollableScrollPhysics()
+            : const ClampingScrollPhysics(),
+        onPageChanged: (index) => setState(() {
+          _currentIndex = index;
+          _editing = false;
+          _resetEdit(_items[index]);
+        }),
+        itemCount: _items.length,
+        itemBuilder: (context, index) {
+          final liveItem = liveStore.firstWhere(
+            (i) => i.docId == _items[index].docId,
+            orElse: () => _items[index],
+          );
+
+          if (index == _currentIndex && _editing) {
+            return _buildEditLayout(context, liveItem);
+          }
+          return _buildViewLayout(context, liveItem);
+        },
+      ),
     );
   }
 
@@ -117,7 +155,6 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
     final botPad = MediaQuery.of(context).padding.bottom;
 
     return GestureDetector(
-      // 下滑手勢關閉
       onVerticalDragEnd: (d) {
         if ((d.primaryVelocity ?? 0) > 400) Navigator.of(context).pop();
       },
@@ -127,7 +164,7 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
           // 全幅照片
           _ModalImage(localFileName: item.localFileName),
 
-          // 上方暗 scrim（狀態列 + 關閉按鈕可讀性）
+          // 上方暗 scrim
           Positioned(
             top: 0,
             left: 0,
@@ -147,7 +184,7 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
             ),
           ),
 
-          // 下方暗 scrim（資訊疊層可讀性）
+          // 下方暗 scrim
           Positioned(
             bottom: 0,
             left: 0,
@@ -167,7 +204,7 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
             ),
           ),
 
-          // 日期 chip — 左上，尊重狀態列
+          // 日期 chip — 左上
           Positioned(
             top: topPad + LumiSpacing.sm,
             left: LumiSpacing.md,
@@ -218,7 +255,6 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // 分析狀態（未完成時）
                 if (!item.analyzed) ...[
                   _InfoPill(
                     item.analyzeError != null ? '分析失敗，可下拉重試' : 'AI 分析中…',
@@ -226,7 +262,6 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
                   const SizedBox(height: LumiSpacing.sm),
                 ],
 
-                // 材質 pills
                 if (item.analyzed && item.materials.isNotEmpty) ...[
                   Wrap(
                     spacing: LumiSpacing.xs,
@@ -238,7 +273,6 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
                   const SizedBox(height: LumiSpacing.sm),
                 ],
 
-                // 類型 + 顏色點 + 編輯按鈕
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -299,8 +333,8 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color:
-                                    LumiColors.onPrimary.withValues(alpha: 0.4),
+                                color: LumiColors.onPrimary
+                                    .withValues(alpha: 0.4),
                               ),
                             ),
                             child: const Icon(
@@ -331,7 +365,6 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
 
     return Column(
       children: [
-        // 照片 header — 比例式高度
         SizedBox(
           height: photoH + topPad,
           child: Stack(
@@ -339,7 +372,6 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
             children: [
               _ModalImage(localFileName: item.localFileName),
 
-              // 底部暗 scrim
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -359,7 +391,6 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
                 ),
               ),
 
-              // 「編輯辨識結果」gradient chip
               Positioned(
                 top: topPad + LumiSpacing.sm,
                 left: LumiSpacing.md,
@@ -383,7 +414,6 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
                 ),
               ),
 
-              // 關閉按鈕
               Positioned(
                 top: topPad + LumiSpacing.xs,
                 right: LumiSpacing.md,
@@ -395,8 +425,7 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
                     onTap: () => Navigator.of(context).pop(),
                     child: const Padding(
                       padding: EdgeInsets.all(LumiSpacing.sm),
-                      child:
-                          Icon(Icons.close, size: 20, color: LumiColors.text),
+                      child: Icon(Icons.close, size: 20, color: LumiColors.text),
                     ),
                   ),
                 ),
@@ -405,7 +434,6 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
           ),
         ),
 
-        // 編輯表單
         Expanded(
           child: ColoredBox(
             color: LumiColors.surface,
@@ -430,7 +458,6 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── 種類 ──────────────────────────────────────────────────────
         const _SectionLabel('種類'),
         const SizedBox(height: LumiSpacing.xs),
         SingleChildScrollView(
@@ -474,7 +501,6 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
 
         const SizedBox(height: LumiSpacing.lg),
 
-        // ── 顏色 ──────────────────────────────────────────────────────
         const _SectionLabel('顏色'),
         const SizedBox(height: LumiSpacing.xs),
         Wrap(
@@ -539,7 +565,6 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
 
         const SizedBox(height: LumiSpacing.lg),
 
-        // ── 材質 ──────────────────────────────────────────────────────
         const _SectionLabel('材質'),
         const SizedBox(height: LumiSpacing.xs),
         Wrap(
@@ -581,7 +606,6 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
 
         const SizedBox(height: LumiSpacing.xl),
 
-        // ── 操作按鈕 ──────────────────────────────────────────────────
         Row(
           children: [
             Expanded(

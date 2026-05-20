@@ -307,7 +307,7 @@ class _WardrobeGrid extends StatelessWidget {
         final item = items[index];
         return WardrobeCard(
           item: item,
-          onTap: () => showItemDetailModal(context, item),
+          onTap: () => showItemDetailModal(context, items, index),
         );
       },
     );
@@ -327,6 +327,19 @@ class _EmptyState extends ConsumerWidget {
     // 真空衣櫥
     if (allItems.isEmpty) {
       return const _TrueEmptyState();
+    }
+
+    // 在「我的最愛」tab 但尚未收藏任何衣物
+    if (filter.category == WardrobeFilter.favoritesFilter) {
+      return _FilteredEmptyState(
+        icon: Icons.favorite_border,
+        iconColor: LumiColors.warning,
+        title: '還沒有收藏的衣物',
+        subtitle: '點擊衣物卡片右下角的愛心，\n將喜歡的單品加入最愛',
+        ctaLabel: '查看全部衣物',
+        onCta: () =>
+            ref.read(wardrobeFilterProvider.notifier).setCategory(null),
+      );
     }
 
     // 在「未分類」tab，但衣物已被 AI 移至各分類

@@ -126,6 +126,15 @@ class LocalWardrobeNotifier extends AsyncNotifier<List<WardrobeItem>> {
     _log('updateUserEdit docId=$docId category=$category');
   }
 
+  /// Toggles the favourite flag on the item and persists immediately.
+  Future<void> toggleFavorite(String docId) async {
+    await _patch(
+      docId,
+      (item) => item.copyWith(isFavorite: !item.isFavorite),
+    );
+    _log('toggleFavorite docId=$docId');
+  }
+
   /// Rescans the wardrobe directory from disk (useful after OS backup restore).
   Future<void> reload() async {
     state = const AsyncLoading();

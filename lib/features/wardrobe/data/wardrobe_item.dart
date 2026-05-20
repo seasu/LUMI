@@ -11,6 +11,7 @@ class WardrobeItem {
     required this.createdAt,
     this.analyzed = true,
     this.analyzeError,
+    this.isFavorite = false,
   });
 
   /// Firestore document ID — UUID derived from the image file name.
@@ -27,6 +28,7 @@ class WardrobeItem {
 
   final bool analyzed;
   final String? analyzeError;
+  final bool isFavorite;
 
   bool get isPending => !analyzed && analyzeError == null;
   bool get isQuotaExceeded => analyzeError == 'quota_exceeded';
@@ -41,6 +43,7 @@ class WardrobeItem {
         'createdAt': createdAt.toUtc().toIso8601String(),
         'analyzed': analyzed,
         if (analyzeError != null) 'analyzeError': analyzeError,
+        if (isFavorite) 'isFavorite': true,
       };
 
   factory WardrobeItem.fromJson(Map<String, dynamic> d) => WardrobeItem(
@@ -61,6 +64,7 @@ class WardrobeItem {
         createdAt: DateTime.parse(d['createdAt'] as String),
         analyzed: d['analyzed'] as bool? ?? true,
         analyzeError: d['analyzeError'] as String?,
+        isFavorite: d['isFavorite'] as bool? ?? false,
       );
 
   Map<String, dynamic> toFirestore() => {
@@ -104,6 +108,7 @@ class WardrobeItem {
     bool? analyzed,
     String? analyzeError,
     bool clearAnalyzeError = false,
+    bool? isFavorite,
   }) =>
       WardrobeItem(
         docId: docId,
@@ -116,5 +121,6 @@ class WardrobeItem {
         analyzed: analyzed ?? this.analyzed,
         analyzeError:
             clearAnalyzeError ? null : (analyzeError ?? this.analyzeError),
+        isFavorite: isFavorite ?? this.isFavorite,
       );
 }

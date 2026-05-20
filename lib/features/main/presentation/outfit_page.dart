@@ -212,14 +212,21 @@ class _OotdGrid extends StatelessWidget {
         childAspectRatio: 0.72,
       ),
       itemCount: items.length,
-      itemBuilder: (context, index) => _OotdCard(item: items[index]),
+      itemBuilder: (context, index) =>
+          _OotdCard(item: items[index], allItems: items, index: index),
     );
   }
 }
 
 class _OotdCard extends ConsumerWidget {
-  const _OotdCard({required this.item});
+  const _OotdCard({
+    required this.item,
+    required this.allItems,
+    required this.index,
+  });
   final OotdItem item;
+  final List<OotdItem> allItems;
+  final int index;
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
@@ -262,7 +269,7 @@ class _OotdCard extends ConsumerWidget {
 
     return InkWell(
       borderRadius: BorderRadius.circular(LumiRadii.lg),
-      onTap: () => showOotdDetailModal(context, item),
+      onTap: () => showOotdDetailModal(context, allItems, index),
       onLongPress: () => _confirmDelete(context, ref),
       child: Container(
         decoration: BoxDecoration(

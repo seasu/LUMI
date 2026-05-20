@@ -307,7 +307,7 @@ class _WardrobeGrid extends StatelessWidget {
         final item = items[index];
         return WardrobeCard(
           item: item,
-          onTap: () => showItemDetailModal(context, item),
+          onTap: () => showItemDetailModal(context, items, index),
         );
       },
     );

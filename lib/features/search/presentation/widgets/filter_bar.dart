@@ -7,6 +7,7 @@ import '../providers/search_provider.dart';
 // 分類與 Gemini 輸出對應
 const _categories = <_CategoryTab>[
   _CategoryTab('全部', null),
+  _CategoryTab('我的最愛', WardrobeFilter.favoritesFilter),
   _CategoryTab('未分類', WardrobeFilter.uncategorizedOnly),
   _CategoryTab('連身裙', '連身裙'),
   _CategoryTab('上衣', '上衣'),
@@ -78,20 +79,53 @@ class _CategoryTabs extends ConsumerWidget {
                 border: Border(
                   bottom: BorderSide(
                     color: isSelected
-                        ? LumiColors.primary
+                        ? (tab.category == WardrobeFilter.favoritesFilter
+                            ? LumiColors.warning
+                            : LumiColors.primary)
                         : Colors.transparent,
                     width: 2.5,
                   ),
                 ),
               ),
-              child: Text(
-                tab.label,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? LumiColors.primary : LumiColors.subtext,
-                ),
-              ),
+              child: tab.category == WardrobeFilter.favoritesFilter
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isSelected
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          size: 13,
+                          color: isSelected
+                              ? LumiColors.warning
+                              : LumiColors.subtext,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          tab.label,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: isSelected
+                                ? LumiColors.warning
+                                : LumiColors.subtext,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Text(
+                      tab.label,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w500,
+                        color: isSelected
+                            ? LumiColors.primary
+                            : LumiColors.subtext,
+                      ),
+                    ),
             ),
           );
         },

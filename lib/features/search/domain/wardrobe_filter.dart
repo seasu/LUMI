@@ -10,6 +10,9 @@ class WardrobeFilter {
   /// Distinct from [category] `null` which means **no** category filter (顯示全部).
   static const String uncategorizedOnly = '';
 
+  /// Sentinel value for the "我的最愛" tab — filters to isFavorite == true.
+  static const String favoritesFilter = '_favorites_';
+
   final String keyword;
   final String? category;
   final List<String> colors;

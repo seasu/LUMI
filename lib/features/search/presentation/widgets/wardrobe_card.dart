@@ -85,12 +85,29 @@ class WardrobeCard extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 4),
-              Padding(
-                padding: const EdgeInsets.only(top: 1),
-                child: Icon(
-                  Icons.favorite_border,
-                  size: 13,
-                  color: LumiColors.subtext.withValues(alpha: 0.65),
+              GestureDetector(
+                onTap: () => ref
+                    .read(localWardrobeProvider.notifier)
+                    .toggleFavorite(item.docId),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 0, 0, 0),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    transitionBuilder: (child, anim) => ScaleTransition(
+                      scale: anim,
+                      child: child,
+                    ),
+                    child: Icon(
+                      item.isFavorite
+                          ? Icons.favorite
+                          : Icons.favorite_border,
+                      key: ValueKey(item.isFavorite),
+                      size: 15,
+                      color: item.isFavorite
+                          ? LumiColors.warning
+                          : LumiColors.subtext.withValues(alpha: 0.65),
+                    ),
+                  ),
                 ),
               ),
             ],

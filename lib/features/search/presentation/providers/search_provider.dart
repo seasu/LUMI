@@ -73,9 +73,12 @@ List<WardrobeItem> _applyFilter(
       if (!inCategory && !inMaterials) return false;
     }
 
-    // Category: null = no filter; '' = only empty category (未分類 / 待分析)
+    // Category: null = no filter; '' = only empty category (未分類 / 待分析);
+    // '_favorites_' = only favorited items.
     if (filter.category != null) {
-      if (filter.category!.isEmpty) {
+      if (filter.category == WardrobeFilter.favoritesFilter) {
+        if (!item.isFavorite) return false;
+      } else if (filter.category!.isEmpty) {
         if (item.category.isNotEmpty) return false;
       } else if (item.category != filter.category) {
         return false;

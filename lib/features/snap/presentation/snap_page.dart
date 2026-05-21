@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -26,7 +25,6 @@ class _SnapPageState extends ConsumerState<SnapPage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _glowController;
   late final Animation<double> _glowAnimation;
-  Timer? _autoReturnFromDoneTimer;
   bool _pickerTriggered = false;
 
   @override
@@ -57,7 +55,6 @@ class _SnapPageState extends ConsumerState<SnapPage>
 
   @override
   void dispose() {
-    _autoReturnFromDoneTimer?.cancel();
     _glowController.dispose();
     super.dispose();
   }
@@ -76,15 +73,46 @@ class _SnapPageState extends ConsumerState<SnapPage>
     final isSaving = snapState is SnapUploading;
 
     ref.listen<SnapState>(snapProvider, (previous, next) {
-      _autoReturnFromDoneTimer?.cancel();
-      _autoReturnFromDoneTimer = null;
-      if (next is SnapDone) {
-        _autoReturnFromDoneTimer =
-            Timer(const Duration(milliseconds: 2200), () {
-          if (!mounted) return;
-          if (ref.read(snapProvider) is! SnapDone) return;
-          _popToWardrobeUncategorized();
-        });
+      if (next is SnapDone && mounted) {
+        final messenger = ScaffoldMessenger.of(context);
+        final label = next.count == 1 ? '已成功加入 1 件衣物' : '已成功加入 ${next.count} 件衣物';
+        _popToWardrobeUncategorized();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.check_circle_outline,
+                  color: LumiColors.onPrimary,
+                  size: 18,
+                ),
+                const SizedBox(width: LumiSpacing.xs),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: LumiTypeScale.body,
+                    fontWeight: FontWeight.w600,
+                    color: LumiColors.onPrimary,
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: LumiColors.primary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(LumiRadii.pill),
+            ),
+            margin: const EdgeInsets.fromLTRB(
+              LumiSpacing.xl,
+              0,
+              LumiSpacing.xl,
+              LumiSpacing.xl,
+            ),
+            duration: const Duration(seconds: 3),
+            elevation: 0,
+          ),
+        );
       }
       // When launched with autoSource and user cancels the picker,
       // state returns to idle — pop back to avoid showing the idle UI.
@@ -140,13 +168,7 @@ class _SnapPageState extends ConsumerState<SnapPage>
               total: total,
               onCancel: () => _showCancelDialog(context),
             ),
-          SnapDone(:final count) => _DoneView(
-              count: count,
-              onBack: () {
-                _autoReturnFromDoneTimer?.cancel();
-                _popToWardrobeUncategorized();
-              },
-            ),
+          SnapDone() => const SizedBox.shrink(),
           SnapError(:final message) => _ErrorView(
               message: message,
               onRetry: () => ref.read(snapProvider.notifier).reset(),
@@ -614,77 +636,6 @@ class _SavingView extends StatelessWidget {
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── 加入完成 ──────────────────────────────────────────────────────────────────
-
-class _DoneView extends StatelessWidget {
-  const _DoneView({required this.count, required this.onBack});
-
-  final int count;
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.md),
-      child: Column(
-        children: [
-          const Spacer(flex: 2),
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  LumiColors.glow.withValues(alpha: 0.35),
-                  LumiColors.glow.withValues(alpha: 0.10),
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.58, 1.0],
-              ),
-            ),
-            child: const Icon(
-              Icons.check_rounded,
-              size: 56,
-              color: LumiColors.primary,
-            ),
-          ),
-          const SizedBox(height: LumiSpacing.lg),
-          const Text(
-            '加入完成！',
-            style: TextStyle(
-              fontSize: LumiTypeScale.headlineMd,
-              fontWeight: FontWeight.w700,
-              color: LumiColors.text,
-            ),
-          ),
-          const SizedBox(height: LumiSpacing.sm),
-          Text(
-            '已成功加入 $count 件衣物',
-            style: const TextStyle(
-              fontSize: LumiTypeScale.body,
-              color: LumiColors.text,
-            ),
-          ),
-          const SizedBox(height: LumiSpacing.sm),
-          const Text(
-            'AI 正在為妳分析衣物；即將帶妳前往「未分類」查看。',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: LumiTypeScale.labelMd,
-              color: LumiColors.subtext,
-              height: 1.5,
-            ),
-          ),
-          const Spacer(flex: 3),
-          _PrimaryButton(label: '立即回到衣櫥', onTap: onBack),
-          const SizedBox(height: LumiSpacing.xl),
         ],
       ),
     );

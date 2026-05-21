@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
@@ -20,17 +22,23 @@ class LocalImageStorage {
     return dir;
   }
 
-  /// Saves [bytes] to the wardrobe directory.
-  /// Returns the file name (e.g. `"abc123.jpg"`), which should be stored in Firestore.
+  /// Saves [bytes] to the wardrobe directory, compressing to JPEG first.
+  /// Returns the file name (e.g. `"abc123.jpg"`).
   static Future<String> saveImage(
     List<int> bytes, {
     String extension = 'jpg',
   }) async {
     final dir = await _wardrobeDir();
-    final ext = extension.startsWith('.') ? extension.substring(1) : extension;
-    final fileName = '${_uuid.v4()}.$ext';
+    final compressed = await FlutterImageCompress.compressWithList(
+      Uint8List.fromList(bytes),
+      minWidth: 1920,
+      minHeight: 1920,
+      quality: 82,
+      format: CompressFormat.jpeg,
+    );
+    final fileName = '${_uuid.v4()}.jpg';
     final file = File('${dir.path}/$fileName');
-    await file.writeAsBytes(bytes, flush: true);
+    await file.writeAsBytes(compressed, flush: true);
     return fileName;
   }
 

@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
@@ -20,10 +22,18 @@ class LocalOotdStorage {
   }
 
   /// Saves image bytes and returns the generated [id] (filename without ext).
+  /// Compresses to JPEG (quality 82, max 1920px) before writing.
   static Future<String> saveImage(List<int> bytes) async {
     final dir = await _dir();
     final id = _uuid.v4().replaceAll('-', '');
-    await File('${dir.path}/$id.jpg').writeAsBytes(bytes, flush: true);
+    final compressed = await FlutterImageCompress.compressWithList(
+      Uint8List.fromList(bytes),
+      minWidth: 1440,
+      minHeight: 1920,
+      quality: 82,
+      format: CompressFormat.jpeg,
+    );
+    await File('${dir.path}/$id.jpg').writeAsBytes(compressed, flush: true);
     return id;
   }
 

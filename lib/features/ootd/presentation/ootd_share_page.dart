@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -64,10 +65,18 @@ class _OotdSharePageState extends State<OotdSharePage> {
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) throw Exception('截圖轉換失敗');
 
-      final bytes = byteData.buffer.asUint8List();
+      final pngBytes = byteData.buffer.asUint8List();
+      final compressed = await FlutterImageCompress.compressWithList(
+        pngBytes,
+        minWidth: 1080,
+        minHeight: 1920,
+        quality: 85,
+        format: CompressFormat.jpeg,
+      );
+
       final tmp = await getTemporaryDirectory();
-      final file = File('${tmp.path}/lumi_ootd_share.png');
-      await file.writeAsBytes(bytes);
+      final file = File('${tmp.path}/lumi_ootd_share.jpg');
+      await file.writeAsBytes(compressed);
 
       if (!mounted) return;
       final shareOrigin = Rect.fromCenter(

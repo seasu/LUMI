@@ -88,32 +88,38 @@ class _CategoryTabs extends ConsumerWidget {
                 ),
               ),
               child: tab.category == WardrobeFilter.favoritesFilter
-                  ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isSelected
-                              ? Icons.favorite
-                              : Icons.favorite_border,
-                          size: 13,
-                          color: isSelected
-                              ? LumiColors.warning
-                              : LumiColors.subtext,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          tab.label,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: isSelected
-                                ? LumiColors.warning
-                                : LumiColors.subtext,
+                  ? Text.rich(
+                      TextSpan(
+                        children: [
+                          WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 4),
+                              child: Icon(
+                                isSelected
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                size: 13,
+                                color: isSelected
+                                    ? LumiColors.warning
+                                    : LumiColors.subtext,
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+                          TextSpan(
+                            text: tab.label,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? LumiColors.warning
+                                  : LumiColors.subtext,
+                            ),
+                          ),
+                        ],
+                      ),
                     )
                   : Text(
                       tab.label,

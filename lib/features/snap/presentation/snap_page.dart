@@ -15,7 +15,8 @@ import '../domain/snap_state.dart';
 import 'providers/snap_provider.dart';
 
 class SnapPage extends ConsumerStatefulWidget {
-  const SnapPage({super.key});
+  const SnapPage({super.key, this.autoSource});
+  final ImageSource? autoSource;
 
   @override
   ConsumerState<SnapPage> createState() => _SnapPageState();
@@ -40,6 +41,16 @@ class _SnapPageState extends ConsumerState<SnapPage>
       parent: _glowController,
       curve: Curves.easeInOut,
     );
+    if (widget.autoSource != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (widget.autoSource == ImageSource.camera) {
+          ref.read(snapProvider.notifier).takePhoto();
+        } else {
+          ref.read(snapProvider.notifier).pickImages();
+        }
+      });
+    }
   }
 
   @override

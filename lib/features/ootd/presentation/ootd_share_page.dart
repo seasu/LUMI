@@ -70,7 +70,7 @@ class _OotdSharePageState extends State<OotdSharePage> {
         pngBytes,
         minWidth: 1080,
         minHeight: 1920,
-        quality: 85,
+        quality: 90,
         format: CompressFormat.jpeg,
       );
 

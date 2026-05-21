@@ -78,6 +78,11 @@ class SearchPage extends ConsumerWidget {
             Positioned(
               bottom: LumiSpacing.lg,
               right: LumiSpacing.md,
+              child: _AddFab(),
+            ),
+            Positioned(
+              bottom: LumiSpacing.lg + 56 + 12,
+              right: LumiSpacing.md + 4, // center 48px over 56px FAB
               child: _SnapFab(),
             ),
           ],
@@ -107,50 +112,107 @@ class _WardrobeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(
         LumiSpacing.md,
-        LumiSpacing.sm + LumiSpacing.xs, // 12 — visual top margin
+        LumiSpacing.sm + LumiSpacing.xs,
         LumiSpacing.md,
         LumiSpacing.sm,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const Expanded(
-            child: Text(
-              '我的衣櫥',
-              style: TextStyle(
-                fontSize: LumiTypeScale.headlineMd,
-                fontWeight: FontWeight.w800,
-                color: LumiColors.text,
-              ),
-            ),
-          ),
-          TextButton.icon(
-            onPressed: () => context.push('/snap'),
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            icon: const Icon(Icons.add, size: 18, color: LumiColors.primary),
-            label: const Text(
-              '加入新品',
-              style: TextStyle(
-                fontSize: LumiTypeScale.labelMd,
-                fontWeight: FontWeight.w600,
-                color: LumiColors.primary,
-              ),
-            ),
-          ),
-        ],
+      child: Text(
+        '我的衣櫥',
+        style: TextStyle(
+          fontSize: LumiTypeScale.headlineMd,
+          fontWeight: FontWeight.w800,
+          color: LumiColors.text,
+        ),
       ),
     );
   }
 }
 
-// ── Snap FAB ──────────────────────────────────────────────────────────────────
+// ── Add FAB (主動作) ───────────────────────────────────────────────────────────
+
+class _AddFab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _showAddSheet(context),
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: const BoxDecoration(
+          gradient: LumiColors.buttonGradient,
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.add, color: LumiColors.onPrimary, size: 28),
+      ),
+    );
+  }
+
+  void _showAddSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: LumiColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(LumiRadii.xl),
+        ),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            LumiSpacing.lg,
+            LumiSpacing.md,
+            LumiSpacing.lg,
+            LumiSpacing.lg,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '加入新品',
+                style: TextStyle(
+                  fontSize: LumiTypeScale.titleLg,
+                  fontWeight: FontWeight.w700,
+                  color: LumiColors.text,
+                ),
+              ),
+              const SizedBox(height: LumiSpacing.xs),
+              const Text(
+                '選擇照片來源，AI 將自動辨識並加入衣櫥',
+                style: TextStyle(
+                  fontSize: LumiTypeScale.labelMd,
+                  color: LumiColors.subtext,
+                ),
+              ),
+              const SizedBox(height: LumiSpacing.sm),
+              _CheckSourceOption(
+                icon: Icons.camera_alt_outlined,
+                label: '拍照',
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  context.push('/snap?source=camera');
+                },
+              ),
+              _CheckSourceOption(
+                icon: Icons.photo_library_outlined,
+                label: '從相簿選取',
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  context.push('/snap?source=gallery');
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Snap FAB (副動作) ──────────────────────────────────────────────────────────
 
 class _SnapFab extends StatelessWidget {
   @override
@@ -158,8 +220,8 @@ class _SnapFab extends StatelessWidget {
     return GestureDetector(
       onTap: () => _showCheckSheet(context),
       child: Container(
-        width: 56,
-        height: 56,
+        width: 48,
+        height: 48,
         decoration: const BoxDecoration(
           gradient: LumiColors.buttonGradient,
           shape: BoxShape.circle,
@@ -169,7 +231,7 @@ class _SnapFab extends StatelessWidget {
             '似',
             style: TextStyle(
               color: LumiColors.onPrimary,
-              fontSize: LumiTypeScale.titleSm,
+              fontSize: LumiTypeScale.labelMd,
               fontWeight: FontWeight.w700,
             ),
           ),

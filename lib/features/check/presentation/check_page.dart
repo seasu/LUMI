@@ -36,6 +36,41 @@ class _CheckPageState extends ConsumerState<CheckPage> {
     }
   }
 
+  Future<void> _addToWardrobe() async {
+    final messenger = ScaffoldMessenger.of(context);
+    await ref.read(checkProvider.notifier).addToWardrobe();
+    if (!mounted) return;
+    context.pop();
+    messenger.showSnackBar(
+      SnackBar(
+        content: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle_outline,
+                color: LumiColors.onPrimary, size: 18),
+            SizedBox(width: LumiSpacing.xs),
+            Text(
+              '已成功加入衣櫥',
+              style: TextStyle(
+                fontSize: LumiTypeScale.body,
+                fontWeight: FontWeight.w600,
+                color: LumiColors.onPrimary,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: LumiColors.primary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(LumiRadii.pill)),
+        margin: const EdgeInsets.fromLTRB(
+            LumiSpacing.xl, 0, LumiSpacing.xl, LumiSpacing.xl),
+        duration: const Duration(seconds: 3),
+        elevation: 0,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(checkProvider);
@@ -86,10 +121,7 @@ class _CheckPageState extends ConsumerState<CheckPage> {
             topMatches: topMatches,
             isHighSimilarity: true,
             onReset: () => context.pop(),
-            onAdd: () {
-              context.pop();
-              context.push('/snap');
-            },
+            onAdd: () => _addToWardrobe(),
           ),
         ),
       CheckMediumSimilarity(:final topMatches, :final newImageBytes) =>
@@ -99,10 +131,7 @@ class _CheckPageState extends ConsumerState<CheckPage> {
             topMatches: topMatches,
             isHighSimilarity: false,
             onReset: () => context.pop(),
-            onAdd: () {
-              context.pop();
-              context.push('/snap');
-            },
+            onAdd: () => _addToWardrobe(),
           ),
         ),
       CheckNone() => SafeArea(
@@ -296,7 +325,7 @@ class _CompareView extends StatefulWidget {
   final List<MatchedClothingItem> topMatches;
   final bool isHighSimilarity;
   final VoidCallback onReset;
-  final VoidCallback onAdd;
+  final Future<void> Function() onAdd;
 
   @override
   State<_CompareView> createState() => _CompareViewState();
@@ -305,6 +334,7 @@ class _CompareView extends StatefulWidget {
 class _CompareViewState extends State<_CompareView> {
   late final PageController _pageController;
   int _currentPage = 0;
+  bool _adding = false;
 
   @override
   void initState() {
@@ -567,8 +597,15 @@ class _CompareViewState extends State<_CompareView> {
                   const SizedBox(width: LumiSpacing.sm),
                   Expanded(
                     child: _PrimaryButton(
-                      label: '加入新品',
-                      onTap: widget.onAdd,
+                      label: _adding ? '加入中...' : '加入新品',
+                      onTap: _adding
+                          ? null
+                          : () {
+                              setState(() => _adding = true);
+                              widget.onAdd().then((_) {
+                                if (mounted) setState(() => _adding = false);
+                              });
+                            },
                     ),
                   ),
                 ],

@@ -27,6 +27,7 @@ class _SnapPageState extends ConsumerState<SnapPage>
   late final AnimationController _glowController;
   late final Animation<double> _glowAnimation;
   Timer? _autoReturnFromDoneTimer;
+  bool _pickerTriggered = false;
 
   @override
   void initState() {
@@ -44,6 +45,7 @@ class _SnapPageState extends ConsumerState<SnapPage>
     if (widget.autoSource != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
+        _pickerTriggered = true;
         if (widget.autoSource == ImageSource.camera) {
           ref.read(snapProvider.notifier).takePhoto();
         } else {
@@ -84,6 +86,14 @@ class _SnapPageState extends ConsumerState<SnapPage>
           _popToWardrobeUncategorized();
         });
       }
+      // When launched with autoSource and user cancels the picker,
+      // state returns to idle — pop back to avoid showing the idle UI.
+      if (_pickerTriggered &&
+          previous is! SnapIdle &&
+          next is SnapIdle &&
+          mounted) {
+        context.pop();
+      }
     });
 
     return Scaffold(
@@ -110,6 +120,9 @@ class _SnapPageState extends ConsumerState<SnapPage>
       ),
       body: SafeArea(
         child: switch (snapState) {
+          // When arriving with autoSource, the source was already chosen in the
+          // bottom sheet — hide the idle UI while the picker is loading.
+          SnapIdle() when widget.autoSource != null => const SizedBox.shrink(),
           SnapIdle() => _IdleView(
               onCamera: () => ref.read(snapProvider.notifier).takePhoto(),
               onLibrary: () => ref.read(snapProvider.notifier).pickImages(),

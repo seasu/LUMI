@@ -18,10 +18,12 @@ class CheckHighSimilarity extends CheckState {
   const CheckHighSimilarity({
     required this.topMatches,
     required this.newImageBytes,
+    required this.analysisResult,
   });
 
   final List<MatchedClothingItem> topMatches;
   final List<int> newImageBytes;
+  final AnalyzeClothingResult analysisResult;
 }
 
 /// 0.5 <= similarity < 0.8 for the top match
@@ -29,10 +31,12 @@ class CheckMediumSimilarity extends CheckState {
   const CheckMediumSimilarity({
     required this.topMatches,
     required this.newImageBytes,
+    required this.analysisResult,
   });
 
   final List<MatchedClothingItem> topMatches;
   final List<int> newImageBytes;
+  final AnalyzeClothingResult analysisResult;
 }
 
 /// similarity < 0.5

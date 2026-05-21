@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/storage/local_image_storage.dart';
 import '../../../../core/storage/local_wardrobe_store.dart';
 import '../../../../features/snap/data/cloud_functions_service.dart';
 import '../../domain/check_state.dart';
@@ -50,11 +51,13 @@ class CheckNotifier extends Notifier<CheckState> {
         state = CheckHighSimilarity(
           topMatches: matches,
           newImageBytes: bytes,
+          analysisResult: result,
         );
       } else if (topSimilarity >= 0.5) {
         state = CheckMediumSimilarity(
           topMatches: matches,
           newImageBytes: bytes,
+          analysisResult: result,
         );
       } else {
         state = const CheckNone();
@@ -64,6 +67,40 @@ class CheckNotifier extends Notifier<CheckState> {
     } catch (e) {
       state = CheckError(e.toString());
     }
+  }
+
+  /// Saves the already-analyzed photo directly to the local wardrobe.
+  /// Reuses the AI result from the current check state — no extra Cloud
+  /// Function call needed.
+  Future<void> addToWardrobe() async {
+    final s = state;
+    final List<int> bytes;
+    final AnalyzeClothingResult result;
+    switch (s) {
+      case CheckHighSimilarity(:final newImageBytes, :final analysisResult):
+        bytes = newImageBytes;
+        result = analysisResult;
+      case CheckMediumSimilarity(:final newImageBytes, :final analysisResult):
+        bytes = newImageBytes;
+        result = analysisResult;
+      default:
+        return;
+    }
+
+    final fileName = await LocalImageStorage.saveImage(bytes);
+    final docId = fileName.contains('.')
+        ? fileName.substring(0, fileName.lastIndexOf('.'))
+        : fileName;
+    final store = ref.read(localWardrobeProvider.notifier);
+    await store.addItem(localFileName: fileName, createdAt: DateTime.now());
+    await store.updateAnalysis(
+      docId,
+      category: result.category,
+      colors: result.colors,
+      materials: result.materials,
+      embedding: result.embedding,
+    );
+    state = const CheckIdle();
   }
 
   void reset() => state = const CheckIdle();

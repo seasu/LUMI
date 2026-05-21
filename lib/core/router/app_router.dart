@@ -95,7 +95,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/snap',
-        builder: (context, state) => const SnapPage(),
+        builder: (context, state) {
+          final src = state.uri.queryParameters['source'];
+          ImageSource? autoSource;
+          if (src == 'camera') autoSource = ImageSource.camera;
+          if (src == 'gallery') autoSource = ImageSource.gallery;
+          return SnapPage(autoSource: autoSource);
+        },
       ),
       GoRoute(
         path: '/check',

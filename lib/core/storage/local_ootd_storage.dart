@@ -28,9 +28,9 @@ class LocalOotdStorage {
     final id = _uuid.v4().replaceAll('-', '');
     final compressed = await FlutterImageCompress.compressWithList(
       Uint8List.fromList(bytes),
-      minWidth: 1440,
-      minHeight: 1920,
-      quality: 82,
+      minWidth: 4096,
+      minHeight: 4096,
+      quality: 90,
       format: CompressFormat.jpeg,
     );
     await File('${dir.path}/$id.jpg').writeAsBytes(compressed, flush: true);

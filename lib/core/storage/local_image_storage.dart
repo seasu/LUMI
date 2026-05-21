@@ -31,9 +31,9 @@ class LocalImageStorage {
     final dir = await _wardrobeDir();
     final compressed = await FlutterImageCompress.compressWithList(
       Uint8List.fromList(bytes),
-      minWidth: 1920,
-      minHeight: 1920,
-      quality: 82,
+      minWidth: 4096,
+      minHeight: 4096,
+      quality: 90,
       format: CompressFormat.jpeg,
     );
     final fileName = '${_uuid.v4()}.jpg';

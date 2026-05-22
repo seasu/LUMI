@@ -162,6 +162,8 @@ class _SnapPageState extends ConsumerState<SnapPage>
               onConfirm: () => ref.read(snapProvider.notifier).uploadAll(),
               onCancel: () => ref.read(snapProvider.notifier).reset(),
             ),
+          SnapUploading(:final current, :final total) when current == total =>
+            const SizedBox.shrink(),
           SnapUploading(:final current, :final total) => _SavingView(
               animation: _glowAnimation,
               current: current,

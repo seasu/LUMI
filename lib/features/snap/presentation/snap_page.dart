@@ -21,10 +21,7 @@ class SnapPage extends ConsumerStatefulWidget {
   ConsumerState<SnapPage> createState() => _SnapPageState();
 }
 
-class _SnapPageState extends ConsumerState<SnapPage>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _glowController;
-  late final Animation<double> _glowAnimation;
+class _SnapPageState extends ConsumerState<SnapPage> {
   bool _pickerTriggered = false;
 
   @override
@@ -32,14 +29,6 @@ class _SnapPageState extends ConsumerState<SnapPage>
     super.initState();
     // Reset stale state from a previous session so the page always starts idle.
     ref.read(snapProvider.notifier).reset();
-    _glowController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..repeat(reverse: true);
-    _glowAnimation = CurvedAnimation(
-      parent: _glowController,
-      curve: Curves.easeInOut,
-    );
     if (widget.autoSource != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -53,12 +42,6 @@ class _SnapPageState extends ConsumerState<SnapPage>
     }
   }
 
-  @override
-  void dispose() {
-    _glowController.dispose();
-    super.dispose();
-  }
-
   void _popToWardrobeUncategorized() {
     ref.read(snapProvider.notifier).reset();
     ref.read(wardrobeFilterProvider.notifier).setCategory(
@@ -70,7 +53,7 @@ class _SnapPageState extends ConsumerState<SnapPage>
   @override
   Widget build(BuildContext context) {
     final snapState = ref.watch(snapProvider);
-    final isSaving = snapState is SnapUploading;
+    final isSaving = snapState is SnapUploading; // hides back button while saving locally
 
     ref.listen<SnapState>(snapProvider, (previous, next) {
       if (next is SnapDone && mounted) {
@@ -162,12 +145,7 @@ class _SnapPageState extends ConsumerState<SnapPage>
               onConfirm: () => ref.read(snapProvider.notifier).uploadAll(),
               onCancel: () => ref.read(snapProvider.notifier).reset(),
             ),
-          SnapUploading(:final current, :final total) => _SavingView(
-              animation: _glowAnimation,
-              current: current,
-              total: total,
-              onCancel: () => _showCancelDialog(context),
-            ),
+          SnapUploading() => const SizedBox.shrink(),
           SnapDone() => const SizedBox.shrink(),
           SnapError(:final message) => _ErrorView(
               message: message,
@@ -183,21 +161,6 @@ class _SnapPageState extends ConsumerState<SnapPage>
         SnapUploading() => '加入衣櫥中',
         SnapDone() => '加入完成',
       };
-
-  void _showCancelDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierColor: LumiColors.overlayBarrier,
-      builder: (_) => _CancelDialog(
-        onContinue: () => Navigator.pop(context),
-        onCancel: () {
-          Navigator.pop(context);
-          ref.read(snapProvider.notifier).reset();
-          context.pop();
-        },
-      ),
-    );
-  }
 }
 
 // ── Idle（入口，選擇來源）──────────────────────────────────────────────────────
@@ -535,113 +498,6 @@ class _AddMoreTile extends StatelessWidget {
   }
 }
 
-// ── 加入中（圓形進度 + 光暈）─────────────────────────────────────────────────
-
-class _SavingView extends StatelessWidget {
-  const _SavingView({
-    required this.animation,
-    required this.current,
-    required this.total,
-    required this.onCancel,
-  });
-
-  final Animation<double> animation;
-  final int current;
-  final int total;
-  final VoidCallback onCancel;
-
-  @override
-  Widget build(BuildContext context) {
-    final progress = total == 0 ? 0.0 : current / total;
-
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedBuilder(
-            animation: animation,
-            builder: (_, __) {
-              return SizedBox(
-                width: 140,
-                height: 140,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: 140,
-                      height: 140,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: LumiColors.glow.withValues(
-                              alpha: 0.25 + animation.value * 0.35,
-                            ),
-                            blurRadius: 32,
-                            spreadRadius: 8,
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(
-                      width: 116,
-                      height: 116,
-                      child: CircularProgressIndicator(
-                        value: progress,
-                        color: LumiColors.primary,
-                        backgroundColor:
-                            LumiColors.primary.withValues(alpha: 0.12),
-                        strokeWidth: 6,
-                      ),
-                    ),
-                    Text(
-                      '${(progress * 100).toInt()}%',
-                      style: const TextStyle(
-                        fontSize: LumiTypeScale.titleLg,
-                        fontWeight: FontWeight.w600,
-                        color: LumiColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: LumiSpacing.lg),
-          const Text(
-            '正在加入衣櫥...',
-            style: TextStyle(
-              fontSize: LumiTypeScale.titleSm,
-              fontWeight: FontWeight.w500,
-              color: LumiColors.text,
-            ),
-          ),
-          const SizedBox(height: LumiSpacing.sm),
-          Text(
-            '第 $current / $total 張，完成前請不要關閉此畫面',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: LumiTypeScale.labelMd,
-              color: LumiColors.subtext,
-            ),
-          ),
-          const SizedBox(height: LumiSpacing.xl),
-          TextButton(
-            onPressed: onCancel,
-            child: const Text(
-              '取消',
-              style: TextStyle(
-                fontSize: LumiTypeScale.body,
-                color: LumiColors.primary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ── 錯誤狀態 ──────────────────────────────────────────────────────────────────
 
 class _ErrorView extends StatelessWidget {
@@ -678,105 +534,6 @@ class _ErrorView extends StatelessWidget {
           _PrimaryButton(label: '重新選取', onTap: onRetry),
           const Spacer(),
         ],
-      ),
-    );
-  }
-}
-
-// ── 中斷確認 Dialog ───────────────────────────────────────────────────────────
-
-class _CancelDialog extends StatelessWidget {
-  const _CancelDialog({
-    required this.onContinue,
-    required this.onCancel,
-  });
-
-  final VoidCallback onContinue;
-  final VoidCallback onCancel;
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: LumiColors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(LumiRadii.xl),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          LumiSpacing.lg,
-          LumiSpacing.lg,
-          LumiSpacing.lg,
-          LumiSpacing.md,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              '確定要中斷嗎？',
-              style: TextStyle(
-                fontSize: LumiTypeScale.titleSm,
-                fontWeight: FontWeight.w600,
-                color: LumiColors.text,
-              ),
-            ),
-            const SizedBox(height: LumiSpacing.sm),
-            const Text(
-              '已加入衣櫥的照片將會保留，\n尚未完成的照片不會加入。',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: LumiTypeScale.labelMd,
-                color: LumiColors.subtext,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: LumiSpacing.lg),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: onCancel,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: LumiColors.subtext,
-                      side: BorderSide(
-                        color: LumiColors.subtext.withValues(alpha: 0.35),
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(LumiRadii.pill),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: LumiSpacing.md,
-                      ),
-                    ),
-                    child: const Text('中斷並退出'),
-                  ),
-                ),
-                const SizedBox(width: LumiSpacing.sm),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: onContinue,
-                    child: Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        gradient: LumiColors.buttonGradient,
-                        borderRadius: BorderRadius.circular(LumiRadii.pill),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          '繼續加入',
-                          style: TextStyle(
-                            fontSize: LumiTypeScale.body,
-                            fontWeight: FontWeight.w600,
-                            color: LumiColors.onPrimary,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }

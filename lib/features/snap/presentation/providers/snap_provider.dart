@@ -8,6 +8,7 @@ import '../../../../core/providers/firebase_providers.dart'
     show firebaseAuthProvider;
 import '../../../../core/storage/local_image_storage.dart';
 import '../../../../core/storage/local_wardrobe_store.dart';
+import '../../../user/data/user_repository.dart' show userProfileProvider;
 import '../../../wardrobe/data/wardrobe_item.dart';
 import '../../data/cloud_functions_service.dart';
 import '../../domain/snap_state.dart';
@@ -74,6 +75,15 @@ class SnapNotifier extends Notifier<SnapState> {
     final user = ref.read(firebaseAuthProvider).currentUser;
     if (user == null) {
       state = const SnapError('請先登入再加入衣物。');
+      return;
+    }
+
+    // ── Client-side quota pre-check ──────────────────────────────────────────
+    // Fast failure: avoids saving images that cannot be AI-analysed. The server
+    // also enforces the quota, so this is a UX optimisation, not a security gate.
+    final profile = ref.read(userProfileProvider).valueOrNull;
+    if (profile != null && profile.isOverQuota) {
+      state = const SnapError('quota_exceeded');
       return;
     }
 
@@ -152,7 +162,10 @@ class SnapNotifier extends Notifier<SnapState> {
         embedding: result.embedding,
       );
     } catch (e) {
-      final msg = 'analysis_failed:${formatFirebaseCallableError(e)}';
+      // QuotaExceededException gets a dedicated error code understood by the UI.
+      final msg = e is QuotaExceededException
+          ? 'quota_exceeded'
+          : 'analysis_failed:${formatFirebaseCallableError(e)}';
       try {
         await store.markAnalyzeFailed(docId, msg);
       } catch (_) {}

@@ -8,8 +8,10 @@ import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
 import '../../../shared/constants/lumi_type_scale.dart';
+import '../../purchase/presentation/widgets/paywall_sheet.dart';
 import '../../search/domain/wardrobe_filter.dart';
 import '../../search/presentation/providers/search_provider.dart';
+import '../../user/data/user_repository.dart' show userProfileProvider;
 import '../domain/snap_state.dart';
 import 'providers/snap_provider.dart';
 
@@ -54,8 +56,17 @@ class _SnapPageState extends ConsumerState<SnapPage> {
   Widget build(BuildContext context) {
     final snapState = ref.watch(snapProvider);
     final isSaving = snapState is SnapUploading; // hides back button while saving locally
+    final profile = ref.watch(userProfileProvider).valueOrNull;
+    final remainingQuota = profile?.remainingQuota;
+    final isPro = profile?.plan == 'pro';
 
     ref.listen<SnapState>(snapProvider, (previous, next) {
+      if (next is SnapError && next.message == 'quota_exceeded' && mounted) {
+        // Reset snap state then show paywall
+        ref.read(snapProvider.notifier).reset();
+        showPaywallSheet(context);
+        return;
+      }
       if (next is SnapDone && mounted) {
         final messenger = ScaffoldMessenger.of(context);
         final label = next.count == 1 ? '已成功加入 1 件衣物' : '已成功加入 ${next.count} 件衣物';
@@ -144,6 +155,9 @@ class _SnapPageState extends ConsumerState<SnapPage> {
               onRemove: (i) => ref.read(snapProvider.notifier).removeFile(i),
               onConfirm: () => ref.read(snapProvider.notifier).uploadAll(),
               onCancel: () => ref.read(snapProvider.notifier).reset(),
+              remainingQuota: remainingQuota,
+              isPro: isPro,
+              onUpgrade: () => showPaywallSheet(context),
             ),
           SnapUploading() => const SizedBox.shrink(),
           SnapDone() => const SizedBox.shrink(),
@@ -323,6 +337,9 @@ class _PreviewView extends StatelessWidget {
     required this.onRemove,
     required this.onConfirm,
     required this.onCancel,
+    this.remainingQuota,
+    this.isPro = false,
+    this.onUpgrade,
   });
 
   final List<XFile> files;
@@ -330,15 +347,28 @@ class _PreviewView extends StatelessWidget {
   final void Function(int index) onRemove;
   final VoidCallback onConfirm;
   final VoidCallback onCancel;
+  final int? remainingQuota;
+  final bool isPro;
+  final VoidCallback? onUpgrade;
 
   static const _maxPhotos = 10;
+  static const _quotaWarningThreshold = 5;
 
   @override
   Widget build(BuildContext context) {
     final canAddMore = files.length < _maxPhotos;
+    final showQuotaBanner = !isPro &&
+        remainingQuota != null &&
+        remainingQuota! <= _quotaWarningThreshold;
 
     return Column(
       children: [
+        // Quota warning banner
+        if (showQuotaBanner)
+          _QuotaBanner(
+            remaining: remainingQuota!,
+            onUpgrade: onUpgrade,
+          ),
         Expanded(
           child: GridView.builder(
             padding: const EdgeInsets.fromLTRB(
@@ -491,6 +521,74 @@ class _AddMoreTile extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── 配額警示 Banner ────────────────────────────────────────────────────────────
+
+class _QuotaBanner extends StatelessWidget {
+  const _QuotaBanner({required this.remaining, this.onUpgrade});
+
+  final int remaining;
+  final VoidCallback? onUpgrade;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onUpgrade,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(
+          LumiSpacing.md,
+          LumiSpacing.sm,
+          LumiSpacing.md,
+          0,
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: LumiSpacing.md,
+          vertical: LumiSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: LumiColors.warning.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(LumiRadii.md),
+          border: Border.all(
+            color: LumiColors.warning.withValues(alpha: 0.30),
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.warning_amber_rounded,
+              size: 16,
+              color: LumiColors.warning,
+            ),
+            const SizedBox(width: LumiSpacing.sm),
+            Expanded(
+              child: Text(
+                remaining == 0
+                    ? 'AI 分析配額已用完，加入後無法分析'
+                    : 'AI 分析剩餘 $remaining 件，即將用完',
+                style: const TextStyle(
+                  fontSize: LumiTypeScale.labelMd,
+                  color: LumiColors.warning,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            if (onUpgrade != null) ...[
+              const SizedBox(width: LumiSpacing.sm),
+              const Text(
+                '升級 →',
+                style: TextStyle(
+                  fontSize: LumiTypeScale.labelMd,
+                  color: LumiColors.warning,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ],
         ),
       ),

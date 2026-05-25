@@ -259,11 +259,11 @@ class _AppleIcon extends StatelessWidget {
       ),
       child: const Center(
         child: Text(
-          '',
+          'A',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: LumiTypeScale.labelMd,
+            fontWeight: FontWeight.w700,
             color: LumiColors.text,
-            height: 1.1,
           ),
         ),
       ),

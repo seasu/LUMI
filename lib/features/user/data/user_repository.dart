@@ -38,7 +38,7 @@ class UserRepository {
           'displayName': user.displayName ?? '',
           'photoUrl': user.photoURL,
           'plan': 'free',
-          'freeQuota': 100,
+          'freeQuota': 30,
           'analyzedCount': 0,
           'createdAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));

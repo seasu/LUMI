@@ -7,6 +7,7 @@ import '../../../shared/constants/lumi_spacing.dart';
 import '../../../shared/constants/lumi_type_scale.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../../debug/debug_log_page.dart';
+import '../../purchase/presentation/widgets/paywall_sheet.dart';
 import '../../user/data/user_profile.dart';
 import '../../user/data/user_repository.dart';
 
@@ -82,6 +83,8 @@ class _ProfileContent extends ConsumerWidget {
         const SizedBox(height: LumiSpacing.xs),
         _InfoRow(label: 'UID', value: profile.uid),
         const SizedBox(height: LumiSpacing.lg),
+        _QuotaCard(profile: profile),
+        const SizedBox(height: LumiSpacing.lg),
         const Text(
           '個人身材數據',
           textAlign: TextAlign.center,
@@ -108,6 +111,142 @@ class _ProfileContent extends ConsumerWidget {
         ),
         const SizedBox(height: LumiSpacing.lg),
       ],
+    );
+  }
+}
+
+// ── Quota progress card ────────────────────────────────────────────────────────
+
+class _QuotaCard extends StatelessWidget {
+  const _QuotaCard({required this.profile});
+  final UserProfile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final isPro = profile.plan == 'pro';
+    final used = profile.analyzedCount;
+    final quota = profile.freeQuota;
+    final remaining = profile.remainingQuota;
+    final progress = isPro ? 1.0 : (quota > 0 ? (used / quota).clamp(0.0, 1.0) : 0.0);
+    final isNearLimit = !isPro && remaining <= 5;
+
+    return Container(
+      padding: const EdgeInsets.all(LumiSpacing.md),
+      decoration: BoxDecoration(
+        color: LumiColors.surface,
+        borderRadius: BorderRadius.circular(LumiRadii.lg),
+        border: isNearLimit
+            ? Border.all(color: LumiColors.warning.withValues(alpha: 0.35))
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome_outlined,
+                  size: 16, color: LumiColors.primary),
+              const SizedBox(width: LumiSpacing.sm),
+              const Text(
+                'AI 分析配額',
+                style: TextStyle(
+                  fontSize: LumiTypeScale.labelMd,
+                  fontWeight: FontWeight.w600,
+                  color: LumiColors.text,
+                ),
+              ),
+              const Spacer(),
+              if (isPro)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: LumiSpacing.sm, vertical: 2),
+                  decoration: BoxDecoration(
+                    gradient: LumiColors.buttonGradient,
+                    borderRadius: BorderRadius.circular(LumiRadii.pill),
+                  ),
+                  child: const Text(
+                    'Pro',
+                    style: TextStyle(
+                      fontSize: LumiTypeScale.labelSm,
+                      fontWeight: FontWeight.w700,
+                      color: LumiColors.onPrimary,
+                    ),
+                  ),
+                )
+              else
+                Text(
+                  '$used / $quota 件',
+                  style: TextStyle(
+                    fontSize: LumiTypeScale.labelMd,
+                    fontWeight: FontWeight.w600,
+                    color: isNearLimit ? LumiColors.warning : LumiColors.subtext,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: LumiSpacing.sm),
+
+          // Progress bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(LumiRadii.pill),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 8,
+              backgroundColor: LumiColors.baseAlt,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isNearLimit ? LumiColors.warning : LumiColors.primary,
+              ),
+            ),
+          ),
+          const SizedBox(height: LumiSpacing.sm),
+
+          // Sub-text
+          if (isPro)
+            const Text(
+              '無限 AI 分析，享受 Pro 會員',
+              style: TextStyle(
+                fontSize: LumiTypeScale.labelMd,
+                color: LumiColors.subtext,
+              ),
+            )
+          else
+            Text(
+              isNearLimit
+                  ? '剩餘 $remaining 件，即將用完'
+                  : '剩餘 $remaining 件可分析',
+              style: TextStyle(
+                fontSize: LumiTypeScale.labelMd,
+                color: isNearLimit ? LumiColors.warning : LumiColors.subtext,
+              ),
+            ),
+
+          // Upgrade button (free plan only)
+          if (!isPro) ...[
+            const SizedBox(height: LumiSpacing.md),
+            GestureDetector(
+              onTap: () => showPaywallSheet(context),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: LumiSpacing.sm),
+                decoration: BoxDecoration(
+                  gradient: LumiColors.buttonGradient,
+                  borderRadius: BorderRadius.circular(LumiRadii.pill),
+                ),
+                child: const Text(
+                  '升級 Pro 或購買補充包',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: LumiTypeScale.labelMd,
+                    fontWeight: FontWeight.w600,
+                    color: LumiColors.onPrimary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -22,6 +24,13 @@ final cloudFunctionsServiceProvider = Provider<CloudFunctionsService>((ref) {
   return CloudFunctionsService(ref.watch(cloudFunctionsProvider));
 });
 
+/// Thrown when the server reports the user has exhausted their AI analysis quota.
+class QuotaExceededException implements Exception {
+  const QuotaExceededException();
+  @override
+  String toString() => 'quota_exceeded';
+}
+
 class CloudFunctionsService {
   CloudFunctionsService(this._functions);
 
@@ -41,6 +50,14 @@ class CloudFunctionsService {
       });
 
       final data = _asStringKeyedMap(result.data);
+
+      // CF returns { skipped: true, reason: 'quota_exceeded' } when over quota
+      if (data['skipped'] == true) {
+        final reason = data['reason'] as String? ?? 'quota_exceeded';
+        _log('analyzeClothing: skipped (reason=$reason) ${sw.elapsedMilliseconds}ms');
+        throw const QuotaExceededException();
+      }
+
       final r = AnalyzeClothingResult(
         category: _requireString(data, 'category'),
         colors: List<String>.from(data['colors'] as List),
@@ -53,6 +70,7 @@ class CloudFunctionsService {
           ' category=${r.category}');
       return r;
     } catch (e) {
+      if (e is QuotaExceededException) rethrow;
       if (e is FirebaseFunctionsException) {
         _log('analyzeClothing ✗ ${sw.elapsedMilliseconds}ms'
             ' code=${e.code}'
@@ -60,6 +78,40 @@ class CloudFunctionsService {
             ' details=${e.details}');
       } else {
         _log('analyzeClothing ✗ ${sw.elapsedMilliseconds}ms $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Validates a platform purchase receipt with the backend and updates the
+  /// user's Firestore quota / plan.
+  ///
+  /// [productId] is one of: `lumi_extra_100`, `lumi_pro_yearly`
+  /// [purchaseToken] is the Android purchase token (Android only).
+  /// [receiptData]   is the base64-encoded App Store receipt (iOS only).
+  Future<void> verifyPurchase({
+    required String productId,
+    String? purchaseToken,
+    String? receiptData,
+  }) async {
+    _log('verifyPurchase → product=$productId');
+    final sw = Stopwatch()..start();
+    try {
+      final platform = Platform.isIOS ? 'ios' : 'android';
+      final callable = _functions.httpsCallable('verifyPurchase');
+      await callable.call<Map<dynamic, dynamic>>({
+        'platform': platform,
+        'productId': productId,
+        if (purchaseToken != null) 'purchaseToken': purchaseToken,
+        if (receiptData != null) 'receiptData': receiptData,
+      });
+      _log('verifyPurchase ← ok ${sw.elapsedMilliseconds}ms');
+    } catch (e) {
+      if (e is FirebaseFunctionsException) {
+        _log('verifyPurchase ✗ ${sw.elapsedMilliseconds}ms'
+            ' code=${e.code} msg=${e.message}');
+      } else {
+        _log('verifyPurchase ✗ ${sw.elapsedMilliseconds}ms $e');
       }
       rethrow;
     }
@@ -76,7 +128,6 @@ class CloudFunctionsService {
       return 'error';
     }
   }
-
 }
 
 class AnalyzeClothingResult {

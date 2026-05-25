@@ -4,3 +4,4 @@ admin.initializeApp();
 
 export { analyzeClothing } from "./analyzeClothing";
 export { getServerInfo } from "./serverInfo";
+export { verifyPurchase } from "./verifyPurchase";

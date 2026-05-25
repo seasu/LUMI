@@ -1,11 +1,11 @@
 {
-  "name": "Lumi",
+  "name": "Lumi — AI 智慧衣櫥管理",
   "short_name": "Lumi",
   "start_url": ".",
-  "display": "standalone",
-  "background_color": "#F5F5F7",
-  "theme_color": "#1D1D1F",
-  "description": "Light up your wardrobe with Google Photos.",
+  "display": "browser",
+  "background_color": "#FAF9F8",
+  "theme_color": "#FAF9F8",
+  "description": "用 AI 智慧整理你的衣櫃。拍照即分類，Lumi Check 幫你避免買到重複的衣服。",
   "icons": [
     {
       "src": "icons/Icon-192.png",

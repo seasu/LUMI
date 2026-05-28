@@ -109,8 +109,178 @@ class _ProfileContent extends ConsumerWidget {
           ),
           child: const Text('登出'),
         ),
+        const SizedBox(height: LumiSpacing.sm),
+        TextButton(
+          onPressed: () => _showDeleteAccountDialog(context, ref),
+          style: TextButton.styleFrom(
+            foregroundColor: LumiColors.warning,
+            padding: const EdgeInsets.symmetric(vertical: LumiSpacing.md),
+          ),
+          child: const Text(
+            '刪除帳號',
+            style: TextStyle(fontSize: LumiTypeScale.body),
+          ),
+        ),
         const SizedBox(height: LumiSpacing.lg),
       ],
+    );
+  }
+
+  Future<void> _showDeleteAccountDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => const _DeleteAccountDialog(),
+    );
+    if (confirmed == true && context.mounted) {
+      await _doDeleteAccount(context, ref);
+    }
+  }
+
+  Future<void> _doDeleteAccount(BuildContext context, WidgetRef ref) async {
+    // Show progress indicator while deleting.
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const _DeletingDialog(),
+    );
+    try {
+      await deleteAccount(ref);
+      // Auth state change will navigate to login automatically via GoRouter.
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop(); // close progress dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('刪除失敗，請再試一次。\n$e'),
+            backgroundColor: LumiColors.warning,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+}
+
+// ── Delete account dialogs ────────────────────────────────────────────────────
+
+class _DeleteAccountDialog extends StatelessWidget {
+  const _DeleteAccountDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: LumiColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(LumiRadii.xl),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(LumiSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: LumiColors.warning.withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.delete_forever_outlined,
+                color: LumiColors.warning,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: LumiSpacing.md),
+            const Text(
+              '確定要刪除帳號嗎？',
+              style: TextStyle(
+                fontSize: LumiTypeScale.titleSm,
+                fontWeight: FontWeight.w700,
+                color: LumiColors.text,
+              ),
+            ),
+            const SizedBox(height: LumiSpacing.sm),
+            const Text(
+              '此操作無法復原。您的帳號資料將永久刪除，'
+              '裝置上的衣物照片與記錄不受影響。',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: LumiTypeScale.labelMd,
+                color: LumiColors.subtext,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: LumiSpacing.lg),
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(true),
+              child: Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(vertical: LumiSpacing.md),
+                decoration: BoxDecoration(
+                  color: LumiColors.warning,
+                  borderRadius: BorderRadius.circular(LumiRadii.pill),
+                ),
+                child: const Text(
+                  '永久刪除帳號',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: LumiTypeScale.body,
+                    fontWeight: FontWeight.w600,
+                    color: LumiColors.onPrimary,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: LumiSpacing.xs),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(
+                '取消',
+                style: TextStyle(
+                  fontSize: LumiTypeScale.body,
+                  color: LumiColors.subtext,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DeletingDialog extends StatelessWidget {
+  const _DeletingDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: LumiColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(LumiRadii.xl),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.all(LumiSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: LumiColors.warning),
+            SizedBox(height: LumiSpacing.md),
+            Text(
+              '正在刪除帳號…',
+              style: TextStyle(
+                fontSize: LumiTypeScale.body,
+                color: LumiColors.subtext,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -140,26 +140,37 @@ class _ProfileContent extends ConsumerWidget {
   }
 
   Future<void> _doDeleteAccount(BuildContext context, WidgetRef ref) async {
-    // Show progress indicator while deleting.
+    // Read all providers before any await.
+    // On iOS, signOut() fires authStateChanges synchronously, which triggers
+    // GoRouter to navigate away and may dispose this widget mid-execution.
+    // Pre-reading prevents "ref used after dispose" crashes.
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
     showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (_) => const _DeletingDialog(),
     );
+
     try {
-      await deleteAccount(ref);
-      // Auth state change will navigate to login automatically via GoRouter.
+      await deleteAccount(ref); // deletes Firestore doc + Firebase Auth user
+
+      // Pop the progress dialog BEFORE signOut.
+      // signOut triggers GoRouter navigation synchronously on iOS — if the
+      // dialog is still present it ends up on an orphaned stack → black screen.
+      navigator.pop();
+
+      await signOut(ref); // clears local session → GoRouter → login page
     } catch (e) {
-      if (context.mounted) {
-        Navigator.of(context).pop(); // close progress dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('刪除失敗，請再試一次。\n$e'),
-            backgroundColor: LumiColors.warning,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      navigator.pop(); // dismiss progress dialog on error
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('刪除失敗，請再試一次。\n$e'),
+          backgroundColor: LumiColors.warning,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 }

@@ -128,6 +128,26 @@ class CloudFunctionsService {
       return 'error';
     }
   }
+
+  /// Permanently deletes the current user's Firestore document and Auth record.
+  /// After this call the Firebase Auth session is gone; caller must sign out locally.
+  Future<void> deleteAccount() async {
+    _log('deleteAccount →');
+    final sw = Stopwatch()..start();
+    try {
+      final callable = _functions.httpsCallable('deleteAccount');
+      await callable.call<Map<dynamic, dynamic>>({});
+      _log('deleteAccount ← ok ${sw.elapsedMilliseconds}ms');
+    } catch (e) {
+      if (e is FirebaseFunctionsException) {
+        _log('deleteAccount ✗ ${sw.elapsedMilliseconds}ms'
+            ' code=${e.code} msg=${e.message}');
+      } else {
+        _log('deleteAccount ✗ ${sw.elapsedMilliseconds}ms $e');
+      }
+      rethrow;
+    }
+  }
 }
 
 class AnalyzeClothingResult {

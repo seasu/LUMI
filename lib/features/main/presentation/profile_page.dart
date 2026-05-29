@@ -148,7 +148,7 @@ class _ProfileContent extends ConsumerWidget {
     // On iOS, signOut() fires authStateChanges synchronously, which triggers
     // GoRouter to navigate away and may dispose this widget mid-execution.
     // Pre-reading prevents "ref used after dispose" crashes.
-    final navigator = Navigator.of(context);
+    final navigator = Navigator.of(context, rootNavigator: true);
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context);
 

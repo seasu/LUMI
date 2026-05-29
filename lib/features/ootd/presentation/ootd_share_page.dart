@@ -8,6 +8,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
@@ -54,6 +55,7 @@ class _OotdSharePageState extends State<OotdSharePage> {
 
   Future<void> _share(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
     final screenSize = MediaQuery.sizeOf(context);
 
     try {
@@ -86,7 +88,7 @@ class _OotdSharePageState extends State<OotdSharePage> {
       );
       final result = await Share.shareXFiles(
         [XFile(file.path)],
-        subject: '我的 Lumi 穿搭',
+        subject: l10n.outfitShareSubject,
         sharePositionOrigin: shareOrigin,
       );
 
@@ -94,18 +96,18 @@ class _OotdSharePageState extends State<OotdSharePage> {
       if (result.status == ShareResultStatus.success) {
         messenger.showSnackBar(
           SnackBar(
-            content: const Row(
+            content: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   Icons.check_circle_outline,
                   color: LumiColors.onPrimary,
                   size: 18,
                 ),
-                SizedBox(width: LumiSpacing.xs),
+                const SizedBox(width: LumiSpacing.xs),
                 Text(
-                  '穿搭已成功分享！',
-                  style: TextStyle(
+                  l10n.outfitShareSuccess,
+                  style: const TextStyle(
                     fontSize: LumiTypeScale.body,
                     fontWeight: FontWeight.w600,
                     color: LumiColors.onPrimary,
@@ -129,9 +131,9 @@ class _OotdSharePageState extends State<OotdSharePage> {
           ),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text('分享失敗：$e')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.outfitShareFailed)));
     }
   }
 
@@ -217,7 +219,7 @@ class _OotdSharePageState extends State<OotdSharePage> {
                             height: 1.4,
                           ),
                           decoration: InputDecoration(
-                            hintText: '新增說明文字...',
+                            hintText: AppLocalizations.of(context).outfitShareCaptionHint,
                             hintStyle: TextStyle(
                               fontSize: LumiTypeScale.body,
                               color:
@@ -238,9 +240,9 @@ class _OotdSharePageState extends State<OotdSharePage> {
                         const SizedBox(width: LumiSpacing.sm),
                         GestureDetector(
                           onTap: () => FocusScope.of(context).unfocus(),
-                          child: const Text(
-                            '完成',
-                            style: TextStyle(
+                          child: Text(
+                            AppLocalizations.of(context).done,
+                            style: const TextStyle(
                               fontSize: LumiTypeScale.labelMd,
                               fontWeight: FontWeight.w600,
                               color: LumiColors.glow,
@@ -268,14 +270,14 @@ class _OotdSharePageState extends State<OotdSharePage> {
                       children: [
                         Expanded(
                           child: _OutlinedButton(
-                            label: '分享穿搭',
+                            label: AppLocalizations.of(context).outfitShareTitle,
                             onTap: () => _share(context),
                           ),
                         ),
                         const SizedBox(width: LumiSpacing.sm),
                         Expanded(
                           child: _GradientButton(
-                            label: '完成',
+                            label: AppLocalizations.of(context).done,
                             onTap: () => Navigator.of(context).pop(),
                           ),
                         ),
@@ -314,7 +316,7 @@ class _OotdSharePageState extends State<OotdSharePage> {
                           ),
                           const SizedBox(width: LumiSpacing.xs),
                           Text(
-                            '返回',
+                            AppLocalizations.of(context).back,
                             style: TextStyle(
                               fontSize: LumiTypeScale.labelMd,
                               fontWeight: FontWeight.w600,
@@ -329,7 +331,7 @@ class _OotdSharePageState extends State<OotdSharePage> {
                 ),
                 const Spacer(),
                 Text(
-                  '分享穿搭',
+                  AppLocalizations.of(context).outfitShareTitle,
                   style: TextStyle(
                     fontSize: LumiTypeScale.titleSm,
                     fontWeight: FontWeight.w600,
@@ -492,9 +494,9 @@ class _BrandedCard extends StatelessWidget {
                 margin: const EdgeInsets.symmetric(horizontal: LumiSpacing.sm),
                 color: LumiColors.onPrimary.withValues(alpha: 0.3),
               ),
-              const Text(
-                '用AI記錄每日穿搭風格',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context).outfitShareBrandSlogan,
+                style: const TextStyle(
                   fontSize: LumiTypeScale.labelSm,
                   color: LumiColors.onPrimary,
                   fontWeight: FontWeight.w400,

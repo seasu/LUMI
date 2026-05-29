@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
@@ -173,7 +174,7 @@ class _ErrorView extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: LumiSpacing.lg),
-              _PrimaryButton(label: '返回', onTap: onBack),
+              _PrimaryButton(label: AppLocalizations.of(context).back, onTap: onBack),
             ],
           ),
         ),

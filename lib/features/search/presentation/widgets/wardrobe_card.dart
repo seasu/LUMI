@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/storage/local_image_storage.dart';
 import '../../../../core/storage/local_wardrobe_store.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../shared/constants/lumi_colors.dart';
 import '../../../wardrobe/data/wardrobe_item.dart';
 
@@ -16,8 +17,9 @@ class WardrobeCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final title = _displayTitle(item);
-    final subtitle = _displaySubtitle(item);
+    final l10n = AppLocalizations.of(context);
+    final title = _displayTitle(item, l10n);
+    final subtitle = _displaySubtitle(item, l10n);
 
     return InkWell(
       borderRadius: BorderRadius.circular(20),
@@ -119,21 +121,22 @@ class WardrobeCard extends ConsumerWidget {
 
   Future<void> _showDeleteConfirmation(
       BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('刪除衣物'),
-        content: const Text('確定要從衣櫥中刪除這件衣物嗎？'),
+        title: Text(AppLocalizations.of(ctx).searchDeleteTitle),
+        content: Text(AppLocalizations.of(ctx).searchDeleteConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('取消'),
+            child: Text(AppLocalizations.of(ctx).cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text(
-              '刪除',
-              style: TextStyle(color: LumiColors.warning),
+            child: Text(
+              AppLocalizations.of(ctx).delete,
+              style: const TextStyle(color: LumiColors.warning),
             ),
           ),
         ],
@@ -148,7 +151,7 @@ class WardrobeCard extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('刪除失敗，請再試一次')),
+          SnackBar(content: Text(l10n.errorDeleteFailed)),
         );
       }
     }
@@ -200,8 +203,8 @@ Color? _parseHex(String hex) {
   }
 }
 
-String _displayTitle(WardrobeItem item) {
-  if (item.isPending) return '分析中';
+String _displayTitle(WardrobeItem item, AppLocalizations l10n) {
+  if (item.isPending) return l10n.snapAnalyzing;
   if (item.analyzeError != null && item.analyzeError!.isNotEmpty) {
     return _analyzeErrorTitle(item.analyzeError!);
   }
@@ -211,20 +214,20 @@ String _displayTitle(WardrobeItem item) {
   if (item.category.isNotEmpty) {
     return item.category;
   }
-  return '未分類';
+  return l10n.searchFilterUncategorized;
 }
 
-String _displaySubtitle(WardrobeItem item) {
+String _displaySubtitle(WardrobeItem item, AppLocalizations l10n) {
   if (item.isPending) {
-    return '未分類 · AI 分類處理中';
+    return '${l10n.searchFilterUncategorized} · ${l10n.snapAnalyzing}';
   }
   final err = item.analyzeError;
   if (err != null && err.isNotEmpty && !item.isQuotaExceeded) {
     final hint = _analyzeErrorHintForUser(err);
     if (hint.isNotEmpty) return hint;
-    return '分析失敗，可下拉重試';
+    return l10n.itemDetailAnalyzeFailed;
   }
-  final category = item.category.isEmpty ? '未分類' : item.category;
+  final category = item.category.isEmpty ? l10n.searchFilterUncategorized : item.category;
   final id = item.docId;
   final code = id.length > 6 ? id.substring(0, 6).toUpperCase() : id.toUpperCase();
   return '$category | $code';
@@ -285,13 +288,14 @@ class _PendingOverlay extends StatelessWidget {
     final isQuota = item.isQuotaExceeded;
     final err = item.analyzeError;
 
+    final l10n = AppLocalizations.of(context);
     final String title;
     if (isQuota) {
-      title = '配額已用完';
+      title = l10n.snapQuotaExceeded;
     } else if (err != null && err.isNotEmpty) {
       title = _analyzeErrorTitle(err);
     } else {
-      title = 'AI 分析中';
+      title = l10n.snapAnalyzing;
     }
 
     return Container(

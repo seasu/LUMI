@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/storage/local_image_storage.dart';
 import '../../../../core/storage/local_wardrobe_store.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../shared/constants/lumi_colors.dart';
 import '../../../../shared/constants/lumi_radii.dart';
 import '../../../../shared/constants/lumi_spacing.dart';
@@ -257,7 +258,9 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
               children: [
                 if (!item.analyzed) ...[
                   _InfoPill(
-                    item.analyzeError != null ? '分析失敗，可下拉重試' : 'AI 分析中…',
+                    item.analyzeError != null
+                        ? AppLocalizations.of(context).itemDetailAnalyzeFailed
+                        : AppLocalizations.of(context).itemDetailAnalyzing,
                   ),
                   const SizedBox(height: LumiSpacing.sm),
                 ],
@@ -403,9 +406,9 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
                     gradient: LumiColors.buttonGradient,
                     borderRadius: BorderRadius.circular(LumiRadii.pill),
                   ),
-                  child: const Text(
-                    '編輯辨識結果',
-                    style: TextStyle(
+                  child: Text(
+                    AppLocalizations.of(context).itemDetailEditBadge,
+                    style: const TextStyle(
                       fontSize: LumiTypeScale.labelSm,
                       fontWeight: FontWeight.w600,
                       color: LumiColors.onPrimary,
@@ -455,10 +458,11 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
   // ── 編輯表單內容 ──────────────────────────────────────────────────────────
 
   Widget _buildEditSection() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionLabel('種類'),
+        _SectionLabel(l10n.itemDetailCategory),
         const SizedBox(height: LumiSpacing.xs),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -501,7 +505,7 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
 
         const SizedBox(height: LumiSpacing.lg),
 
-        const _SectionLabel('顏色'),
+        _SectionLabel(l10n.itemDetailColors),
         const SizedBox(height: LumiSpacing.xs),
         Wrap(
           spacing: LumiSpacing.sm,
@@ -565,7 +569,7 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
 
         const SizedBox(height: LumiSpacing.lg),
 
-        const _SectionLabel('材質'),
+        _SectionLabel(l10n.itemDetailMaterials),
         const SizedBox(height: LumiSpacing.xs),
         Wrap(
           spacing: LumiSpacing.xs,
@@ -624,7 +628,7 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
                     vertical: LumiSpacing.sm + 2,
                   ),
                 ),
-                child: const Text('取消'),
+                child: Text(l10n.cancel),
               ),
             ),
             const SizedBox(width: LumiSpacing.sm),
@@ -647,9 +651,9 @@ class _ItemDetailModalState extends ConsumerState<_ItemDetailModal> {
                               color: LumiColors.onPrimary,
                             ),
                           )
-                        : const Text(
-                            '儲存',
-                            style: TextStyle(
+                        : Text(
+                            l10n.save,
+                            style: const TextStyle(
                               fontSize: LumiTypeScale.body,
                               fontWeight: FontWeight.w600,
                               color: LumiColors.onPrimary,

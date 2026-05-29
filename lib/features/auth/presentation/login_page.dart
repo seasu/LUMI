@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/constants/app_urls.dart';
 import '../../../shared/constants/app_version.dart';
 import '../../../shared/constants/lumi_colors.dart';
@@ -19,6 +20,7 @@ class LoginPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final loading = ref.watch(signInLoadingProvider);
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: LumiColors.base,
@@ -55,10 +57,10 @@ class LoginPage extends ConsumerWidget {
                   const Spacer(flex: 2),
                   const LumiLogoWordmark(fontSize: 56),
                   const SizedBox(height: LumiSpacing.sm),
-                  const Text(
-                    '用 AI 點亮妳的衣櫥',
+                  Text(
+                    l10n.authTitle,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: LumiTypeScale.body,
                       fontWeight: FontWeight.w400,
                       color: LumiColors.subtext,
@@ -77,7 +79,7 @@ class LoginPage extends ConsumerWidget {
                   const SizedBox(height: LumiSpacing.sm),
                   if (Platform.isIOS) ...[
                     _SignInButton(
-                      label: '使用 Apple 帳號登入',
+                      label: l10n.authSignInApple,
                       icon: const _AppleIcon(),
                       isLoading: loading == SignInMethod.apple,
                       isDisabled: loading != SignInMethod.none,
@@ -86,7 +88,7 @@ class LoginPage extends ConsumerWidget {
                     const SizedBox(height: LumiSpacing.sm),
                   ],
                   _SignInButton(
-                    label: '使用 Google 帳號登入',
+                    label: l10n.authSignInGoogle,
                     icon: const _GoogleIcon(),
                     isLoading: loading == SignInMethod.google,
                     isDisabled: loading != SignInMethod.none,
@@ -142,6 +144,7 @@ class _TosFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     const linkStyle = TextStyle(
       fontSize: LumiTypeScale.labelSm,
       color: LumiColors.subtext,
@@ -158,16 +161,16 @@ class _TosFooter extends StatelessWidget {
       TextSpan(
         style: baseStyle,
         children: [
-          const TextSpan(text: '繼續即表示您同意我們的'),
+          TextSpan(text: l10n.authTermsPrefix),
           TextSpan(
-            text: '使用條款',
+            text: l10n.authTermsLink,
             style: linkStyle,
             recognizer: TapGestureRecognizer()
               ..onTap = () => _launch(kTermsOfServiceUrl),
           ),
-          const TextSpan(text: '與'),
+          TextSpan(text: l10n.and),
           TextSpan(
-            text: '隱私政策',
+            text: l10n.authPrivacyLink,
             style: linkStyle,
             recognizer: TapGestureRecognizer()
               ..onTap = () => _launch(kPrivacyPolicyUrl),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/storage/local_ootd_storage.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../shared/constants/lumi_colors.dart';
 import '../../../../shared/constants/lumi_radii.dart';
 import '../../../../shared/constants/lumi_spacing.dart';
@@ -74,21 +75,22 @@ class _OotdDetailModalState extends ConsumerState<_OotdDetailModal> {
 
   Future<void> _deleteItem(int index) async {
     final item = _items[index];
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('刪除穿搭'),
-        content: const Text('確定要刪除這筆穿搭記錄嗎？'),
+        title: Text(AppLocalizations.of(ctx).outfitDelete),
+        content: Text(AppLocalizations.of(ctx).outfitDeleteConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('取消'),
+            child: Text(AppLocalizations.of(ctx).cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text(
-              '刪除',
-              style: TextStyle(color: LumiColors.warning),
+            child: Text(
+              AppLocalizations.of(ctx).delete,
+              style: const TextStyle(color: LumiColors.warning),
             ),
           ),
         ],
@@ -101,7 +103,7 @@ class _OotdDetailModalState extends ConsumerState<_OotdDetailModal> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('刪除失敗，請再試一次')));
+            .showSnackBar(SnackBar(content: Text(l10n.errorDeleteFailed)));
       }
       return;
     }
@@ -372,22 +374,24 @@ class _ShareButton extends StatelessWidget {
             gradient: LumiColors.buttonGradient,
             borderRadius: BorderRadius.circular(LumiRadii.pill),
           ),
-          child: const SizedBox(
+          child: SizedBox(
             height: 52,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.ios_share, size: 18, color: LumiColors.onPrimary),
-                SizedBox(width: LumiSpacing.sm),
-                Text(
-                  '分享穿搭',
-                  style: TextStyle(
-                    fontSize: LumiTypeScale.body,
-                    fontWeight: FontWeight.w600,
-                    color: LumiColors.onPrimary,
+            child: Builder(
+              builder: (context) => Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.ios_share, size: 18, color: LumiColors.onPrimary),
+                  const SizedBox(width: LumiSpacing.sm),
+                  Text(
+                    AppLocalizations.of(context).outfitShare,
+                    style: const TextStyle(
+                      fontSize: LumiTypeScale.body,
+                      fontWeight: FontWeight.w600,
+                      color: LumiColors.onPrimary,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -415,7 +419,7 @@ class _DeleteButton extends StatelessWidget {
           color: LumiColors.onPrimary.withValues(alpha: 0.55),
         ),
         label: Text(
-          '刪除這套穿搭',
+          AppLocalizations.of(context).outfitDelete,
           style: TextStyle(
             color: LumiColors.onPrimary.withValues(alpha: 0.55),
           ),

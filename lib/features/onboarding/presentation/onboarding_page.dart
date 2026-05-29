@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
@@ -51,29 +52,34 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
       backgroundColor: LumiColors.base,
       body: Stack(
         children: [
-          PageView(
-            controller: _controller,
-            onPageChanged: (i) => setState(() => _currentPage = i),
-            children: const [
-              _OnboardingStep(
-                gradientColors: [LumiColors.baseAlt, LumiColors.base],
-                icon: Icons.photo_library_outlined,
-                title: '零摩擦數位化衣櫥',
-                description: 'LUMI 與 Google 相片自動同步，妳無需手動上傳任何內容。',
-              ),
-              _OnboardingStep(
-                gradientColors: [LumiColors.base, LumiColors.baseAlt],
-                icon: Icons.auto_awesome_outlined,
-                title: 'AI 智慧分析',
-                description: 'Lumi 透過 Gemini AI 自動辨識顏色、材質與款式，讓搜尋變得毫不費力。',
-              ),
-              _OnboardingStep(
-                gradientColors: [LumiColors.baseAlt, LumiColors.base],
-                icon: Icons.compare_arrows_rounded,
-                title: '聰明消費不重複',
-                description: '「似曾相識」讓妳在購物現場即時比對衣櫥，避免買到重複款式。',
-              ),
-            ],
+          Builder(
+            builder: (context) {
+              final l10n = AppLocalizations.of(context);
+              return PageView(
+                controller: _controller,
+                onPageChanged: (i) => setState(() => _currentPage = i),
+                children: [
+                  _OnboardingStep(
+                    gradientColors: const [LumiColors.baseAlt, LumiColors.base],
+                    icon: Icons.photo_library_outlined,
+                    title: l10n.onboardingStep1Title,
+                    description: l10n.onboardingStep1Desc,
+                  ),
+                  _OnboardingStep(
+                    gradientColors: const [LumiColors.base, LumiColors.baseAlt],
+                    icon: Icons.auto_awesome_outlined,
+                    title: l10n.onboardingStep2Title,
+                    description: l10n.onboardingStep2Desc,
+                  ),
+                  _OnboardingStep(
+                    gradientColors: const [LumiColors.baseAlt, LumiColors.base],
+                    icon: Icons.compare_arrows_rounded,
+                    title: l10n.onboardingStep3Title,
+                    description: l10n.onboardingStep3Desc,
+                  ),
+                ],
+              );
+            },
           ),
           // 頁面指示器 — 置於按鈕上方 lg+56 處
           Positioned(
@@ -113,7 +119,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 ),
                 child: Center(
                   child: Text(
-                    _currentPage < _stepCount - 1 ? '下一步' : '開始使用',
+                    _currentPage < _stepCount - 1
+                        ? AppLocalizations.of(context).onboardingNext
+                        : AppLocalizations.of(context).onboardingStart,
                     style: const TextStyle(
                       fontSize: LumiTypeScale.titleSm,
                       fontWeight: FontWeight.w600,

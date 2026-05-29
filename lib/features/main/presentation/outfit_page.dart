@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/storage/local_ootd_storage.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
@@ -58,16 +59,16 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
         LumiSpacing.lg,
         LumiSpacing.md,
         LumiSpacing.md,
         LumiSpacing.sm,
       ),
       child: Text(
-        '我的穿搭',
-        style: TextStyle(
+        AppLocalizations.of(context).outfitTitle,
+        style: const TextStyle(
           fontSize: LumiTypeScale.headlineMd,
           fontWeight: FontWeight.w700,
           color: LumiColors.text,
@@ -117,9 +118,9 @@ class _AddFab extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                '新增穿搭',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context).outfitCreate,
+                style: const TextStyle(
                   fontSize: LumiTypeScale.titleLg,
                   fontWeight: FontWeight.w700,
                   color: LumiColors.text,
@@ -128,7 +129,7 @@ class _AddFab extends StatelessWidget {
               const SizedBox(height: LumiSpacing.md),
               _SourceOption(
                 icon: Icons.camera_alt_outlined,
-                label: '拍照',
+                label: AppLocalizations.of(context).snapCamera,
                 onTap: () {
                   Navigator.of(ctx).pop();
                   context.push('/ootd/add?source=camera');
@@ -136,7 +137,7 @@ class _AddFab extends StatelessWidget {
               ),
               _SourceOption(
                 icon: Icons.photo_library_outlined,
-                label: '從相簿選取',
+                label: AppLocalizations.of(context).snapLibrary,
                 onTap: () {
                   Navigator.of(ctx).pop();
                   context.push('/ootd/add?source=gallery');
@@ -229,21 +230,22 @@ class _OotdCard extends ConsumerWidget {
   final int index;
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('刪除穿搭'),
-        content: const Text('確定要刪除這筆穿搭記錄嗎？'),
+        title: Text(AppLocalizations.of(ctx).outfitDelete),
+        content: Text(AppLocalizations.of(ctx).outfitDeleteConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('取消'),
+            child: Text(AppLocalizations.of(ctx).cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text(
-              '刪除',
-              style: TextStyle(color: LumiColors.warning),
+            child: Text(
+              AppLocalizations.of(ctx).delete,
+              style: const TextStyle(color: LumiColors.warning),
             ),
           ),
         ],
@@ -256,7 +258,7 @@ class _OotdCard extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('刪除失敗，請再試一次')),
+          SnackBar(content: Text(l10n.errorDeleteFailed)),
         );
       }
     }
@@ -304,7 +306,9 @@ class _OotdCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item.caption.isEmpty ? '無備註' : item.caption,
+                    item.caption.isEmpty
+                        ? AppLocalizations.of(context).outfitNoCaption
+                        : item.caption,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -363,19 +367,19 @@ class _EmptyState extends StatelessWidget {
               ],
             ),
             const SizedBox(height: LumiSpacing.lg),
-            const Text(
-              '尚未記錄任何穿搭',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context).outfitEmpty,
+              style: const TextStyle(
                 fontSize: LumiTypeScale.titleLg,
                 fontWeight: FontWeight.w600,
                 color: LumiColors.text,
               ),
             ),
             const SizedBox(height: LumiSpacing.sm),
-            const Text(
-              '點擊右下角的按鈕，\n開始記錄妳的每日時尚風格吧！',
+            Text(
+              AppLocalizations.of(context).outfitEmptyHint,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: LumiTypeScale.labelMd,
                 color: LumiColors.subtext,
                 height: 1.6,
@@ -425,7 +429,7 @@ class _ErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Text(
-        '載入失敗：$message',
+        '${AppLocalizations.of(context).error}: $message',
         textAlign: TextAlign.center,
         style: const TextStyle(
           fontSize: LumiTypeScale.labelMd,

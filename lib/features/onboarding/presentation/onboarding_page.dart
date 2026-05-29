@@ -38,16 +38,24 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     }
   }
 
-  Future<void> _finish() async {
+  void _finish() {
+    // Navigate immediately so the button feels instant.
+    // The Firestore write runs in background; on next cold start LoadingPage
+    // will re-check onboardingCompleted if the write somehow failed.
     final user = ref.read(authStateProvider).valueOrNull;
     if (user != null) {
-      await ref.read(userRepositoryProvider).markOnboardingComplete(user.uid);
+      ref
+          .read(userRepositoryProvider)
+          .markOnboardingComplete(user.uid)
+          .ignore();
     }
     if (mounted) context.go('/home');
   }
 
   @override
   Widget build(BuildContext context) {
+    final botPad = MediaQuery.of(context).padding.bottom;
+
     return Scaffold(
       backgroundColor: LumiColors.base,
       body: Stack(
@@ -60,20 +68,23 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 onPageChanged: (i) => setState(() => _currentPage = i),
                 children: [
                   _OnboardingStep(
-                    gradientColors: const [LumiColors.baseAlt, LumiColors.base],
-                    icon: Icons.photo_library_outlined,
+                    gradientBegin: LumiColors.primaryFixed,
+                    gradientEnd: LumiColors.glow.withValues(alpha: 0.65),
+                    illustration: const _WardrobeIllustration(),
                     title: l10n.onboardingStep1Title,
                     description: l10n.onboardingStep1Desc,
                   ),
                   _OnboardingStep(
-                    gradientColors: const [LumiColors.base, LumiColors.baseAlt],
-                    icon: Icons.auto_awesome_outlined,
+                    gradientBegin: LumiColors.glow.withValues(alpha: 0.55),
+                    gradientEnd: LumiColors.primaryFixed,
+                    illustration: const _AiIllustration(),
                     title: l10n.onboardingStep2Title,
                     description: l10n.onboardingStep2Desc,
                   ),
                   _OnboardingStep(
-                    gradientColors: const [LumiColors.baseAlt, LumiColors.base],
-                    icon: Icons.compare_arrows_rounded,
+                    gradientBegin: LumiColors.primaryFixed,
+                    gradientEnd: LumiColors.glow.withValues(alpha: 0.60),
+                    illustration: const _CheckIllustration(),
                     title: l10n.onboardingStep3Title,
                     description: l10n.onboardingStep3Desc,
                   ),
@@ -81,9 +92,10 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               );
             },
           ),
-          // 頁面指示器 — 置於按鈕上方 lg+56 處
+
+          // Page indicator
           Positioned(
-            bottom: LumiSpacing.xl + LumiSpacing.lg + 56, // ~112
+            bottom: botPad + LumiSpacing.xl + LumiSpacing.lg + 56,
             left: 0,
             right: 0,
             child: Row(
@@ -91,7 +103,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               children: List.generate(_stepCount, (i) {
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
-                  margin: const EdgeInsets.symmetric(horizontal: LumiSpacing.xs),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: LumiSpacing.xs),
                   width: _currentPage == i ? 20 : 6,
                   height: 6,
                   decoration: BoxDecoration(
@@ -104,9 +117,10 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               }),
             ),
           ),
-          // 底部主按鈕
+
+          // Bottom CTA button
           Positioned(
-            bottom: LumiSpacing.xl + LumiSpacing.md,
+            bottom: botPad + LumiSpacing.xl + LumiSpacing.md,
             left: LumiSpacing.lg,
             right: LumiSpacing.lg,
             child: GestureDetector(
@@ -118,14 +132,16 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                   borderRadius: BorderRadius.circular(LumiRadii.pill),
                 ),
                 child: Center(
-                  child: Text(
-                    _currentPage < _stepCount - 1
-                        ? AppLocalizations.of(context).onboardingNext
-                        : AppLocalizations.of(context).onboardingStart,
-                    style: const TextStyle(
-                      fontSize: LumiTypeScale.titleSm,
-                      fontWeight: FontWeight.w600,
-                      color: LumiColors.onPrimary,
+                  child: Builder(
+                    builder: (ctx) => Text(
+                      _currentPage < _stepCount - 1
+                          ? AppLocalizations.of(ctx).onboardingNext
+                          : AppLocalizations.of(ctx).onboardingStart,
+                      style: const TextStyle(
+                        fontSize: LumiTypeScale.titleSm,
+                        fontWeight: FontWeight.w600,
+                        color: LumiColors.onPrimary,
+                      ),
                     ),
                   ),
                 ),
@@ -138,18 +154,20 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   }
 }
 
-// ── 單一步驟 ──────────────────────────────────────────────────────────────────
+// ── Single step ───────────────────────────────────────────────────────────────
 
 class _OnboardingStep extends StatelessWidget {
   const _OnboardingStep({
-    required this.gradientColors,
-    required this.icon,
+    required this.gradientBegin,
+    required this.gradientEnd,
+    required this.illustration,
     required this.title,
     required this.description,
   });
 
-  final List<Color> gradientColors;
-  final IconData icon;
+  final Color gradientBegin;
+  final Color gradientEnd;
+  final Widget illustration;
   final String title;
   final String description;
 
@@ -159,36 +177,19 @@ class _OnboardingStep extends StatelessWidget {
 
     return Column(
       children: [
+        // Illustration area
         Container(
           height: screenHeight * 0.48,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: gradientColors,
+              colors: [gradientBegin, gradientEnd],
             ),
           ),
-          child: Center(
-            child: Container(
-              width: 108,
-              height: 108,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    LumiColors.glow.withValues(alpha: 0.35),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-              child: Icon(
-                icon,
-                size: 52,
-                color: LumiColors.primary,
-              ),
-            ),
-          ),
+          child: Center(child: illustration),
         ),
+        // Text area
         Expanded(
           child: Container(
             width: double.infinity,
@@ -199,9 +200,9 @@ class _OnboardingStep extends StatelessWidget {
               ),
             ),
             padding: const EdgeInsets.fromLTRB(
-              LumiSpacing.lg + LumiSpacing.xs, // 28
+              LumiSpacing.lg + LumiSpacing.xs,
               LumiSpacing.xl,
-              LumiSpacing.lg + LumiSpacing.xs, // 28
+              LumiSpacing.lg + LumiSpacing.xs,
               100,
             ),
             child: Column(
@@ -231,6 +232,292 @@ class _OnboardingStep extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Step 1: Wardrobe grid illustration ────────────────────────────────────────
+
+class _WardrobeIllustration extends StatelessWidget {
+  const _WardrobeIllustration();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 240,
+      height: 220,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Soft background glow
+          Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: LumiColors.primary.withValues(alpha: 0.08),
+            ),
+          ),
+          // 2×2 card grid
+          const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _MiniCard(icon: Icons.checkroom_outlined),
+                  SizedBox(width: LumiSpacing.sm),
+                  _MiniCard(icon: Icons.style_outlined),
+                ],
+              ),
+              SizedBox(height: LumiSpacing.sm),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _MiniCard(icon: Icons.palette_outlined),
+                  SizedBox(width: LumiSpacing.sm),
+                  _MiniCard(icon: Icons.watch_outlined),
+                ],
+              ),
+            ],
+          ),
+          // Item-count badge
+          const Positioned(
+            top: 8,
+            right: 8,
+            child: _GradientBadge(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.photo_library_outlined,
+                    size: 11,
+                    color: LumiColors.onPrimary,
+                  ),
+                  SizedBox(width: 3),
+                  Text(
+                    '247',
+                    style: TextStyle(
+                      fontSize: LumiTypeScale.labelSm,
+                      fontWeight: FontWeight.w700,
+                      color: LumiColors.onPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Step 2: AI-orb illustration ───────────────────────────────────────────────
+
+class _AiIllustration extends StatelessWidget {
+  const _AiIllustration();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 260,
+      height: 260,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Outer ring
+          Container(
+            width: 210,
+            height: 210,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: LumiColors.primary.withValues(alpha: 0.07),
+            ),
+          ),
+          // Mid ring
+          Container(
+            width: 152,
+            height: 152,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: LumiColors.primary.withValues(alpha: 0.10),
+            ),
+          ),
+          // Core orb
+          Container(
+            width: 96,
+            height: 96,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LumiColors.buttonGradient,
+            ),
+            child: const Icon(
+              Icons.auto_awesome,
+              size: 46,
+              color: LumiColors.onPrimary,
+            ),
+          ),
+          // Floating category chips
+          const Positioned(
+            top: 24,
+            right: 12,
+            child: _PillChip(icon: Icons.style_outlined),
+          ),
+          const Positioned(
+            bottom: 28,
+            left: 4,
+            child: _PillChip(icon: Icons.checkroom_outlined),
+          ),
+          const Positioned(
+            top: 84,
+            left: 0,
+            child: _PillChip(icon: Icons.category_outlined),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Step 3: Comparison illustration ──────────────────────────────────────────
+
+class _CheckIllustration extends StatelessWidget {
+  const _CheckIllustration();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 260,
+      height: 200,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Left card — wardrobe item (slightly tilted)
+          Positioned(
+            left: 8,
+            child: Transform.rotate(
+              angle: -0.10,
+              child: const _ClothingCard(icon: Icons.checkroom_outlined),
+            ),
+          ),
+          // Right card — store item (opposite tilt)
+          Positioned(
+            right: 8,
+            child: Transform.rotate(
+              angle: 0.10,
+              child: const _ClothingCard(icon: Icons.shopping_bag_outlined),
+            ),
+          ),
+          // Compare badge (center)
+          Container(
+            width: 48,
+            height: 48,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LumiColors.buttonGradient,
+            ),
+            child: const Icon(
+              Icons.compare_arrows_rounded,
+              size: 24,
+              color: LumiColors.onPrimary,
+            ),
+          ),
+          // Similarity percentage badge
+          const Positioned(
+            top: 6,
+            right: 48,
+            child: _GradientBadge(
+              child: Text(
+                '87%',
+                style: TextStyle(
+                  fontSize: LumiTypeScale.labelSm,
+                  fontWeight: FontWeight.w700,
+                  color: LumiColors.onPrimary,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Shared illustration helpers ───────────────────────────────────────────────
+
+class _MiniCard extends StatelessWidget {
+  const _MiniCard({required this.icon});
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 84,
+      height: 84,
+      decoration: BoxDecoration(
+        color: LumiColors.surface,
+        borderRadius: BorderRadius.circular(LumiRadii.md),
+      ),
+      child: Icon(icon, size: 38, color: LumiColors.primary),
+    );
+  }
+}
+
+class _PillChip extends StatelessWidget {
+  const _PillChip({required this.icon});
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: LumiSpacing.sm,
+        vertical: LumiSpacing.xs + 2,
+      ),
+      decoration: BoxDecoration(
+        color: LumiColors.surface,
+        borderRadius: BorderRadius.circular(LumiRadii.pill),
+      ),
+      child: Icon(icon, size: 16, color: LumiColors.primary),
+    );
+  }
+}
+
+class _ClothingCard extends StatelessWidget {
+  const _ClothingCard({required this.icon});
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 100,
+      height: 124,
+      decoration: BoxDecoration(
+        color: LumiColors.surface,
+        borderRadius: BorderRadius.circular(LumiRadii.lg),
+      ),
+      child: Icon(icon, size: 44, color: LumiColors.primary),
+    );
+  }
+}
+
+class _GradientBadge extends StatelessWidget {
+  const _GradientBadge({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: LumiSpacing.sm,
+        vertical: LumiSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        gradient: LumiColors.buttonGradient,
+        borderRadius: BorderRadius.circular(LumiRadii.pill),
+      ),
+      child: child,
     );
   }
 }

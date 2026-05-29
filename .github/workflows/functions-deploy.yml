@@ -68,6 +68,9 @@ jobs:
           if [ -n "${{ vars.GEMINI_EMBEDDING_MODEL }}" ]; then
             printf '%s\n' 'GEMINI_EMBEDDING_MODEL=${{ vars.GEMINI_EMBEDDING_MODEL }}' >> .env.lumi-309ff
           fi
+          if [ -n "${{ secrets.APPLE_SHARED_SECRET }}" ]; then
+            printf '%s\n' 'APPLE_SHARED_SECRET=${{ secrets.APPLE_SHARED_SECRET }}' >> .env.lumi-309ff
+          fi
 
       - name: Deploy Cloud Functions (with trigger migration fallback)
         working-directory: functions

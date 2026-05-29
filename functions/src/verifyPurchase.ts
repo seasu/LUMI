@@ -15,13 +15,13 @@
  */
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
-import { defineSecret } from "firebase-functions/params";
 import * as admin from "firebase-admin";
 import { GoogleAuth } from "google-auth-library";
 import { FUNCTIONS_REGION } from "./functionsRegion";
 
-const appleSharedSecret = defineSecret("APPLE_SHARED_SECRET");
-
+// APPLE_SHARED_SECRET is injected via .env.lumi-309ff at deploy time
+// (set APPLE_SHARED_SECRET in GitHub Actions Secrets → flows into .env via workflow).
+// Sandbox receipts are accepted without it; production subscriptions require the real value.
 const PACKAGE_NAME = "io.github.seasu.lumi";
 const APPLE_VERIFY_PROD = "https://buy.itunes.apple.com/verifyReceipt";
 const APPLE_VERIFY_SANDBOX = "https://sandbox.itunes.apple.com/verifyReceipt";
@@ -129,10 +129,7 @@ async function applyPurchase(uid: string, productId: string): Promise<void> {
 // ── Cloud Function ────────────────────────────────────────────────────────────
 
 export const verifyPurchase = onCall(
-  {
-    region: FUNCTIONS_REGION,
-    secrets: [appleSharedSecret],
-  },
+  { region: FUNCTIONS_REGION },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentication required.");
@@ -163,7 +160,7 @@ export const verifyPurchase = onCall(
       }
       valid = await verifyAppleReceipt(
         receiptData,
-        appleSharedSecret.value()
+        process.env.APPLE_SHARED_SECRET ?? ""
       );
     } else if (platform === "android") {
       if (!purchaseToken) {

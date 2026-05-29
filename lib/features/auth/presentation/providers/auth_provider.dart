@@ -35,15 +35,11 @@ Future<void> signInWithApple(WidgetRef ref) async {
   }
 }
 
-/// Permanently deletes the account: calls the `deleteAccount` CF then signs out locally.
-/// Clears the loading state before any await to avoid "ref disposed" errors on iOS.
+/// Permanently deletes the account server-side (Firestore + Firebase Auth).
+/// Caller is responsible for signing out locally afterwards.
 Future<void> deleteAccount(WidgetRef ref) async {
-  final loading = ref.read(signInLoadingProvider.notifier);
-  final auth = ref.read(authRepositoryProvider);
   final functions = ref.read(cloudFunctionsServiceProvider);
-  loading.state = SignInMethod.none;
   await functions.deleteAccount();
-  await auth.signOut();
 }
 
 /// Clears [signInLoadingProvider] so the login button never stays stuck after logout.

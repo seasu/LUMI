@@ -83,8 +83,9 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
         case PurchaseStatus.pending:
           state = AsyncData(PurchaseProcessing(productId: p.productID));
         case PurchaseStatus.purchased:
+          await _handleSuccess(p, isRestore: false);
         case PurchaseStatus.restored:
-          await _handleSuccess(p);
+          await _handleSuccess(p, isRestore: true);
         case PurchaseStatus.error:
           final msg = p.error?.message ?? 'Purchase failed';
           _log('error: $msg');
@@ -102,14 +103,16 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
     }
   }
 
-  Future<void> _handleSuccess(PurchaseDetails details) async {
+  Future<void> _handleSuccess(
+    PurchaseDetails details, {
+    bool isRestore = false,
+  }) async {
     final productId = details.productID;
-    _log('success: $productId — verifying with backend');
+    _log('${isRestore ? 'restore' : 'purchase'}: $productId — verifying with backend');
     state = AsyncData(PurchaseProcessing(productId: productId));
 
     try {
-      final vData =
-          PurchaseRepository.extractVerificationData(details);
+      final vData = PurchaseRepository.extractVerificationData(details);
       final service = ref.read(cloudFunctionsServiceProvider);
       await service.verifyPurchase(
         productId: productId,
@@ -117,18 +120,28 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
         purchaseToken: vData.purchaseToken,
       );
 
-      // Acknowledge delivery to the platform.
       if (details.pendingCompletePurchase) {
         await ref.read(purchaseRepositoryProvider).complete(details);
       }
 
-      _log('success: $productId — Firestore updated');
+      _log('${isRestore ? 'restore' : 'purchase'}: $productId — Firestore updated');
       state = AsyncData(PurchaseDone(productId: productId));
     } catch (e) {
-      _log('verify ✗ $e');
-      state = AsyncData(PurchaseError('購買驗證失敗，請聯絡客服。\n$e'));
-      if (details.pendingCompletePurchase) {
-        await ref.read(purchaseRepositoryProvider).complete(details);
+      if (isRestore) {
+        // Platform already confirmed ownership — don't surface an error.
+        // Firestore should already reflect the original purchase; if not,
+        // user needs to re-purchase (edge case: account data was wiped).
+        _log('restore: $productId — backend verify failed, completing silently: $e');
+        if (details.pendingCompletePurchase) {
+          await ref.read(purchaseRepositoryProvider).complete(details);
+        }
+        state = AsyncData(PurchaseDone(productId: productId));
+      } else {
+        _log('verify ✗ $e');
+        state = AsyncData(PurchaseError('購買驗證失敗，請聯絡客服。\n$e'));
+        if (details.pendingCompletePurchase) {
+          await ref.read(purchaseRepositoryProvider).complete(details);
+        }
       }
     }
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/constants/app_version.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_radii.dart';
@@ -8,6 +9,7 @@ import '../../../shared/constants/lumi_type_scale.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../../debug/debug_log_page.dart';
 import '../../purchase/presentation/widgets/paywall_sheet.dart';
+import '../../../core/providers/locale_provider.dart';
 import '../../user/data/user_profile.dart';
 import '../../user/data/user_repository.dart';
 
@@ -46,9 +48,9 @@ class _ProfileContent extends ConsumerWidget {
         LumiSpacing.lg,
       ),
       children: [
-        const Text(
-          '個人檔案',
-          style: TextStyle(
+        Text(
+          AppLocalizations.of(context).profileTitle,
+          style: const TextStyle(
             fontSize: LumiTypeScale.headlineMd,
             fontWeight: FontWeight.w700,
             color: LumiColors.text,
@@ -85,10 +87,10 @@ class _ProfileContent extends ConsumerWidget {
         const SizedBox(height: LumiSpacing.lg),
         _QuotaCard(profile: profile),
         const SizedBox(height: LumiSpacing.lg),
-        const Text(
-          '個人身材數據',
+        Text(
+          AppLocalizations.of(context).profileMeasurements,
           textAlign: TextAlign.center,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: LumiTypeScale.body,
             fontWeight: FontWeight.w500,
             color: LumiColors.subtext,
@@ -107,8 +109,10 @@ class _ProfileContent extends ConsumerWidget {
               borderRadius: BorderRadius.circular(LumiRadii.pill),
             ),
           ),
-          child: const Text('登出'),
+          child: Text(AppLocalizations.of(context).profileSignOut),
         ),
+        const SizedBox(height: LumiSpacing.sm),
+        _LanguageSelector(),
         const SizedBox(height: LumiSpacing.sm),
         TextButton(
           onPressed: () => _showDeleteAccountDialog(context, ref),
@@ -116,9 +120,9 @@ class _ProfileContent extends ConsumerWidget {
             foregroundColor: LumiColors.warning,
             padding: const EdgeInsets.symmetric(vertical: LumiSpacing.md),
           ),
-          child: const Text(
-            '刪除帳號',
-            style: TextStyle(fontSize: LumiTypeScale.body),
+          child: Text(
+            AppLocalizations.of(context).profileDeleteAccount,
+            style: const TextStyle(fontSize: LumiTypeScale.body),
           ),
         ),
         const SizedBox(height: LumiSpacing.lg),
@@ -144,8 +148,9 @@ class _ProfileContent extends ConsumerWidget {
     // On iOS, signOut() fires authStateChanges synchronously, which triggers
     // GoRouter to navigate away and may dispose this widget mid-execution.
     // Pre-reading prevents "ref used after dispose" crashes.
-    final navigator = Navigator.of(context);
+    final navigator = Navigator.of(context, rootNavigator: true);
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
 
     showDialog<void>(
       context: context,
@@ -166,7 +171,7 @@ class _ProfileContent extends ConsumerWidget {
       navigator.pop(); // dismiss progress dialog on error
       messenger.showSnackBar(
         SnackBar(
-          content: Text('刪除失敗，請再試一次。\n$e'),
+          content: Text('${l10n.profileDeleteError}\n$e'),
           backgroundColor: LumiColors.warning,
           behavior: SnackBarBehavior.floating,
         ),
@@ -206,20 +211,19 @@ class _DeleteAccountDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: LumiSpacing.md),
-            const Text(
-              '確定要刪除帳號嗎？',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context).profileDeleteConfirmTitle,
+              style: const TextStyle(
                 fontSize: LumiTypeScale.titleSm,
                 fontWeight: FontWeight.w700,
                 color: LumiColors.text,
               ),
             ),
             const SizedBox(height: LumiSpacing.sm),
-            const Text(
-              '此操作無法復原。您的帳號資料將永久刪除，'
-              '裝置上的衣物照片與記錄不受影響。',
+            Text(
+              AppLocalizations.of(context).profileDeleteConfirmBody,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: LumiTypeScale.labelMd,
                 color: LumiColors.subtext,
                 height: 1.5,
@@ -236,10 +240,10 @@ class _DeleteAccountDialog extends StatelessWidget {
                   color: LumiColors.warning,
                   borderRadius: BorderRadius.circular(LumiRadii.pill),
                 ),
-                child: const Text(
-                  '永久刪除帳號',
+                child: Text(
+                  AppLocalizations.of(context).profileDeletePermanentButton,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: LumiTypeScale.body,
                     fontWeight: FontWeight.w600,
                     color: LumiColors.onPrimary,
@@ -250,9 +254,9 @@ class _DeleteAccountDialog extends StatelessWidget {
             const SizedBox(height: LumiSpacing.xs),
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text(
-                '取消',
-                style: TextStyle(
+              child: Text(
+                AppLocalizations.of(context).cancel,
+                style: const TextStyle(
                   fontSize: LumiTypeScale.body,
                   color: LumiColors.subtext,
                 ),
@@ -275,20 +279,20 @@ class _DeletingDialog extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(LumiRadii.xl),
       ),
-      child: const Padding(
-        padding: EdgeInsets.all(LumiSpacing.xl),
+      child: Padding(
+        padding: const EdgeInsets.all(LumiSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(color: LumiColors.warning),
-            SizedBox(height: LumiSpacing.md),
-            Text(
-              '正在刪除帳號…',
-              style: TextStyle(
+            const CircularProgressIndicator(color: LumiColors.warning),
+            const SizedBox(height: LumiSpacing.md),
+            Builder(builder: (context) => Text(
+              AppLocalizations.of(context).profileDeleting,
+              style: const TextStyle(
                 fontSize: LumiTypeScale.body,
                 color: LumiColors.subtext,
               ),
-            ),
+            )),
           ],
         ),
       ),
@@ -329,9 +333,9 @@ class _QuotaCard extends StatelessWidget {
               const Icon(Icons.auto_awesome_outlined,
                   size: 16, color: LumiColors.primary),
               const SizedBox(width: LumiSpacing.sm),
-              const Text(
-                'AI 分析配額',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context).quotaTitle,
+                style: const TextStyle(
                   fontSize: LumiTypeScale.labelMd,
                   fontWeight: FontWeight.w600,
                   color: LumiColors.text,
@@ -357,7 +361,7 @@ class _QuotaCard extends StatelessWidget {
                 )
               else
                 Text(
-                  '$used / $quota 件',
+                  AppLocalizations.of(context).quotaUsed(used, quota),
                   style: TextStyle(
                     fontSize: LumiTypeScale.labelMd,
                     fontWeight: FontWeight.w600,
@@ -384,18 +388,16 @@ class _QuotaCard extends StatelessWidget {
 
           // Sub-text
           if (isPro)
-            const Text(
-              '無限 AI 分析，享受 Pro 會員',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context).quotaProActive,
+              style: const TextStyle(
                 fontSize: LumiTypeScale.labelMd,
                 color: LumiColors.subtext,
               ),
             )
           else
             Text(
-              isNearLimit
-                  ? '剩餘 $remaining 件，即將用完'
-                  : '剩餘 $remaining 件可分析',
+              AppLocalizations.of(context).quotaRemaining(remaining),
               style: TextStyle(
                 fontSize: LumiTypeScale.labelMd,
                 color: isNearLimit ? LumiColors.warning : LumiColors.subtext,
@@ -414,10 +416,10 @@ class _QuotaCard extends StatelessWidget {
                   gradient: LumiColors.buttonGradient,
                   borderRadius: BorderRadius.circular(LumiRadii.pill),
                 ),
-                child: const Text(
-                  '升級 Pro 或購買補充包',
+                child: Text(
+                  AppLocalizations.of(context).quotaUpgradeHint,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: LumiTypeScale.labelMd,
                     fontWeight: FontWeight.w600,
                     color: LumiColors.onPrimary,
@@ -506,7 +508,7 @@ class _VersionRowState extends State<_VersionRow> {
         ..clearSnackBars()
         ..showSnackBar(
           SnackBar(
-            content: Text('再點 ${5 - _taps} 次開啟 Debug Log'),
+            content: Text(AppLocalizations.of(context).profileDebugHint(5 - _taps)),
             duration: const Duration(milliseconds: 800),
             behavior: SnackBarBehavior.floating,
           ),
@@ -519,7 +521,12 @@ class _VersionRowState extends State<_VersionRow> {
     return GestureDetector(
       onTap: _onTap,
       behavior: HitTestBehavior.opaque,
-      child: const _InfoRow(label: '版本', value: appVersionLabel),
+      child: Builder(
+        builder: (context) => _InfoRow(
+          label: AppLocalizations.of(context).profileVersion,
+          value: appVersionLabel,
+        ),
+      ),
     );
   }
 }
@@ -532,7 +539,7 @@ class _MeasurementsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = _measurementItems(profile);
+    final items = _measurementItems(profile, AppLocalizations.of(context));
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -547,10 +554,10 @@ class _MeasurementsGrid extends StatelessWidget {
     );
   }
 
-  List<_MeasurementItem> _measurementItems(UserProfile p) => [
+  List<_MeasurementItem> _measurementItems(UserProfile p, AppLocalizations l10n) => [
         _MeasurementItem(
           icon: Icons.accessibility_new_outlined,
-          label: '身高',
+          label: l10n.measureHeight,
           field: 'heightCm',
           value: p.heightCm != null
               ? '${p.heightCm!.toStringAsFixed(0)} cm'
@@ -560,7 +567,7 @@ class _MeasurementsGrid extends StatelessWidget {
         ),
         _MeasurementItem(
           icon: Icons.monitor_weight_outlined,
-          label: '體重',
+          label: l10n.measureWeight,
           field: 'weightKg',
           value: p.weightKg != null
               ? '${p.weightKg!.toStringAsFixed(0)} kg'
@@ -570,7 +577,7 @@ class _MeasurementsGrid extends StatelessWidget {
         ),
         _MeasurementItem(
           icon: Icons.calendar_today_outlined,
-          label: '生日',
+          label: l10n.measureBirthday,
           field: 'birthday',
           value: p.birthday != null ? _formatBirthday(p.birthday!) : '—',
           unit: '',
@@ -579,7 +586,7 @@ class _MeasurementsGrid extends StatelessWidget {
         ),
         _MeasurementItem(
           icon: Icons.face_outlined,
-          label: '頭圍',
+          label: l10n.measureHead,
           field: 'headCircumferenceCm',
           value: p.headCircumferenceCm != null
               ? '${p.headCircumferenceCm!.toStringAsFixed(0)} cm'
@@ -589,7 +596,7 @@ class _MeasurementsGrid extends StatelessWidget {
         ),
         _MeasurementItem(
           icon: Icons.favorite_border,
-          label: '胸圍',
+          label: l10n.measureChest,
           field: 'chestCm',
           value:
               p.chestCm != null ? '${p.chestCm!.toStringAsFixed(0)} cm' : '—',
@@ -598,7 +605,7 @@ class _MeasurementsGrid extends StatelessWidget {
         ),
         _MeasurementItem(
           icon: Icons.straighten_outlined,
-          label: '腰圍',
+          label: l10n.measureWaist,
           field: 'waistCm',
           value:
               p.waistCm != null ? '${p.waistCm!.toStringAsFixed(0)} cm' : '—',
@@ -607,7 +614,7 @@ class _MeasurementsGrid extends StatelessWidget {
         ),
         _MeasurementItem(
           icon: Icons.airline_seat_legroom_normal_outlined,
-          label: '臀圍',
+          label: l10n.measureHips,
           field: 'hipCm',
           value: p.hipCm != null ? '${p.hipCm!.toStringAsFixed(0)} cm' : '—',
           unit: 'cm',
@@ -615,7 +622,7 @@ class _MeasurementsGrid extends StatelessWidget {
         ),
         _MeasurementItem(
           icon: Icons.directions_walk_outlined,
-          label: '腿長',
+          label: l10n.measureInseam,
           field: 'legLengthCm',
           value: p.legLengthCm != null
               ? '${p.legLengthCm!.toStringAsFixed(0)} cm'
@@ -792,7 +799,7 @@ class _EditMeasurementDialogState extends State<_EditMeasurementDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '修改${widget.item.label}',
+              AppLocalizations.of(context).itemDetailEditTitle(widget.item.label),
               style: const TextStyle(
                 fontSize: LumiTypeScale.titleSm,
                 fontWeight: FontWeight.w600,
@@ -855,9 +862,9 @@ class _EditMeasurementDialogState extends State<_EditMeasurementDialog> {
                             color: LumiColors.onPrimary,
                           ),
                         )
-                      : const Text(
-                          '儲存',
-                          style: TextStyle(
+                      : Text(
+                          AppLocalizations.of(context).save,
+                          style: const TextStyle(
                             fontSize: LumiTypeScale.titleSm,
                             fontWeight: FontWeight.w600,
                             color: LumiColors.onPrimary,
@@ -869,9 +876,9 @@ class _EditMeasurementDialogState extends State<_EditMeasurementDialog> {
             const SizedBox(height: LumiSpacing.xs),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
-                '取消',
-                style: TextStyle(
+              child: Text(
+                AppLocalizations.of(context).cancel,
+                style: const TextStyle(
                   fontSize: LumiTypeScale.body,
                   color: LumiColors.subtext,
                 ),
@@ -879,6 +886,73 @@ class _EditMeasurementDialogState extends State<_EditMeasurementDialog> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── Language selector ─────────────────────────────────────────────────────────
+
+class _LanguageSelector extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentLocale = ref.watch(localeProvider);
+    final l10n = AppLocalizations.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(LumiSpacing.md),
+      decoration: BoxDecoration(
+        color: LumiColors.surface,
+        borderRadius: BorderRadius.circular(LumiRadii.lg),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.profileLanguage,
+            style: const TextStyle(
+              fontSize: LumiTypeScale.labelMd,
+              fontWeight: FontWeight.w600,
+              color: LumiColors.subtext,
+            ),
+          ),
+          const SizedBox(height: LumiSpacing.sm),
+          Wrap(
+            spacing: LumiSpacing.sm,
+            runSpacing: LumiSpacing.xs,
+            children: kSupportedLocales.map((locale) {
+              final key = localeToKey(locale);
+              final name = kLocaleDisplayNames[key] ?? locale.toString();
+              final isActive = locale.languageCode == currentLocale.languageCode &&
+                  locale.countryCode == currentLocale.countryCode;
+              return GestureDetector(
+                onTap: () => ref.read(localeProvider.notifier).setLocale(locale),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: LumiSpacing.md,
+                    vertical: LumiSpacing.xs + 2,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: isActive ? LumiColors.buttonGradient : null,
+                    color: isActive ? null : LumiColors.baseAlt,
+                    borderRadius: BorderRadius.circular(LumiRadii.pill),
+                  ),
+                  child: Text(
+                    name,
+                    style: TextStyle(
+                      fontSize: LumiTypeScale.labelMd,
+                      fontWeight:
+                          isActive ? FontWeight.w600 : FontWeight.w400,
+                      color: isActive ? LumiColors.onPrimary : LumiColors.subtext,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }

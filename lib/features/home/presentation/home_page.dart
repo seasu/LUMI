@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/firebase_providers.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_spacing.dart';
 import '../../../shared/constants/lumi_type_scale.dart';
@@ -13,6 +14,7 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(firebaseAuthProvider).currentUser;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: LumiColors.base,
@@ -41,9 +43,9 @@ class HomePage extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                '衣櫥是空的',
-                style: TextStyle(
+              Text(
+                l10n.homeEmpty,
+                style: const TextStyle(
                   fontSize: LumiTypeScale.titleLg,
                   fontWeight: FontWeight.w500,
                   color: LumiColors.text,
@@ -51,7 +53,7 @@ class HomePage extends ConsumerWidget {
               ),
               const SizedBox(height: LumiSpacing.sm),
               Text(
-                '歡迎 ${user?.displayName ?? ''}，點下方按鈕開始拍照入庫',
+                l10n.homeEmptyHint(user?.displayName ?? ''),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: LumiTypeScale.body,
@@ -67,7 +69,7 @@ class HomePage extends ConsumerWidget {
         onPressed: () => context.push('/snap'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        label: const Text('Lumi Snap'),
+        label: Text(l10n.homeFab),
         icon: const Icon(Icons.camera_alt_outlined),
       ),
     );

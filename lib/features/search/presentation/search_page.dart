@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/storage/local_wardrobe_store.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
@@ -112,16 +113,16 @@ class _WardrobeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
         LumiSpacing.md,
         LumiSpacing.sm + LumiSpacing.xs,
         LumiSpacing.md,
         LumiSpacing.sm,
       ),
       child: Text(
-        '我的衣櫥',
-        style: TextStyle(
+        AppLocalizations.of(context).searchTitle,
+        style: const TextStyle(
           fontSize: LumiTypeScale.headlineMd,
           fontWeight: FontWeight.w800,
           color: LumiColors.text,
@@ -171,18 +172,18 @@ class _AddFab extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                '加入新品',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context).homeAddItem,
+                style: const TextStyle(
                   fontSize: LumiTypeScale.titleLg,
                   fontWeight: FontWeight.w700,
                   color: LumiColors.text,
                 ),
               ),
               const SizedBox(height: LumiSpacing.xs),
-              const Text(
-                '選擇照片來源，AI 將自動辨識並加入衣櫥',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context).snapIdleSubtitle,
+                style: const TextStyle(
                   fontSize: LumiTypeScale.labelMd,
                   color: LumiColors.subtext,
                 ),
@@ -190,7 +191,7 @@ class _AddFab extends StatelessWidget {
               const SizedBox(height: LumiSpacing.sm),
               _CheckSourceOption(
                 icon: Icons.camera_alt_outlined,
-                label: '拍照',
+                label: AppLocalizations.of(context).snapCamera,
                 onTap: () {
                   Navigator.of(ctx).pop();
                   context.push('/snap?source=camera');
@@ -198,7 +199,7 @@ class _AddFab extends StatelessWidget {
               ),
               _CheckSourceOption(
                 icon: Icons.photo_library_outlined,
-                label: '從相簿選取',
+                label: AppLocalizations.of(context).snapLibrary,
                 onTap: () {
                   Navigator.of(ctx).pop();
                   context.push('/snap?source=gallery');
@@ -261,18 +262,18 @@ class _SnapFab extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                '似曾相識',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context).checkTitle,
+                style: const TextStyle(
                   fontSize: LumiTypeScale.titleLg,
                   fontWeight: FontWeight.w700,
                   color: LumiColors.text,
                 ),
               ),
               const SizedBox(height: LumiSpacing.xs),
-              const Text(
-                '拍下想買的衣物，AI 立即為妳比對衣櫥',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context).checkSubtitle,
+                style: const TextStyle(
                   fontSize: LumiTypeScale.labelMd,
                   color: LumiColors.subtext,
                 ),
@@ -280,7 +281,7 @@ class _SnapFab extends StatelessWidget {
               const SizedBox(height: LumiSpacing.sm),
               _CheckSourceOption(
                 icon: Icons.camera_alt_outlined,
-                label: '拍照',
+                label: AppLocalizations.of(context).snapCamera,
                 onTap: () {
                   Navigator.of(ctx).pop();
                   context.push('/check?source=camera');
@@ -288,7 +289,7 @@ class _SnapFab extends StatelessWidget {
               ),
               _CheckSourceOption(
                 icon: Icons.photo_library_outlined,
-                label: '從相簿選取',
+                label: AppLocalizations.of(context).snapLibrary,
                 onTap: () {
                   Navigator.of(ctx).pop();
                   context.push('/check?source=gallery');
@@ -391,14 +392,16 @@ class _EmptyState extends ConsumerWidget {
       return const _TrueEmptyState();
     }
 
+    final l10n = AppLocalizations.of(context);
+
     // 在「我的最愛」tab 但尚未收藏任何衣物
     if (filter.category == WardrobeFilter.favoritesFilter) {
       return _FilteredEmptyState(
         icon: Icons.favorite_border,
         iconColor: LumiColors.warning,
-        title: '還沒有收藏的衣物',
-        subtitle: '點擊衣物卡片右下角的愛心，\n將喜歡的單品加入最愛',
-        ctaLabel: '查看全部衣物',
+        title: l10n.searchFavoritesEmptyTitle,
+        subtitle: l10n.searchFavoritesEmptyHint,
+        ctaLabel: l10n.searchViewAll,
         onCta: () =>
             ref.read(wardrobeFilterProvider.notifier).setCategory(null),
       );
@@ -409,9 +412,9 @@ class _EmptyState extends ConsumerWidget {
       return _FilteredEmptyState(
         icon: Icons.auto_awesome_outlined,
         iconColor: LumiColors.primary,
-        title: 'AI 辨識完成！',
-        subtitle: '衣物已歸類到對應分類\n快點擊下方按鈕去看看吧',
-        ctaLabel: '查看全部衣物',
+        title: l10n.searchAiDoneTitle,
+        subtitle: l10n.searchAiDoneHint,
+        ctaLabel: l10n.searchViewAll,
         onCta: () =>
             ref.read(wardrobeFilterProvider.notifier).setCategory(null),
       );
@@ -421,9 +424,9 @@ class _EmptyState extends ConsumerWidget {
     return _FilteredEmptyState(
       icon: Icons.search_off_outlined,
       iconColor: LumiColors.subtext,
-      title: '這個分類目前沒有衣物',
-      subtitle: '換個分類看看，或清除篩選條件',
-      ctaLabel: '查看全部衣物',
+      title: l10n.searchFilterEmptyTitle,
+      subtitle: l10n.searchFilterEmptyHint,
+      ctaLabel: l10n.searchViewAll,
       onCta: () => ref.read(wardrobeFilterProvider.notifier).clearAll(),
     );
   }
@@ -444,20 +447,20 @@ class _TrueEmptyState extends StatelessWidget {
             color: LumiColors.subtext.withValues(alpha: 0.35),
           ),
           const SizedBox(height: LumiSpacing.md + LumiSpacing.xs),
-          const Text(
-            '妳的衣櫥目前空空如也',
+          Text(
+            AppLocalizations.of(context).homeEmpty,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: LumiTypeScale.titleSm,
               fontWeight: FontWeight.w800,
               color: LumiColors.text,
             ),
           ),
           const SizedBox(height: LumiSpacing.sm),
-          const Text(
-            '點擊右上角的「加入新品」按鈕，\n開始建立妳的數位衣櫥吧！',
+          Text(
+            AppLocalizations.of(context).searchEmptyHint,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: LumiTypeScale.labelMd,
               color: LumiColors.subtext,
               height: 1.7,
@@ -622,7 +625,7 @@ class _ErrorState extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(LumiSpacing.lg),
         child: Text(
-          '載入失敗：$message',
+          '${AppLocalizations.of(context).error}: $message',
           textAlign: TextAlign.center,
           style: const TextStyle(
             fontSize: LumiTypeScale.labelMd,

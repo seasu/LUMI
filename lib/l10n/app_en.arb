@@ -1,0 +1,321 @@
+{
+  "@@locale": "en",
+  "appName": "Lumi",
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "save": "Save",
+  "delete": "Delete",
+  "retry": "Retry",
+  "close": "Close",
+  "loading": "Loading...",
+  "error": "Something went wrong",
+  "unknownError": "An unknown error occurred",
+  "and": " and ",
+  "authTitle": "Light up your wardrobe with AI",
+  "authSignInGoogle": "Sign in with Google",
+  "authSignInApple": "Sign in with Apple",
+  "authTermsPrefix": "By continuing, you agree to our ",
+  "authTermsLink": "Terms of Service",
+  "authPrivacyLink": "Privacy Policy",
+  "homeTitle": "My Wardrobe",
+  "homeAddItem": "Add Item",
+  "homeEmpty": "Your wardrobe is empty",
+  "homeEmptyHint": "Welcome, {name}! Tap the button below to start adding items",
+  "@homeEmptyHint": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeFab": "Lumi Snap",
+  "homeItemCount": "{count, plural, =1{{count} item} other{{count} items}}",
+  "@homeItemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "snapTitle": "New Item",
+  "snapUploadAll": "Analyze All",
+  "snapSuccessCount": "{count, plural, =1{Added 1 item} other{Added {count} items}}",
+  "@snapSuccessCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "snapQuotaBanner": "AI analysis: {remaining} left · Upgrade →",
+  "@snapQuotaBanner": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      }
+    }
+  },
+  "snapQuotaExceeded": "AI analysis quota reached",
+  "snapAnalyzing": "Analyzing...",
+  "snapUploadError": "Upload failed. Please try again.",
+  "snapTapToAdd": "Tap to add photos",
+  "snapAddMore": "Add More",
+  "snapDone": "Done",
+  "searchTitle": "Wardrobe",
+  "searchHint": "Search items...",
+  "searchNoResults": "No items found",
+  "searchDeleteTitle": "Delete Item",
+  "searchDeleteConfirm": "Are you sure you want to remove this item from your wardrobe?",
+  "searchFilterAll": "All",
+  "searchFilterFavorites": "Favorites",
+  "searchFilterUncategorized": "Uncategorized",
+  "catDress": "Dress",
+  "@catDress": {
+    "description": "Clothing category: 連身裙"
+  },
+  "catTop": "Top",
+  "@catTop": {
+    "description": "Clothing category: 上衣"
+  },
+  "catBottom": "Bottom",
+  "@catBottom": {
+    "description": "Clothing category: 下身"
+  },
+  "catShoes": "Shoes",
+  "@catShoes": {
+    "description": "Clothing category: 鞋履/鞋子"
+  },
+  "catBag": "Bags",
+  "@catBag": {
+    "description": "Clothing category: 包款"
+  },
+  "catAccessory": "Accessories",
+  "@catAccessory": {
+    "description": "Clothing category: 配件"
+  },
+  "catPants": "Pants",
+  "@catPants": {
+    "description": "Clothing category: 褲子"
+  },
+  "catOuterwear": "Outerwear",
+  "@catOuterwear": {
+    "description": "Clothing category: 外套"
+  },
+  "colorRed": "Red",
+  "colorOrange": "Orange",
+  "colorYellow": "Yellow",
+  "colorGreen": "Green",
+  "colorBlue": "Blue",
+  "colorPurple": "Purple",
+  "colorPink": "Pink",
+  "colorBrown": "Brown",
+  "colorBeige": "Beige",
+  "colorBlack": "Black",
+  "colorWhite": "White",
+  "colorGray": "Gray",
+  "profileTitle": "Profile",
+  "profileMeasurements": "Body Measurements",
+  "profileHeight": "Height",
+  "profileWeight": "Weight",
+  "profileBirthday": "Birthday",
+  "profileHead": "Head",
+  "profileChest": "Chest",
+  "profileWaist": "Waist",
+  "profileHips": "Hips",
+  "profileInseam": "Inseam",
+  "profileSignOut": "Sign Out",
+  "profileDeleteAccount": "Delete Account",
+  "profileDeleteTitle": "Delete Account",
+  "profileDeleteConfirm": "All data will be permanently deleted and cannot be recovered. Are you sure?",
+  "profileDeletePermanent": "Permanently Delete",
+  "profileDeleting": "Deleting...",
+  "profileDeleteError": "Deletion failed. Please try again.",
+  "profileLanguage": "Language",
+  "quotaTitle": "AI Analysis Quota",
+  "quotaUsed": "{used} / {total}",
+  "@quotaUsed": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaRemaining": "{remaining} remaining",
+  "@quotaRemaining": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaUnlimited": "Unlimited (Pro)",
+  "quotaUpgradeHint": "Upgrade Pro or buy a top-up pack",
+  "quotaUpgradeButton": "Upgrade",
+  "quotaProActive": "Unlimited AI analysis, enjoy Pro membership",
+  "paywallTitle": "Your digital wardrobe\nneeds more space",
+  "paywallSubtitle": "Choose the plan that suits you best",
+  "paywallProName": "Lumi Pro Annual",
+  "paywallProPrice": "NT$199 / year",
+  "paywallProDesc": "Unlimited AI analysis, enjoy year-round",
+  "paywallProBadge": "Best Value",
+  "paywallExtraName": "Top-up Pack",
+  "paywallExtraPrice": "NT$99",
+  "paywallExtraDesc": "+100 AI analysis credits, one-time",
+  "paywallFreeContinue": "Continue for free",
+  "paywallRestorePurchases": "Restore Purchases",
+  "paywallSuccessPro": "🎉 Upgraded to Pro! Enjoy unlimited AI analysis",
+  "paywallSuccessExtra": "✅ Added 100 AI analysis credits",
+  "paywallErrorGeneric": "Purchase failed. Please try again.",
+  "outfitTitle": "Outfits",
+  "outfitCreate": "Create Outfit",
+  "outfitEmpty": "No outfits yet",
+  "outfitEmptyHint": "Tap + to create your first outfit",
+  "outfitShare": "Share",
+  "outfitDelete": "Delete Outfit",
+  "outfitDeleteConfirm": "Delete this outfit?",
+  "outfitNewTitle": "New Outfit",
+  "outfitEditTitle": "Edit Outfit",
+  "outfitDate": "Date",
+  "outfitNote": "Note",
+  "checkTitle": "Lumi Check",
+  "checkSubtitle": "Scan before you buy",
+  "checkSimilarItems": "Similar items in your wardrobe",
+  "checkNoSimilar": "No similar items found",
+  "checkSimilarityLabel": "{percent}% similar",
+  "@checkSimilarityLabel": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "checkTapToScan": "Tap to scan",
+  "checkScanning": "Scanning...",
+  "onboardingStep1Title": "Zero-friction digital wardrobe",
+  "onboardingStep1Desc": "LUMI syncs with Google Photos automatically — no manual uploads needed.",
+  "onboardingStep2Title": "AI smart analysis",
+  "onboardingStep2Desc": "Lumi uses Gemini AI to automatically identify colors, materials and styles, making search effortless.",
+  "onboardingStep3Title": "Shop smarter, never duplicate",
+  "onboardingStep3Desc": "'Lumi Check' lets you compare against your wardrobe in real time while shopping.",
+  "onboardingNext": "Next",
+  "onboardingStart": "Get Started",
+  "itemDetailEditTitle": "Edit {label}",
+  "@itemDetailEditTitle": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "itemDetailCategory": "Category",
+  "itemDetailColors": "Colors",
+  "itemDetailMaterials": "Materials",
+  "itemDetailBrand": "Brand",
+  "itemDetailNote": "Note",
+  "itemDetailAnalyzed": "AI Analyzed",
+  "itemDetailNotAnalyzed": "Not yet analyzed",
+  "itemDetailDeleteTitle": "Delete Item",
+  "itemDetailDeleteConfirm": "Are you sure you want to remove this item from your wardrobe?",
+  "errorQuotaExceeded": "AI analysis quota reached. Purchase a top-up or upgrade to Pro.",
+  "errorNetworkFailed": "Network error. Please check your connection.",
+  "errorAuthRequired": "Please sign in to continue.",
+  "errorPurchaseFailed": "Purchase failed. Please try again.",
+  "errorDeleteFailed": "Deletion failed. Please try again.",
+  "snapIdleTitle": "Select source",
+  "snapIdleSubtitle": "Up to 10 photos at once, AI will categorize in the background",
+  "snapCamera": "Take photo",
+  "snapLibrary": "Choose from library",
+  "snapSelectedCount": "{count} / {max} selected",
+  "@snapSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "snapAddToWardrobe": "Add to Wardrobe",
+  "snapAddMoreTile": "Add",
+  "snapRetry": "Try Again",
+  "snapAppBarAdding": "Adding to wardrobe...",
+  "snapAppBarDone": "Done",
+  "snapQuotaExhaustedBanner": "AI analysis quota used up — items added but not analyzed",
+  "snapUpgradeArrow": "Upgrade →",
+  "paywallBuyPro": "Upgrade Now",
+  "paywallBuyExtra": "Buy",
+  "paywallProPriceSub": "/ year",
+  "paywallExtraPriceSub": "one-time",
+  "profileVersion": "Version",
+  "profileDebugHint": "{count} more taps to open Debug Log",
+  "@profileDebugHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileDeleteConfirmTitle": "Delete Account?",
+  "profileDeleteConfirmBody": "This cannot be undone. Your account data will be permanently deleted. Photos and records on your device are not affected.",
+  "profileDeletePermanentButton": "Permanently Delete Account",
+  "measureHeight": "Height",
+  "measureWeight": "Weight",
+  "measureBirthday": "Birthday",
+  "measureHead": "Head",
+  "measureChest": "Chest",
+  "measureWaist": "Waist",
+  "measureHips": "Hips",
+  "measureInseam": "Inseam",
+  "searchEmptyHint": "Tap + to start adding clothes to your wardrobe",
+  "searchViewAll": "View all",
+  "searchFavoritesEmptyTitle": "No favorites yet",
+  "searchFavoritesEmptyHint": "Tap the heart icon on a clothing card to add it to favorites",
+  "searchAiDoneTitle": "AI analysis complete!",
+  "searchAiDoneHint": "Items have been categorized. Tap a category to view.",
+  "searchFilterEmptyTitle": "No items in this category",
+  "searchFilterEmptyHint": "Try another category or clear your filters",
+  "checkScanTitle": "AI Comparing",
+  "checkScanSubtitle": "Searching your wardrobe for similar styles...",
+  "checkWantToBuy": "Item to Buy",
+  "checkClosestInWardrobe": "Closest Match",
+  "checkHighSimilarBanner": "Wardrobe has {percent}% match — reconsider before buying!",
+  "@checkHighSimilarBanner": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "checkMediumSimilarBanner": "Wardrobe has {percent}% match — compare before deciding.",
+  "@checkMediumSimilarBanner": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "checkAlreadyHave": "Already own it",
+  "checkAddedSuccess": "Added to wardrobe",
+  "checkNoSimilarHint": "No similar items found — safe to buy!",
+  "checkBackToWardrobe": "Back to Wardrobe",
+  "checkAdding": "Adding...",
+  "itemDetailEditBadge": "Edit AI Result",
+  "itemDetailAnalyzing": "AI analyzing…",
+  "itemDetailAnalyzeFailed": "Analysis failed, pull down to retry",
+  "outfitNoCaption": "No caption",
+
+  "back": "Back",
+  "done": "Done",
+
+  "outfitShareTitle": "Share Outfit",
+  "outfitShareCaptionHint": "Add a caption...",
+  "outfitShareDone": "Done",
+  "outfitShareSuccess": "Outfit shared!",
+  "outfitShareFailed": "Share failed. Please try again.",
+  "outfitShareSubject": "My Lumi Outfit",
+  "outfitShareBrandSlogan": "Record your daily style with AI"
+}

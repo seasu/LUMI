@@ -1,23 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../shared/constants/lumi_colors.dart';
+import '../../../../shared/utils/category_translator.dart';
 import '../../domain/wardrobe_filter.dart';
 import '../providers/search_provider.dart';
 
-// 分類與 Gemini 輸出對應
-const _categories = <_CategoryTab>[
-  _CategoryTab('全部', null),
-  _CategoryTab('我的最愛', WardrobeFilter.favoritesFilter),
-  _CategoryTab('未分類', WardrobeFilter.uncategorizedOnly),
-  _CategoryTab('連身裙', '連身裙'),
-  _CategoryTab('上衣', '上衣'),
-  _CategoryTab('下身', '下身'),
-  _CategoryTab('鞋履', '鞋履'),
-  _CategoryTab('包款', '包款'),
-  _CategoryTab('配件', '配件'),
+// Raw category data values (Gemini-returned Chinese strings used as filter keys).
+// Display labels are translated at runtime in _CategoryTabs.
+const _categoryDataKeys = <String?>[
+  null,                              // 全部
+  WardrobeFilter.favoritesFilter,    // 我的最愛
+  WardrobeFilter.uncategorizedOnly,  // 未分類
+  '連身裙',
+  '上衣',
+  '下身',
+  '鞋履',
+  '包款',
+  '配件',
 ];
 
-// 顏色篩選選項（近似色）
+// 顏色篩選選項（近似色）— color values are data swatches, not UI colors
 const _colorOptions = <_ColorOption>[
   _ColorOption('紅', Color(0xFFE53935)),
   _ColorOption('橘', Color(0xFFF57C00)),
@@ -58,15 +61,31 @@ class _CategoryTabs extends ConsumerWidget {
     final selected = ref.watch(
       wardrobeFilterProvider.select((f) => f.category),
     );
+    final l10n = AppLocalizations.of(context);
+
+    // Build translated display labels at runtime
+    final categories = _categoryDataKeys.map((key) {
+      final String label;
+      if (key == null) {
+        label = l10n.searchFilterAll;
+      } else if (key == WardrobeFilter.favoritesFilter) {
+        label = l10n.searchFilterFavorites;
+      } else if (key == WardrobeFilter.uncategorizedOnly) {
+        label = l10n.searchFilterUncategorized;
+      } else {
+        label = translateCategory(key, l10n);
+      }
+      return _CategoryTab(label: label, category: key);
+    }).toList();
 
     return SizedBox(
       height: 36,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _categories.length,
+        itemCount: categories.length,
         itemBuilder: (context, i) {
-          final tab = _categories[i];
+          final tab = categories[i];
           final isSelected = _categoryTabMatches(selected, tab);
           return GestureDetector(
             onTap: () => ref
@@ -167,7 +186,6 @@ class _ColorDotRow extends ConsumerWidget {
                   ? notifier.removeColor(hexStr)
                   : notifier.addColor(hexStr);
             },
-            // 48×48 tap area for comfortable touch
             child: SizedBox(
               width: 48,
               height: 48,
@@ -180,14 +198,12 @@ class _ColorDotRow extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: opt.color,
                     shape: BoxShape.circle,
-                    // Subtle outline for near-white dots so they're visible
                     border: (!isSelected &&
                             opt.color.computeLuminance() > 0.85)
                         ? Border.all(
                             color: LumiColors.subtext.withValues(alpha: 0.20),
                           )
                         : null,
-                    // Selected: white ring + primary outer ring via spread shadows
                     boxShadow: isSelected
                         ? [
                             const BoxShadow(
@@ -226,9 +242,9 @@ String _colorToHex(Color color) {
 }
 
 class _CategoryTab {
-  const _CategoryTab(this.label, this.category);
+  const _CategoryTab({required this.label, required this.category});
   final String label;
-  /// `null` = 全部；[WardrobeFilter.uncategorizedOnly] = 僅空分類；其餘為 Gemini 分類名。
+  /// `null` = all；[WardrobeFilter.uncategorizedOnly] = uncategorized only；else Gemini category key.
   final String? category;
 }
 

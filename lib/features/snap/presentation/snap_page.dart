@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
@@ -69,7 +70,7 @@ class _SnapPageState extends ConsumerState<SnapPage> {
       }
       if (next is SnapDone && mounted) {
         final messenger = ScaffoldMessenger.of(context);
-        final label = next.count == 1 ? '已成功加入 1 件衣物' : '已成功加入 ${next.count} 件衣物';
+        final label = AppLocalizations.of(context).snapSuccessCount(next.count);
         _popToWardrobeUncategorized();
         messenger.showSnackBar(
           SnackBar(
@@ -131,7 +132,7 @@ class _SnapPageState extends ConsumerState<SnapPage> {
                 icon: const Icon(Icons.close, color: LumiColors.text),
               ),
         title: Text(
-          _appBarTitle(snapState),
+          _appBarTitle(context, snapState),
           style: const TextStyle(
             fontSize: LumiTypeScale.titleSm,
             fontWeight: FontWeight.w500,
@@ -170,11 +171,14 @@ class _SnapPageState extends ConsumerState<SnapPage> {
     );
   }
 
-  String _appBarTitle(SnapState state) => switch (state) {
-        SnapIdle() || SnapPreviewing() || SnapError() => '加入新品',
-        SnapUploading() => '加入衣櫥中',
-        SnapDone() => '加入完成',
-      };
+  String _appBarTitle(BuildContext context, SnapState state) {
+    final l10n = AppLocalizations.of(context);
+    return switch (state) {
+      SnapIdle() || SnapPreviewing() || SnapError() => l10n.snapTitle,
+      SnapUploading() => l10n.snapAppBarAdding,
+      SnapDone() => l10n.snapAppBarDone,
+    };
+  }
 }
 
 // ── Idle（入口，選擇來源）──────────────────────────────────────────────────────
@@ -212,19 +216,19 @@ class _IdleView extends StatelessWidget {
             ],
           ),
           const SizedBox(height: LumiSpacing.lg),
-          const Text(
-            '選擇加入方式',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context).snapIdleTitle,
+            style: const TextStyle(
               fontSize: LumiTypeScale.titleLg,
               fontWeight: FontWeight.w700,
               color: LumiColors.text,
             ),
           ),
           const SizedBox(height: LumiSpacing.sm),
-          const Text(
-            '一次最多 10 張，AI 會在背景自動分類',
+          Text(
+            AppLocalizations.of(context).snapIdleSubtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: LumiTypeScale.labelMd,
               color: LumiColors.subtext,
             ),
@@ -236,7 +240,7 @@ class _IdleView extends StatelessWidget {
               Expanded(
                 child: _SourceButton(
                   icon: Icons.camera_alt_outlined,
-                  label: '拍照',
+                  label: AppLocalizations.of(context).snapCamera,
                   onTap: onCamera,
                   isPrimary: true,
                 ),
@@ -245,7 +249,7 @@ class _IdleView extends StatelessWidget {
               Expanded(
                 child: _SourceButton(
                   icon: Icons.photo_library_outlined,
-                  label: '從相簿選取',
+                  label: AppLocalizations.of(context).snapLibrary,
                   onTap: onLibrary,
                   isPrimary: false,
                 ),
@@ -400,13 +404,16 @@ class _PreviewView extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: LumiSpacing.md),
           child: Align(
             alignment: Alignment.centerLeft,
-            child: Text(
-              '已選取 ${files.length} / $_maxPhotos 張',
-              style: const TextStyle(
-                fontSize: LumiTypeScale.labelMd,
-                color: LumiColors.subtext,
-              ),
-            ),
+            child: Builder(builder: (context) {
+              final l10n = AppLocalizations.of(context);
+              return Text(
+                l10n.snapSelectedCount(files.length, _maxPhotos),
+                style: const TextStyle(
+                  fontSize: LumiTypeScale.labelMd,
+                  color: LumiColors.subtext,
+                ),
+              );
+            }),
           ),
         ),
         Padding(
@@ -416,18 +423,26 @@ class _PreviewView extends StatelessWidget {
             LumiSpacing.md,
             LumiSpacing.xs,
           ),
-          child: _PrimaryButton(label: '加入衣櫥', onTap: onConfirm),
+          child: Builder(builder: (context) {
+            return _PrimaryButton(
+              label: AppLocalizations.of(context).snapAddToWardrobe,
+              onTap: onConfirm,
+            );
+          }),
         ),
-        TextButton(
-          onPressed: onCancel,
-          child: const Text(
-            '取消',
-            style: TextStyle(
-              fontSize: LumiTypeScale.body,
-              color: LumiColors.subtext,
+        Builder(builder: (context) {
+          final l10n = AppLocalizations.of(context);
+          return TextButton(
+            onPressed: onCancel,
+            child: Text(
+              l10n.cancel,
+              style: const TextStyle(
+                fontSize: LumiTypeScale.body,
+                color: LumiColors.subtext,
+              ),
             ),
-          ),
-        ),
+          );
+        }),
         const SizedBox(height: LumiSpacing.md),
       ],
     );
@@ -508,14 +523,14 @@ class _AddMoreTile extends StatelessWidget {
             color: LumiColors.subtext.withValues(alpha: 0.18),
           ),
         ),
-        child: const Column(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add, size: 28, color: LumiColors.primary),
-            SizedBox(height: LumiSpacing.xs),
+            const Icon(Icons.add, size: 28, color: LumiColors.primary),
+            const SizedBox(height: LumiSpacing.xs),
             Text(
-              '新增',
-              style: TextStyle(
+              AppLocalizations.of(context).snapAddMoreTile,
+              style: const TextStyle(
                 fontSize: LumiTypeScale.labelSm,
                 color: LumiColors.primary,
                 fontWeight: FontWeight.w600,
@@ -567,27 +582,30 @@ class _QuotaBanner extends StatelessWidget {
             ),
             const SizedBox(width: LumiSpacing.sm),
             Expanded(
-              child: Text(
-                remaining == 0
-                    ? 'AI 分析配額已用完，加入後無法分析'
-                    : 'AI 分析剩餘 $remaining 件，即將用完',
-                style: const TextStyle(
+              child: Builder(builder: (context) {
+                final l10n = AppLocalizations.of(context);
+                return Text(
+                  remaining == 0
+                      ? l10n.snapQuotaExhaustedBanner
+                      : l10n.snapQuotaBanner(remaining),
+                  style: const TextStyle(
                   fontSize: LumiTypeScale.labelMd,
                   color: LumiColors.warning,
                   fontWeight: FontWeight.w500,
                 ),
-              ),
+              );
+              }),
             ),
             if (onUpgrade != null) ...[
               const SizedBox(width: LumiSpacing.sm),
-              const Text(
-                '升級 →',
-                style: TextStyle(
+              Builder(builder: (context) => Text(
+                AppLocalizations.of(context).snapUpgradeArrow,
+                style: const TextStyle(
                   fontSize: LumiTypeScale.labelMd,
                   color: LumiColors.warning,
                   fontWeight: FontWeight.w700,
                 ),
-              ),
+              )),
             ],
           ],
         ),
@@ -629,7 +647,7 @@ class _ErrorView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: LumiSpacing.lg),
-          _PrimaryButton(label: '重新選取', onTap: onRetry),
+          _PrimaryButton(label: AppLocalizations.of(context).snapRetry, onTap: onRetry),
           const Spacer(),
         ],
       ),

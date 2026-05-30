@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.58+147
+**前端版本 (Flutter App)：** 1.0.59+148
 **後端版本 (Cloud Functions)：** 1.0.14
 **開發框架：** Flutter (Cross-platform)
 
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-05-29 | 1.0.59+148 | 1.0.14 | 多國語系（i18n）完整實作：使用 Flutter `gen-l10n`，支援 English / 繁體中文 / 简体中文 / 日本語；新增 `l10n.yaml`、5 個 ARB 檔（`app_en.arb`、`app_zh_TW.arb`、`app_zh_CN.arb`、`app_ja.arb`、`app_zh.arb`）含 ~320 個字串 key；替換全 App 29 個 UI 檔硬編碼中文字串；新增 `LocaleNotifier`（Riverpod + SharedPreferences）與 Profile 頁語言切換 UI；新增 `translateCategory`/`translateColor` helper | UI / i18n / Auth / Profile / Wardrobe / OOTD / Check |
 | 2026-05-28 | 1.0.58+147 | 1.0.14 | 新增帳號刪除功能（Apple App Store Guideline 5.1.1(v)）：(1) CF `deleteAccount`：刪除 Firestore `users/{uid}` 文件後刪除 Firebase Auth 記錄；(2) 個人頁新增「刪除帳號」文字按鈕，點擊後彈出確認 Dialog；(3) `auth_provider.dart` 新增 `deleteAccount()`；(4) `CloudFunctionsService.deleteAccount()` 呼叫 CF | Auth / Profile / Cloud Functions |
 | 2026-05-25 | 1.0.57+146 | 1.0.13 | (1) Paywall Sheet UI（`paywall_sheet.dart`）：底部升級 Sheet，Pro 年費方案卡＋補充包卡（decoy 效果）、Glow Orb 購買中動畫、成功自動關閉；(2) 個人頁配額進度條（`profile_page.dart`）：顯示 AI 分析配額使用量、linear progress bar、剩餘 ≤5 件橘色警示、升級按鈕；(3) Snap 頁配額警示 Banner（`snap_page.dart`）：SnapPreviewing 狀態且剩餘 ≤5 件時顯示橘色 Banner，quota_exceeded 錯誤自動彈出 Paywall | Purchase / IAP / UI / Profile / Snap |
 | 2026-05-21 | 1.0.56+145 | 1.0.12 | (1) 衣櫥與穿搭 Detail Modal 新增左右滑動瀏覽（`PageView.builder` + `ClampingScrollPhysics`，編輯模式鎖定滑動）；(2) 篩選列「我的最愛」Tab 文字高度對齊修正（改用 `Text.rich` + `WidgetSpan(alignment: PlaceholderAlignment.middle)`）；(3) 分享圖片與本機存圖均先壓縮（`flutter_image_compress` Q90 / 4096px 保高解析度）；(4) 衣櫥頁標題「加入新品」改為右下角 FAB，與「似曾相識」雙 FAB 垂直排列，操作流程統一為 bottom sheet 選相機／相簿；(5) SnapPage 帶 `autoSource` 時隱藏閒置 UI 並在取消後自動返回；(6) 移除「加入完成」全頁畫面，改為立即返回衣櫥 + 浮動 SnackBar 提示 | Wardrobe / OOTD / UI / Snap / Share |

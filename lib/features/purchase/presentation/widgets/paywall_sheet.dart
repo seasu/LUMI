@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../shared/constants/lumi_colors.dart';
 import '../../../../shared/constants/lumi_radii.dart';
 import '../../../../shared/constants/lumi_spacing.dart';
@@ -105,25 +106,32 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
             const SizedBox(height: LumiSpacing.md),
 
             // Title
-            const Text(
-              '你的數位衣物庫\n需要更多空間',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: LumiTypeScale.titleLg,
-                fontWeight: FontWeight.w800,
-                color: LumiColors.text,
-                height: 1.3,
-              ),
-            ),
-            const SizedBox(height: LumiSpacing.xs),
-            const Text(
-              '選擇最適合你的方案，繼續擴充衣物庫',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: LumiTypeScale.labelMd,
-                color: LumiColors.subtext,
-              ),
-            ),
+            Builder(builder: (context) {
+              final l10n = AppLocalizations.of(context);
+              return Column(
+                children: [
+                  Text(
+                    l10n.paywallTitle,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: LumiTypeScale.titleLg,
+                      fontWeight: FontWeight.w800,
+                      color: LumiColors.text,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: LumiSpacing.xs),
+                  Text(
+                    l10n.paywallSubtitle,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: LumiTypeScale.labelMd,
+                      color: LumiColors.subtext,
+                    ),
+                  ),
+                ],
+              );
+            }),
             const SizedBox(height: LumiSpacing.lg),
 
             // Plan cards
@@ -169,7 +177,7 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
                 style: TextButton.styleFrom(
                   foregroundColor: LumiColors.subtext,
                 ),
-                child: const Text('繼續免費使用'),
+                child: Text(AppLocalizations.of(context).paywallFreeContinue),
               ),
           ],
         ),
@@ -184,9 +192,10 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
   }
 
   void _showSuccessSnackBar(BuildContext ctx, String productId) {
+    final l10n = AppLocalizations.of(ctx);
     final msg = productId == LumiProductIds.proYearly
-        ? '🎉 已升級為 Pro！享受無限 AI 分析'
-        : '✅ 已補充 100 次 AI 分析配額';
+        ? l10n.paywallSuccessPro
+        : l10n.paywallSuccessExtra;
     ScaffoldMessenger.of(ctx).showSnackBar(
       SnackBar(
         content: Text(msg),
@@ -261,30 +270,36 @@ class _PlanCards extends StatelessWidget {
     return Column(
       children: [
         // Pro annual (shown first — decoy effect; "best value")
-        _PlanCard(
-          highlighted: true,
-          badge: '最划算',
-          title: 'Pro 年費方案',
-          description: '無限 AI 分析，一年暢用',
-          priceLabel: proPrice,
-          priceSub: '/ 年',
-          isProcessing: isProcessing,
-          glowAnim: glowAnim,
-          onBuy: onBuyPro,
-        ),
+        Builder(builder: (context) {
+          final l10n = AppLocalizations.of(context);
+          return _PlanCard(
+            highlighted: true,
+            badge: l10n.paywallProBadge,
+            title: l10n.paywallProName,
+            description: l10n.paywallProDesc,
+            priceLabel: proPrice,
+            priceSub: l10n.paywallProPriceSub,
+            isProcessing: isProcessing,
+            glowAnim: glowAnim,
+            onBuy: onBuyPro,
+          );
+        }),
         const SizedBox(height: LumiSpacing.md),
         // Extra pack
-        _PlanCard(
-          highlighted: false,
-          badge: null,
-          title: '補充包',
-          description: '一次性補充 100 次 AI 分析配額',
-          priceLabel: extraPrice,
-          priceSub: '/ 一次',
-          isProcessing: isProcessing,
-          glowAnim: glowAnim,
-          onBuy: onBuyExtra,
-        ),
+        Builder(builder: (context) {
+          final l10n = AppLocalizations.of(context);
+          return _PlanCard(
+            highlighted: false,
+            badge: null,
+            title: l10n.paywallExtraName,
+            description: l10n.paywallExtraDesc,
+            priceLabel: extraPrice,
+            priceSub: l10n.paywallExtraPriceSub,
+            isProcessing: isProcessing,
+            glowAnim: glowAnim,
+            onBuy: onBuyExtra,
+          );
+        }),
       ],
     );
   }
@@ -510,9 +525,9 @@ class _BuyButton extends StatelessWidget {
             gradient: LumiColors.buttonGradient,
             borderRadius: BorderRadius.circular(LumiRadii.pill),
           ),
-          child: const Text(
-            '立即升級',
-            style: TextStyle(
+          child: Text(
+            AppLocalizations.of(context).paywallBuyPro,
+            style: const TextStyle(
               fontSize: LumiTypeScale.labelMd,
               fontWeight: FontWeight.w600,
               color: LumiColors.onPrimary,
@@ -533,9 +548,9 @@ class _BuyButton extends StatelessWidget {
           color: LumiColors.primaryFixed,
           borderRadius: BorderRadius.circular(LumiRadii.pill),
         ),
-        child: const Text(
-          '購買',
-          style: TextStyle(
+        child: Text(
+          AppLocalizations.of(context).paywallBuyExtra,
+          style: const TextStyle(
             fontSize: LumiTypeScale.labelMd,
             fontWeight: FontWeight.w600,
             color: LumiColors.primary,

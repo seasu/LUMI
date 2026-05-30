@@ -33,6 +33,13 @@ async function verifyAppleReceipt(
   sharedSecret: string,
   useSandbox = false
 ): Promise<boolean> {
+  if (!sharedSecret) {
+    console.warn(
+      "verifyAppleReceipt: APPLE_SHARED_SECRET is empty — " +
+      "subscription verification will fail (status 21004). " +
+      "Set APPLE_SHARED_SECRET in GitHub Secrets and redeploy."
+    );
+  }
   const url = useSandbox ? APPLE_VERIFY_SANDBOX : APPLE_VERIFY_PROD;
   const res = await fetch(url, {
     method: "POST",
@@ -50,6 +57,11 @@ async function verifyAppleReceipt(
     return verifyAppleReceipt(receiptData, sharedSecret, true);
   }
 
+  if (json.status !== 0) {
+    console.warn(
+      `verifyAppleReceipt: Apple returned status=${json.status} sandbox=${useSandbox}`
+    );
+  }
   return json.status === 0;
 }
 
@@ -95,13 +107,20 @@ async function verifyAndroidPurchase(
   if (isSubscription) {
     // subscriptionState SUBSCRIPTION_STATE_ACTIVE = active & paid
     const state = json.subscriptionState as string | undefined;
-    return (
+    const valid =
       state === "SUBSCRIPTION_STATE_ACTIVE" ||
-      state === "SUBSCRIPTION_STATE_IN_GRACE_PERIOD"
-    );
+      state === "SUBSCRIPTION_STATE_IN_GRACE_PERIOD";
+    if (!valid) {
+      console.warn(`verifyAndroidPurchase: subscriptionState=${state}`);
+    }
+    return valid;
   } else {
     // purchaseState: 0 = purchased, 1 = canceled, 2 = pending
-    return (json.purchaseState as number | undefined) === 0;
+    const purchaseState = json.purchaseState as number | undefined;
+    if (purchaseState !== 0) {
+      console.warn(`verifyAndroidPurchase: purchaseState=${purchaseState}`);
+    }
+    return purchaseState === 0;
   }
 }
 

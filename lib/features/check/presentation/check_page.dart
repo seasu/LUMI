@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/storage/local_image_storage.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
@@ -38,20 +39,21 @@ class _CheckPageState extends ConsumerState<CheckPage> {
 
   Future<void> _addToWardrobe() async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
     await ref.read(checkProvider.notifier).addToWardrobe();
     if (!mounted) return;
     context.pop();
     messenger.showSnackBar(
       SnackBar(
-        content: const Row(
+        content: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.check_circle_outline,
+            const Icon(Icons.check_circle_outline,
                 color: LumiColors.onPrimary, size: 18),
-            SizedBox(width: LumiSpacing.xs),
+            const SizedBox(width: LumiSpacing.xs),
             Text(
-              '已成功加入衣櫥',
-              style: TextStyle(
+              l10n.checkAddedSuccess,
+              style: const TextStyle(
                 fontSize: LumiTypeScale.body,
                 fontWeight: FontWeight.w600,
                 color: LumiColors.onPrimary,
@@ -94,9 +96,9 @@ class _CheckPageState extends ConsumerState<CheckPage> {
               ),
             ),
             leadingWidth: 100,
-            title: const Text(
-              '似曾相識',
-              style: TextStyle(
+            title: Text(
+              AppLocalizations.of(context).checkTitle,
+              style: const TextStyle(
                 fontSize: LumiTypeScale.titleSm,
                 fontWeight: FontWeight.w700,
                 color: LumiColors.text,
@@ -256,28 +258,30 @@ class _GlowViewState extends State<_GlowView>
                 ],
               ),
             ),
-            child: const Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'AI 比對中',
-                  style: TextStyle(
-                    fontSize: LumiTypeScale.titleLg,
-                    fontWeight: FontWeight.w700,
-                    color: LumiColors.onPrimary,
-                    letterSpacing: 0.5,
+            child: Builder(
+              builder: (context) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    AppLocalizations.of(context).checkScanTitle,
+                    style: const TextStyle(
+                      fontSize: LumiTypeScale.titleLg,
+                      fontWeight: FontWeight.w700,
+                      color: LumiColors.onPrimary,
+                      letterSpacing: 0.5,
+                    ),
                   ),
-                ),
-                SizedBox(height: LumiSpacing.sm),
-                Text(
-                  '正在從衣櫥中尋找相似款式...',
-                  style: TextStyle(
-                    fontSize: LumiTypeScale.labelMd,
-                    color: LumiColors.onPrimary,
-                    height: 1.5,
+                  const SizedBox(height: LumiSpacing.sm),
+                  Text(
+                    AppLocalizations.of(context).checkScanSubtitle,
+                    style: const TextStyle(
+                      fontSize: LumiTypeScale.labelMd,
+                      color: LumiColors.onPrimary,
+                      height: 1.5,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -354,13 +358,14 @@ class _CompareViewState extends State<_CompareView> {
     final newItemH = (screenH * 0.24).clamp(160.0, 210.0);
     final matchH = (screenH * 0.32).clamp(220.0, 290.0);
 
+    final l10n = AppLocalizations.of(context);
     final topPct =
         (widget.topMatches.first.similarity * 100).toStringAsFixed(0);
     final accentColor =
         widget.isHighSimilarity ? LumiColors.warning : LumiColors.primary;
     final bannerText = widget.isHighSimilarity
-        ? '衣櫥已有 $topPct% 相似款，確認再入手！'
-        : '衣櫥有 $topPct% 相似款，可以再比較看看。';
+        ? l10n.checkHighSimilarBanner(topPct)
+        : l10n.checkMediumSimilarBanner(topPct);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -373,9 +378,9 @@ class _CompareViewState extends State<_CompareView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                '想買的',
-                style: TextStyle(
+              Text(
+                l10n.checkWantToBuy,
+                style: const TextStyle(
                   fontSize: LumiTypeScale.labelMd,
                   color: LumiColors.subtext,
                   fontWeight: FontWeight.w500,
@@ -405,9 +410,9 @@ class _CompareViewState extends State<_CompareView> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                '衣櫥最相似',
-                style: TextStyle(
+              Text(
+                l10n.checkClosestInWardrobe,
+                style: const TextStyle(
                   fontSize: LumiTypeScale.labelMd,
                   color: LumiColors.subtext,
                   fontWeight: FontWeight.w500,
@@ -502,7 +507,7 @@ class _CompareViewState extends State<_CompareView> {
                                 BorderRadius.circular(LumiRadii.pill),
                           ),
                           child: Text(
-                            '$itemPct% 相似',
+                            AppLocalizations.of(context).checkSimilarityLabel(int.parse(itemPct)),
                             style: const TextStyle(
                               fontSize: LumiTypeScale.labelSm,
                               fontWeight: FontWeight.w700,
@@ -591,13 +596,13 @@ class _CompareViewState extends State<_CompareView> {
                           vertical: LumiSpacing.md,
                         ),
                       ),
-                      child: const Text('已經有了'),
+                      child: Text(l10n.checkAlreadyHave),
                     ),
                   ),
                   const SizedBox(width: LumiSpacing.sm),
                   Expanded(
                     child: _PrimaryButton(
-                      label: _adding ? '加入中...' : '加入新品',
+                      label: _adding ? l10n.checkAdding : l10n.snapAddToWardrobe,
                       onTap: _adding
                           ? null
                           : () {
@@ -690,26 +695,28 @@ class _NoneView extends StatelessWidget {
           const Icon(Icons.check_circle_outline,
               size: 64, color: LumiColors.primary),
           const SizedBox(height: LumiSpacing.md),
-          const Text(
-            '衣櫥中無相似款式',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context).checkNoSimilar,
+            style: const TextStyle(
               fontSize: LumiTypeScale.titleLg,
               fontWeight: FontWeight.w600,
               color: LumiColors.text,
             ),
           ),
           const SizedBox(height: LumiSpacing.sm),
-          const Text(
-            '這件衣物在妳的衣櫥裡找不到相似款，\n可以安心入手！',
+          Text(
+            AppLocalizations.of(context).checkNoSimilarHint,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: LumiTypeScale.labelMd,
               color: LumiColors.subtext,
               height: 1.6,
             ),
           ),
           const Spacer(),
-          _PrimaryButton(label: '返回衣櫥', onTap: onDone),
+          _PrimaryButton(
+              label: AppLocalizations.of(context).checkBackToWardrobe,
+              onTap: onDone),
           const SizedBox(height: LumiSpacing.xl),
         ],
       ),
@@ -749,7 +756,8 @@ class _ErrorView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: LumiSpacing.lg),
-          _PrimaryButton(label: '重試', onTap: onRetry),
+          _PrimaryButton(
+              label: AppLocalizations.of(context).retry, onTap: onRetry),
           const Spacer(),
         ],
       ),

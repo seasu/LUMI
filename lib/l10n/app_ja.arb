@@ -119,7 +119,7 @@
   "checkTapToScan": "タップしてスキャン",
   "checkScanning": "スキャン中...",
   "onboardingStep1Title": "ゼロ摩擦のデジタルワードローブ",
-  "onboardingStep1Desc": "LUMIはGoogleフォトと自動同期 — 手動アップロード不要。",
+  "onboardingStep1Desc": "Lumiは Googleフォトと自動同期 — 手動アップロード不要。",
   "onboardingStep2Title": "AIスマート分析",
   "onboardingStep2Desc": "LumiはGemini AIで色・素材・スタイルを自動識別し、検索を簡単に。",
   "onboardingStep3Title": "賢く買い物、重複なし",

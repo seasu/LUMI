@@ -816,7 +816,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingStep1Desc.
   ///
   /// In en, this message translates to:
-  /// **'LUMI syncs with Google Photos automatically — no manual uploads needed.'**
+  /// **'Lumi syncs with Google Photos automatically — no manual uploads needed.'**
   String get onboardingStep1Desc;
 
   /// No description provided for @onboardingStep2Title.

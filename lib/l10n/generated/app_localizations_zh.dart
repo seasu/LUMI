@@ -386,7 +386,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get onboardingStep1Title => '零摩擦數位化衣櫥';
 
   @override
-  String get onboardingStep1Desc => 'LUMI 與 Google 相片自動同步，妳無需手動上傳任何內容。';
+  String get onboardingStep1Desc => 'Lumi 與 Google 相片自動同步，妳無需手動上傳任何內容。';
 
   @override
   String get onboardingStep2Title => 'AI 智慧分析';
@@ -1027,7 +1027,7 @@ class AppLocalizationsZhCn extends AppLocalizationsZh {
   String get onboardingStep1Title => '零摩擦数字化衣橱';
 
   @override
-  String get onboardingStep1Desc => 'LUMI 与 Google 相册自动同步，你无需手动上传任何内容。';
+  String get onboardingStep1Desc => 'Lumi 与 Google 相册自动同步，你无需手动上传任何内容。';
 
   @override
   String get onboardingStep2Title => 'AI 智能分析';
@@ -1668,7 +1668,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get onboardingStep1Title => '零摩擦數位化衣櫥';
 
   @override
-  String get onboardingStep1Desc => 'LUMI 與 Google 相片自動同步，妳無需手動上傳任何內容。';
+  String get onboardingStep1Desc => 'Lumi 與 Google 相片自動同步，妳無需手動上傳任何內容。';
 
   @override
   String get onboardingStep2Title => 'AI 智慧分析';

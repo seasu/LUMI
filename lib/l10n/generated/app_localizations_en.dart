@@ -392,7 +392,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingStep1Title => 'Zero-friction digital wardrobe';
 
   @override
-  String get onboardingStep1Desc => 'LUMI syncs with Google Photos automatically — no manual uploads needed.';
+  String get onboardingStep1Desc => 'Lumi syncs with Google Photos automatically — no manual uploads needed.';
 
   @override
   String get onboardingStep2Title => 'AI smart analysis';

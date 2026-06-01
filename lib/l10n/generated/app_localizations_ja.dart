@@ -386,7 +386,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get onboardingStep1Title => 'ゼロ摩擦のデジタルワードローブ';
 
   @override
-  String get onboardingStep1Desc => 'LUMIはGoogleフォトと自動同期 — 手動アップロード不要。';
+  String get onboardingStep1Desc => 'Lumiは Googleフォトと自動同期 — 手動アップロード不要。';
 
   @override
   String get onboardingStep2Title => 'AIスマート分析';

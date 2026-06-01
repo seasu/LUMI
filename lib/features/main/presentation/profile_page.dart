@@ -19,16 +19,26 @@ class ProfilePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(userProfileProvider);
-    final profile = profileAsync.valueOrNull;
 
     return Scaffold(
       backgroundColor: LumiColors.base,
       body: SafeArea(
-        child: profile == null
-            ? const Center(
-                child: CircularProgressIndicator(color: LumiColors.primary),
-              )
-            : _ProfileContent(profile: profile),
+        child: profileAsync.when(
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: LumiColors.primary),
+          ),
+          error: (_, __) => Center(
+            child: Text(
+              AppLocalizations.of(context).error,
+              style: const TextStyle(color: LumiColors.subtext),
+            ),
+          ),
+          data: (profile) => profile == null
+              ? const Center(
+                  child: CircularProgressIndicator(color: LumiColors.primary),
+                )
+              : _ProfileContent(profile: profile),
+        ),
       ),
     );
   }

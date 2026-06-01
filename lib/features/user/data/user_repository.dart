@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/debug/debug_log.dart';
 import '../../../core/providers/firebase_providers.dart';
+import '../../auth/presentation/providers/auth_provider.dart';
 import 'user_profile.dart';
 
 void _log(String msg) => DebugLogService.instance.log('[fs:user] $msg');
@@ -82,7 +83,10 @@ final userRepositoryProvider = Provider<UserRepository>((ref) {
 });
 
 final userProfileProvider = StreamProvider<UserProfile?>((ref) {
-  final user = ref.watch(firebaseAuthProvider).currentUser;
+  // Watch authStateProvider (reactive) so this provider rebuilds when auth
+  // state changes, rather than reading FirebaseAuth.currentUser once and
+  // never reacting to sign-in / sign-out events.
+  final user = ref.watch(authStateProvider).valueOrNull;
   if (user == null) return const Stream.empty();
   return ref.watch(userRepositoryProvider).watchProfile(user.uid);
 });

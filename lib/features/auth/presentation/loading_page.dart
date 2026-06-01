@@ -7,6 +7,7 @@ import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_spacing.dart';
 import '../../../shared/constants/lumi_type_scale.dart';
 import '../../../shared/widgets/lumi_logo_wordmark.dart';
+import '../../user/data/user_repository.dart';
 import 'providers/auth_provider.dart';
 
 // Persisted key: true once the user has swiped through onboarding at least once.
@@ -41,7 +42,14 @@ class _LoadingPageState extends ConsumerState<LoadingPage> {
       return;
     }
 
-    // Logged in → go straight to the main app.
+    // Ensure the Firestore profile exists (handles cached Auth sessions where
+    // sign-in was never called in this install, e.g. iOS Keychain persistence).
+    try {
+      await ref.read(userRepositoryProvider).ensureProfile(user);
+    } catch (_) {
+      // Non-fatal: continue to home even if Firestore is temporarily offline.
+    }
+
     if (mounted) context.go('/home');
   }
 

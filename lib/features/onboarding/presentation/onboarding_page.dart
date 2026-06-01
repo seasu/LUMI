@@ -1,22 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/constants/lumi_colors.dart';
 import '../../../shared/constants/lumi_radii.dart';
 import '../../../shared/constants/lumi_spacing.dart';
 import '../../../shared/constants/lumi_type_scale.dart';
-import '../../auth/presentation/providers/auth_provider.dart';
-import '../../user/data/user_repository.dart';
 
-class OnboardingPage extends ConsumerStatefulWidget {
+class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
 
   @override
-  ConsumerState<OnboardingPage> createState() => _OnboardingPageState();
+  State<OnboardingPage> createState() => _OnboardingPageState();
 }
 
-class _OnboardingPageState extends ConsumerState<OnboardingPage> {
+class _OnboardingPageState extends State<OnboardingPage> {
   final _controller = PageController();
   int _currentPage = 0;
   static const _stepCount = 3;
@@ -39,17 +37,12 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   }
 
   void _finish() {
-    // Navigate immediately so the button feels instant.
-    // The Firestore write runs in background; on next cold start LoadingPage
-    // will re-check onboardingCompleted if the write somehow failed.
-    final user = ref.read(authStateProvider).valueOrNull;
-    if (user != null) {
-      ref
-          .read(userRepositoryProvider)
-          .markOnboardingComplete(user.uid)
-          .ignore();
-    }
-    if (mounted) context.go('/home');
+    // Mark that onboarding has been seen so future cold-starts skip it.
+    SharedPreferences.getInstance().then(
+      (p) => p.setBool('onboarding_shown', true),
+    );
+    // Onboarding is pre-login: always send to the login page.
+    if (mounted) context.go('/login');
   }
 
   @override

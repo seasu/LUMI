@@ -8,6 +8,7 @@ import '../../../../shared/constants/lumi_colors.dart';
 import '../../../../shared/constants/lumi_radii.dart';
 import '../../../../shared/constants/lumi_spacing.dart';
 import '../../../../shared/constants/lumi_type_scale.dart';
+import '../../../user/data/user_repository.dart' show userProfileProvider;
 import '../../data/purchase_repository.dart';
 import '../../domain/purchase_state.dart';
 import '../providers/purchase_provider.dart';
@@ -64,10 +65,13 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
     final purchaseAsync = ref.watch(purchaseProvider);
     final productsAsync = ref.watch(productsProvider);
 
-    // React to successful purchase → close sheet automatically.
+    // React to successful purchase → close sheet and refresh quota.
     ref.listen(purchaseProvider, (_, next) {
       next.whenData((state) {
         if (state is PurchaseDone && context.mounted) {
+          // Force a fresh read of the profile so quota changes are visible
+          // immediately when the user returns to the profile page.
+          ref.invalidate(userProfileProvider);
           Navigator.of(context).pop();
           _showSuccessSnackBar(context, state.productId);
         }

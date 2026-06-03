@@ -22,6 +22,11 @@ Future<void> showPaywallSheet(BuildContext context) {
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     barrierColor: LumiColors.overlayBarrier,
+    // useRootNavigator: true is required inside a ShellRoute.
+    // Without it the sheet is pushed onto the inner ShellRoute navigator,
+    // which cannot render a transparent overlay over the Shell's content
+    // on iOS — causing a black screen.
+    useRootNavigator: true,
     builder: (_) => const PaywallSheet(),
   );
 }
@@ -69,11 +74,10 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
     ref.listen(purchaseProvider, (_, next) {
       next.whenData((state) {
         if (state is PurchaseDone && context.mounted) {
-          // Force a fresh read of the profile so quota changes are visible
-          // immediately when the user returns to the profile page.
           ref.invalidate(userProfileProvider);
-          Navigator.of(context).pop();
+          // Show snackbar BEFORE popping so context is still valid.
           _showSuccessSnackBar(context, state.productId);
+          Navigator.of(context, rootNavigator: true).pop();
         }
       });
     });
@@ -177,7 +181,7 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
             // Dismiss
             if (!isProcessing)
               TextButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
                 style: TextButton.styleFrom(
                   foregroundColor: LumiColors.subtext,
                 ),

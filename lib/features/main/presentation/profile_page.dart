@@ -50,8 +50,17 @@ class _ProfileContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(
+    return RefreshIndicator(
+      color: LumiColors.primary,
+      onRefresh: () async {
+        ref.invalidate(userProfileProvider);
+        // Wait for the first emission from the re-subscribed stream.
+        try {
+          await ref.read(userProfileProvider.future);
+        } catch (_) {}
+      },
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(
         LumiSpacing.lg,
         LumiSpacing.md,
         LumiSpacing.md,
@@ -137,6 +146,7 @@ class _ProfileContent extends ConsumerWidget {
         ),
         const SizedBox(height: LumiSpacing.lg),
       ],
+      ),
     );
   }
 

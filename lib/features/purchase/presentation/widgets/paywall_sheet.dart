@@ -8,6 +8,7 @@ import '../../../../shared/constants/lumi_colors.dart';
 import '../../../../shared/constants/lumi_radii.dart';
 import '../../../../shared/constants/lumi_spacing.dart';
 import '../../../../shared/constants/lumi_type_scale.dart';
+import '../../../user/data/user_repository.dart' show userProfileProvider;
 import '../../data/purchase_repository.dart';
 import '../../domain/purchase_state.dart';
 import '../providers/purchase_provider.dart';
@@ -21,6 +22,11 @@ Future<void> showPaywallSheet(BuildContext context) {
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     barrierColor: LumiColors.overlayBarrier,
+    // useRootNavigator: true is required inside a ShellRoute.
+    // Without it the sheet is pushed onto the inner ShellRoute navigator,
+    // which cannot render a transparent overlay over the Shell's content
+    // on iOS — causing a black screen.
+    useRootNavigator: true,
     builder: (_) => const PaywallSheet(),
   );
 }
@@ -64,12 +70,14 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
     final purchaseAsync = ref.watch(purchaseProvider);
     final productsAsync = ref.watch(productsProvider);
 
-    // React to successful purchase → close sheet automatically.
+    // React to successful purchase → close sheet and refresh quota.
     ref.listen(purchaseProvider, (_, next) {
       next.whenData((state) {
         if (state is PurchaseDone && context.mounted) {
-          Navigator.of(context).pop();
+          ref.invalidate(userProfileProvider);
+          // Show snackbar BEFORE popping so context is still valid.
           _showSuccessSnackBar(context, state.productId);
+          Navigator.of(context, rootNavigator: true).pop();
         }
       });
     });
@@ -173,7 +181,7 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
             // Dismiss
             if (!isProcessing)
               TextButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
                 style: TextButton.styleFrom(
                   foregroundColor: LumiColors.subtext,
                 ),

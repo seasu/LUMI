@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/debug/debug_log.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../shared/constants/lumi_colors.dart';
 import '../../../../shared/constants/lumi_radii.dart';
@@ -13,10 +14,13 @@ import '../../data/purchase_repository.dart';
 import '../../domain/purchase_state.dart';
 import '../providers/purchase_provider.dart';
 
+void _log(String msg) => DebugLogService.instance.log('[paywall] $msg');
+
 // ── Public helper ─────────────────────────────────────────────────────────────
 
 /// Shows the Lumi upgrade paywall as a modal bottom sheet.
 Future<void> showPaywallSheet(BuildContext context) {
+  _log('showPaywallSheet called — useRootNavigator: true');
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -28,7 +32,9 @@ Future<void> showPaywallSheet(BuildContext context) {
     // on iOS — causing a black screen.
     useRootNavigator: true,
     builder: (_) => const PaywallSheet(),
-  );
+  ).then((_) {
+    _log('showPaywallSheet → sheet dismissed');
+  });
 }
 
 // ── Sheet widget ──────────────────────────────────────────────────────────────
@@ -45,9 +51,12 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
   late final AnimationController _glowCtrl;
   late final Animation<double> _glowAnim;
 
+  bool _buildLogged = false;
+
   @override
   void initState() {
     super.initState();
+    _log('PaywallSheet initState');
     _glowCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
@@ -59,6 +68,7 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
 
   @override
   void dispose() {
+    _log('PaywallSheet dispose');
     _glowCtrl.dispose();
     super.dispose();
   }
@@ -70,13 +80,29 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
     final purchaseAsync = ref.watch(purchaseProvider);
     final productsAsync = ref.watch(productsProvider);
 
+    if (!_buildLogged) {
+      _buildLogged = true;
+      _log(
+        'PaywallSheet first build — '
+        'purchaseState: ${purchaseAsync.runtimeType} '
+        'value: ${purchaseAsync.valueOrNull?.runtimeType}',
+      );
+    }
+
     // React to successful purchase → close sheet and refresh quota.
-    ref.listen(purchaseProvider, (_, next) {
+    ref.listen(purchaseProvider, (prev, next) {
+      _log(
+        'ref.listen fired — '
+        'prev: ${prev?.valueOrNull?.runtimeType} '
+        'next: ${next.valueOrNull?.runtimeType}',
+      );
       next.whenData((state) {
         if (state is PurchaseDone && context.mounted) {
+          _log('PurchaseDone detected — invalidating profile and popping sheet');
           ref.invalidate(userProfileProvider);
           // Show snackbar BEFORE popping so context is still valid.
           _showSuccessSnackBar(context, state.productId);
+          _log('calling Navigator.pop (rootNavigator: true)');
           Navigator.of(context, rootNavigator: true).pop();
         }
       });
@@ -196,6 +222,7 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
   // ── Actions ────────────────────────────────────────────────────────────────
 
   void _buy(String productId) {
+    _log('_buy tapped: $productId');
     ref.read(purchaseProvider.notifier).buy(productId);
   }
 

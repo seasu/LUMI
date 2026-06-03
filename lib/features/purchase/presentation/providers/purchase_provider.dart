@@ -37,10 +37,15 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
 
   @override
   Future<PurchaseState> build() async {
+    _log('PurchaseNotifier build — subscribing to purchaseStream');
     final repo = ref.read(purchaseRepositoryProvider);
     _sub?.cancel();
     _sub = repo.purchaseStream.listen(_onPurchaseUpdate);
-    ref.onDispose(() => _sub?.cancel());
+    ref.onDispose(() {
+      _log('PurchaseNotifier dispose');
+      _sub?.cancel();
+    });
+    _log('PurchaseNotifier build complete → PurchaseIdle');
     return const PurchaseIdle();
   }
 

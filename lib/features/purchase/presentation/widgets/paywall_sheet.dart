@@ -521,7 +521,7 @@ class _PlanCardState extends State<_PlanCard> {
                     highlighted: widget.highlighted,
                     isProcessing: widget.isProcessing,
                     glowAnim: widget.glowAnim,
-                    onTap: widget.isProcessing ? null : widget.onBuy,
+                    onTap: null, // outer _PlanCard GestureDetector handles all taps
                   ),
                 ],
               ),

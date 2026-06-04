@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/debug/debug_log.dart';
+import '../../../../core/router/navigator_keys.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../shared/constants/lumi_colors.dart';
 import '../../../../shared/constants/lumi_radii.dart';
@@ -19,18 +20,21 @@ void _log(String msg) => DebugLogService.instance.log('[paywall] $msg');
 // ── Public helper ─────────────────────────────────────────────────────────────
 
 /// Shows the Lumi upgrade paywall as a modal bottom sheet.
+///
+/// Uses [rootNavigatorKey] directly instead of relying on
+/// Navigator.of(context, rootNavigator: true) traversal, which can be
+/// unreliable inside ShellRoute on iOS (manifests as a black screen).
 Future<void> showPaywallSheet(BuildContext context) {
-  _log('showPaywallSheet called — useRootNavigator: true');
+  final rootCtx = rootNavigatorKey.currentContext ?? context;
+  _log(
+    'showPaywallSheet called — '
+    'usingRootKey: ${rootNavigatorKey.currentContext != null}',
+  );
   return showModalBottomSheet<void>(
-    context: context,
+    context: rootCtx,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     barrierColor: LumiColors.overlayBarrier,
-    // useRootNavigator: true is required inside a ShellRoute.
-    // Without it the sheet is pushed onto the inner ShellRoute navigator,
-    // which cannot render a transparent overlay over the Shell's content
-    // on iOS — causing a black screen.
-    useRootNavigator: true,
     builder: (_) => const PaywallSheet(),
   ).then((_) {
     _log('showPaywallSheet → sheet dismissed');
@@ -102,8 +106,8 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
           ref.invalidate(userProfileProvider);
           // Show snackbar BEFORE popping so context is still valid.
           _showSuccessSnackBar(context, state.productId);
-          _log('calling Navigator.pop (rootNavigator: true)');
-          Navigator.of(context, rootNavigator: true).pop();
+          _log('calling Navigator.pop via rootNavigatorKey');
+          (rootNavigatorKey.currentState ?? Navigator.of(context)).pop();
         }
       });
     });
@@ -207,7 +211,9 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
             // Dismiss
             if (!isProcessing)
               TextButton(
-                onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+                onPressed: () =>
+                    (rootNavigatorKey.currentState ?? Navigator.of(context))
+                        .pop(),
                 style: TextButton.styleFrom(
                   foregroundColor: LumiColors.subtext,
                 ),

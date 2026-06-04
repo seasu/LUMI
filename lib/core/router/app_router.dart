@@ -15,6 +15,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../features/ootd/presentation/ootd_add_page.dart';
 import '../../features/search/presentation/search_page.dart';
 import '../../features/snap/presentation/snap_page.dart';
+import 'navigator_keys.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final auth = ref.watch(firebaseAuthProvider);
@@ -27,6 +28,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   ref.onDispose(authNotifier.dispose);
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/login',
     refreshListenable: authNotifier,
     redirect: (context, state) {

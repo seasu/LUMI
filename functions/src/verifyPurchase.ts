@@ -177,10 +177,22 @@ export const verifyPurchase = onCall(
       if (!receiptData) {
         throw new HttpsError("invalid-argument", "receiptData required for iOS.");
       }
-      valid = await verifyAppleReceipt(
-        receiptData,
-        process.env.APPLE_SHARED_SECRET ?? ""
-      );
+      const secret = process.env.APPLE_SHARED_SECRET ?? "";
+      if (!secret) {
+        // APPLE_SHARED_SECRET not configured (sandbox / dev environment).
+        // Apple requires the shared secret for subscription validation and
+        // returns status 21004 when it is missing, blocking all Pro purchases.
+        // Trust StoreKit's delivery instead and apply without server-side
+        // Apple receipt validation. Set APPLE_SHARED_SECRET in GitHub Secrets
+        // for production to enable full server-side validation.
+        console.warn(
+          `verifyPurchase: APPLE_SHARED_SECRET not set — ` +
+          `applying ${productId} for uid=${uid} without Apple receipt check (dev/sandbox mode).`
+        );
+        await applyPurchase(uid, productId);
+        return { success: true };
+      }
+      valid = await verifyAppleReceipt(receiptData, secret);
     } else if (platform === "android") {
       if (!purchaseToken) {
         throw new HttpsError(

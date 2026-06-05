@@ -209,6 +209,21 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
 
             const SizedBox(height: LumiSpacing.md),
 
+            // Restore Purchases (App Store compliance)
+            if (!isProcessing)
+              TextButton(
+                onPressed: () {
+                  _log('restore tapped');
+                  ref.read(purchaseProvider.notifier).restore();
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: LumiColors.subtext,
+                ),
+                child: Text(
+                  AppLocalizations.of(context).paywallRestorePurchases,
+                ),
+              ),
+
             // Dismiss
             if (!isProcessing)
               TextButton(

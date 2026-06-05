@@ -35,9 +35,16 @@ final purchaseProvider =
 class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
   StreamSubscription<List<PurchaseDetails>>? _sub;
 
+  // iOS StoreKit automatically re-delivers any unfinished transactions the
+  // moment purchaseStream is subscribed. Without this flag those stale
+  // deliveries would trigger PurchaseDone and cause the paywall sheet to
+  // auto-pop before the user has tapped anything.
+  bool _purchaseInitiated = false;
+
   @override
   Future<PurchaseState> build() async {
     _log('PurchaseNotifier build — subscribing to purchaseStream');
+    _purchaseInitiated = false;
     final repo = ref.read(purchaseRepositoryProvider);
     _sub?.cancel();
     _sub = repo.purchaseStream.listen(_onPurchaseUpdate);
@@ -62,10 +69,12 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
       );
       _log('buy → ${product.id} (${product.price})');
       state = AsyncData(PurchaseProcessing(productId: productId));
+      _purchaseInitiated = true;
       await ref.read(purchaseRepositoryProvider).buy(product);
       // Actual result arrives via purchaseStream → _onPurchaseUpdate
     } catch (e) {
       _log('buy ✗ $e');
+      _purchaseInitiated = false;
       state = AsyncData(PurchaseError(e.toString()));
     }
   }
@@ -73,22 +82,36 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
   /// Restores previous purchases (required by App Store review guidelines).
   Future<void> restore() async {
     _log('restore');
+    _purchaseInitiated = true;
     state = const AsyncData(PurchaseProcessing(productId: 'restore'));
     await ref.read(purchaseRepositoryProvider).restore();
   }
 
-  void reset() => state = const AsyncData(PurchaseIdle());
+  void reset() {
+    _purchaseInitiated = false;
+    state = const AsyncData(PurchaseIdle());
+  }
 
   // ── Purchase stream handler ────────────────────────────────────────────────
 
   Future<void> _onPurchaseUpdate(List<PurchaseDetails> purchases) async {
     for (final p in purchases) {
-      _log('update: id=${p.productID} status=${p.status}');
+      _log('update: id=${p.productID} status=${p.status} initiated=$_purchaseInitiated');
       switch (p.status) {
         case PurchaseStatus.pending:
           state = AsyncData(PurchaseProcessing(productId: p.productID));
         case PurchaseStatus.purchased:
-          await _handleSuccess(p, isRestore: false);
+          if (_purchaseInitiated) {
+            await _handleSuccess(p, isRestore: false);
+          } else {
+            // iOS re-delivered an unfinished transaction from a prior session.
+            // Firestore was already updated by the original purchase; just
+            // complete the transaction to clear the StoreKit queue silently.
+            _log('stale re-delivery: ${p.productID} — completing without re-verify');
+            if (p.pendingCompletePurchase) {
+              await ref.read(purchaseRepositoryProvider).complete(p);
+            }
+          }
         case PurchaseStatus.restored:
           await _handleSuccess(p, isRestore: true);
         case PurchaseStatus.error:

@@ -56,11 +56,21 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
   late final Animation<double> _glowAnim;
 
   bool _buildLogged = false;
+  bool _dismissed = false;
 
   @override
   void initState() {
     super.initState();
     _log('PaywallSheet initState');
+    // Reset any stale PurchaseDone / PurchaseProcessing state that might have
+    // been left over from a previous session. Without this the ref.listen
+    // handler could fire on the very first build and auto-pop the sheet.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _log('initState post-frame: resetting purchase state');
+        ref.read(purchaseProvider.notifier).reset();
+      }
+    });
     _glowCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
@@ -98,16 +108,24 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
       _log(
         'ref.listen fired — '
         'prev: ${prev?.valueOrNull?.runtimeType} '
-        'next: ${next.valueOrNull?.runtimeType}',
+        'next: ${next.valueOrNull?.runtimeType} '
+        'dismissed: $_dismissed',
       );
       next.whenData((state) {
-        if (state is PurchaseDone && context.mounted) {
+        if (state is PurchaseDone && context.mounted && !_dismissed) {
+          _dismissed = true;
           _log('PurchaseDone detected — invalidating profile and popping sheet');
           ref.invalidate(userProfileProvider);
           // Show snackbar BEFORE popping so context is still valid.
           _showSuccessSnackBar(context, state.productId);
           _log('calling Navigator.pop via rootNavigatorKey');
-          (rootNavigatorKey.currentState ?? Navigator.of(context)).pop();
+          final nav = rootNavigatorKey.currentState;
+          if (nav != null && nav.canPop()) {
+            nav.pop();
+          } else {
+            _log('rootNavigatorKey not available or canPop=false — using context');
+            Navigator.of(context).pop();
+          }
         }
       });
     });

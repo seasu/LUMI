@@ -2,9 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/debug/debug_log.dart';
-import '../../../../core/router/navigator_keys.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../shared/constants/lumi_colors.dart';
 import '../../../../shared/constants/lumi_radii.dart';
@@ -19,26 +19,15 @@ void _log(String msg) => DebugLogService.instance.log('[paywall] $msg');
 
 // ── Public helper ─────────────────────────────────────────────────────────────
 
-/// Shows the Lumi upgrade paywall as a modal bottom sheet.
+/// Navigates to the `/paywall` GoRouter route.
 ///
-/// Uses [rootNavigatorKey] directly instead of relying on
-/// Navigator.of(context, rootNavigator: true) traversal, which can be
-/// unreliable inside ShellRoute on iOS (manifests as a black screen).
-Future<void> showPaywallSheet(BuildContext context) {
-  final rootCtx = rootNavigatorKey.currentContext ?? context;
-  _log(
-    'showPaywallSheet called — '
-    'usingRootKey: ${rootNavigatorKey.currentContext != null}',
-  );
-  return showModalBottomSheet<void>(
-    context: rootCtx,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    barrierColor: LumiColors.overlayBarrier,
-    builder: (_) => const PaywallSheet(),
-  ).then((_) {
-    _log('showPaywallSheet → sheet dismissed');
-  });
+/// The paywall is a declarative GoRouter route (opaque: false) rather than an
+/// imperative showModalBottomSheet call. This prevents the black-screen bug
+/// where GoRouter's refreshListenable rebuild reconciles its pages list and
+/// silently removes an imperatively-pushed modal route.
+void showPaywallSheet(BuildContext context) {
+  _log('showPaywallSheet called — pushing /paywall via GoRouter');
+  context.push('/paywall');
 }
 
 // ── Sheet widget ──────────────────────────────────────────────────────────────
@@ -118,14 +107,8 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
           ref.invalidate(userProfileProvider);
           // Show snackbar BEFORE popping so context is still valid.
           _showSuccessSnackBar(context, state.productId);
-          _log('calling Navigator.pop via rootNavigatorKey');
-          final nav = rootNavigatorKey.currentState;
-          if (nav != null && nav.canPop()) {
-            nav.pop();
-          } else {
-            _log('rootNavigatorKey not available or canPop=false — using context');
-            Navigator.of(context).pop();
-          }
+          _log('calling context.pop() via GoRouter');
+          context.pop();
         }
       });
     });
@@ -229,9 +212,7 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
             // Dismiss
             if (!isProcessing)
               TextButton(
-                onPressed: () =>
-                    (rootNavigatorKey.currentState ?? Navigator.of(context))
-                        .pop(),
+                onPressed: () => context.pop(),
                 style: TextButton.styleFrom(
                   foregroundColor: LumiColors.subtext,
                 ),

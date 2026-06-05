@@ -13,8 +13,11 @@ import '../../features/main/presentation/profile_page.dart';
 import '../../features/onboarding/presentation/onboarding_page.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../features/ootd/presentation/ootd_add_page.dart';
+import '../../features/purchase/presentation/widgets/paywall_sheet.dart'
+    show PaywallSheet;
 import '../../features/search/presentation/search_page.dart';
 import '../../features/snap/presentation/snap_page.dart';
+import '../../shared/constants/lumi_colors.dart';
 import 'navigator_keys.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -123,6 +126,38 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               src == 'gallery' ? ImageSource.gallery : ImageSource.camera;
           return OotdAddPage(source: source);
         },
+      ),
+      // Paywall uses a transparent declarative route so GoRouter owns its
+      // lifecycle. Using showModalBottomSheet imperatively caused GoRouter's
+      // refreshListenable rebuilds to reconcile the navigator pages list and
+      // silently remove the modal route → black screen on iOS.
+      GoRoute(
+        path: '/paywall',
+        pageBuilder: (context, state) => CustomTransitionPage<void>(
+          key: state.pageKey,
+          opaque: false,
+          barrierDismissible: true,
+          barrierColor: LumiColors.overlayBarrier,
+          child: const Align(
+            alignment: Alignment.bottomCenter,
+            child: PaywallSheet(),
+          ),
+          transitionDuration: const Duration(milliseconds: 350),
+          reverseTransitionDuration: const Duration(milliseconds: 250),
+          transitionsBuilder: (context, animation, _, child) =>
+              SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 1),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  ),
+                ),
+                child: child,
+              ),
+        ),
       ),
     ],
   );

@@ -138,9 +138,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           opaque: false,
           barrierDismissible: true,
           barrierColor: LumiColors.overlayBarrier,
-          child: const Align(
-            alignment: Alignment.bottomCenter,
-            child: PaywallSheet(),
+          child: const Material(
+            type: MaterialType.transparency,
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: PaywallSheet(),
+            ),
           ),
           transitionDuration: const Duration(milliseconds: 350),
           reverseTransitionDuration: const Duration(milliseconds: 250),

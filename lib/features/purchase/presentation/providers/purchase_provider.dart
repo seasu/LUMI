@@ -113,7 +113,17 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
             }
           }
         case PurchaseStatus.restored:
-          await _handleSuccess(p, isRestore: true);
+          if (_purchaseInitiated) {
+            await _handleSuccess(p, isRestore: true);
+          } else {
+            // iOS re-delivers restored transactions when subscribing to purchaseStream
+            // (same as purchased stale re-delivery). Firestore was already updated by
+            // the original purchase; silently complete to clear the StoreKit queue.
+            _log('stale restore re-delivery: ${p.productID} — completing without re-verify');
+            if (p.pendingCompletePurchase) {
+              await ref.read(purchaseRepositoryProvider).complete(p);
+            }
+          }
         case PurchaseStatus.error:
           final msg = p.error?.message ?? 'Purchase failed';
           _log('error: $msg');

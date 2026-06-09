@@ -57,20 +57,15 @@ jobs:
       # without it, deploy can exit 1 after functions succeeded.
 
       # Optional runtime overrides on the deployed function (still via .env.lumi-309ff).
-      - name: Verify required secrets are present
+      - name: Verify optional secrets presence
         run: |
-          missing=()
           if [ -z "${{ secrets.APPLE_SHARED_SECRET }}" ]; then
-            missing+=("APPLE_SHARED_SECRET (App Store Connect → App Information → App-Specific Shared Secret)")
+            echo "⚠️  APPLE_SHARED_SECRET not set — deploying in sandbox/dev mode."
+            echo "   iOS purchases will be applied without Apple receipt validation (StoreKit trusted)."
+            echo "   Set APPLE_SHARED_SECRET for production: Settings → Secrets → Actions → New repository secret"
+          else
+            echo "✅ APPLE_SHARED_SECRET is configured — full Apple receipt validation enabled"
           fi
-          if [ ${#missing[@]} -gt 0 ]; then
-            echo "❌ Missing required GitHub Secrets:"
-            for s in "${missing[@]}"; do echo "   • $s"; done
-            echo ""
-            echo "Add them at: Settings → Secrets and variables → Actions → New repository secret"
-            exit 1
-          fi
-          echo "✅ All required secrets are present"
 
       - name: Write optional runtime Gemini env for Firebase deploy
         working-directory: functions

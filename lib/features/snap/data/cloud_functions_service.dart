@@ -93,8 +93,9 @@ class CloudFunctionsService {
     required String productId,
     String? purchaseToken,
     String? receiptData,
+    bool isRestore = false,
   }) async {
-    _log('verifyPurchase → product=$productId');
+    _log('verifyPurchase → product=$productId isRestore=$isRestore');
     final sw = Stopwatch()..start();
     try {
       final platform = Platform.isIOS ? 'ios' : 'android';
@@ -104,6 +105,7 @@ class CloudFunctionsService {
         'productId': productId,
         if (purchaseToken != null) 'purchaseToken': purchaseToken,
         if (receiptData != null) 'receiptData': receiptData,
+        if (isRestore) 'isRestore': true,
       });
       _log('verifyPurchase ← ok ${sw.elapsedMilliseconds}ms');
     } catch (e) {

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
@@ -41,10 +42,17 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
   // auto-pop before the user has tapped anything.
   bool _purchaseInitiated = false;
 
+  // Tracks whether the user explicitly tapped "Restore Purchases" vs "Buy".
+  // StoreKit may return PurchaseStatus.restored even for a buy() call (e.g. in
+  // sandbox or when a transaction was pending from a prior session); using this
+  // flag keeps the two paths distinct so errors are handled correctly.
+  bool _isRestoreAction = false;
+
   @override
   Future<PurchaseState> build() async {
     _log('PurchaseNotifier build — subscribing to purchaseStream');
     _purchaseInitiated = false;
+    _isRestoreAction = false;
     final repo = ref.read(purchaseRepositoryProvider);
     _sub?.cancel();
     _sub = repo.purchaseStream.listen(_onPurchaseUpdate);
@@ -70,6 +78,7 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
       _log('buy → ${product.id} (${product.price})');
       state = AsyncData(PurchaseProcessing(productId: productId));
       _purchaseInitiated = true;
+      _isRestoreAction = false;
       await ref.read(purchaseRepositoryProvider).buy(product);
       // Actual result arrives via purchaseStream → _onPurchaseUpdate
     } catch (e) {
@@ -83,12 +92,14 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
   Future<void> restore() async {
     _log('restore');
     _purchaseInitiated = true;
+    _isRestoreAction = true;
     state = const AsyncData(PurchaseProcessing(productId: 'restore'));
     await ref.read(purchaseRepositoryProvider).restore();
   }
 
   void reset() {
     _purchaseInitiated = false;
+    _isRestoreAction = false;
     state = const AsyncData(PurchaseIdle());
   }
 
@@ -114,7 +125,11 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
           }
         case PurchaseStatus.restored:
           if (_purchaseInitiated) {
-            await _handleSuccess(p, isRestore: true);
+            // Use _isRestoreAction (not the StoreKit status) to decide the path.
+            // buy() sets _isRestoreAction=false; restore() sets it to true.
+            // StoreKit can return "restored" for a buy() call (pending sandbox
+            // transaction), so we must not blindly treat it as a restore.
+            await _handleSuccess(p, isRestore: _isRestoreAction);
           } else {
             // iOS re-delivers restored transactions when subscribing to purchaseStream
             // (same as purchased stale re-delivery). Firestore was already updated by
@@ -156,6 +171,7 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
         productId: productId,
         receiptData: vData.receiptData,
         purchaseToken: vData.purchaseToken,
+        isRestore: isRestore,
       );
 
       if (details.pendingCompletePurchase) {
@@ -165,21 +181,19 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
       _log('${isRestore ? 'restore' : 'purchase'}: $productId — Firestore updated');
       state = AsyncData(PurchaseDone(productId: productId));
     } catch (e) {
+      _log('${isRestore ? 'restore' : 'verify'} ✗ $e');
+      if (details.pendingCompletePurchase) {
+        await ref.read(purchaseRepositoryProvider).complete(details);
+      }
+      // Subscription expired — surface a specific message.
+      if (e is FirebaseFunctionsException && e.code == 'failed-precondition') {
+        state = const AsyncData(PurchaseError('訂閱已過期，請重新訂閱以繼續使用 Pro 功能。'));
+        return;
+      }
       if (isRestore) {
-        // Platform already confirmed ownership — don't surface an error.
-        // Firestore should already reflect the original purchase; if not,
-        // user needs to re-purchase (edge case: account data was wiped).
-        _log('restore: $productId — backend verify failed, completing silently: $e');
-        if (details.pendingCompletePurchase) {
-          await ref.read(purchaseRepositoryProvider).complete(details);
-        }
-        state = AsyncData(PurchaseDone(productId: productId));
+        state = AsyncData(PurchaseError('恢復購買失敗，請稍後再試或聯絡客服。\n$e'));
       } else {
-        _log('verify ✗ $e');
         state = AsyncData(PurchaseError('購買驗證失敗，請聯絡客服。\n$e'));
-        if (details.pendingCompletePurchase) {
-          await ref.read(purchaseRepositoryProvider).complete(details);
-        }
       }
     }
   }

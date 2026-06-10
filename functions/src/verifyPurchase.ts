@@ -32,14 +32,7 @@ async function verifyAppleReceipt(
   receiptData: string,
   sharedSecret: string,
   useSandbox = false
-): Promise<boolean> {
-  if (!sharedSecret) {
-    console.warn(
-      "verifyAppleReceipt: APPLE_SHARED_SECRET is empty — " +
-      "subscription verification will fail (status 21004). " +
-      "Set APPLE_SHARED_SECRET in GitHub Secrets and redeploy."
-    );
-  }
+): Promise<{ valid: boolean; status: number }> {
   const url = useSandbox ? APPLE_VERIFY_SANDBOX : APPLE_VERIFY_PROD;
   const res = await fetch(url, {
     method: "POST",
@@ -62,7 +55,7 @@ async function verifyAppleReceipt(
       `verifyAppleReceipt: Apple returned status=${json.status} sandbox=${useSandbox}`
     );
   }
-  return json.status === 0;
+  return { valid: json.status === 0, status: json.status };
 }
 
 // ── Google Play purchase validation ──────────────────────────────────────────
@@ -155,12 +148,13 @@ export const verifyPurchase = onCall(
     }
     const uid = request.auth.uid;
 
-    const { platform, productId, purchaseToken, receiptData } =
+    const { platform, productId, purchaseToken, receiptData, isRestore } =
       request.data as {
         platform: string;       // 'ios' | 'android'
         productId: string;      // 'lumi_extra_100' | 'lumi_pro_yearly'
         purchaseToken?: string; // Android only
         receiptData?: string;   // iOS only (base64 App Store receipt)
+        isRestore?: boolean;    // true when triggered by restorePurchases()
       };
 
     if (!platform || !productId) {
@@ -180,11 +174,8 @@ export const verifyPurchase = onCall(
       const secret = process.env.APPLE_SHARED_SECRET ?? "";
       if (!secret) {
         // APPLE_SHARED_SECRET not configured (sandbox / dev environment).
-        // Apple requires the shared secret for subscription validation and
-        // returns status 21004 when it is missing, blocking all Pro purchases.
-        // Trust StoreKit's delivery instead and apply without server-side
-        // Apple receipt validation. Set APPLE_SHARED_SECRET in GitHub Secrets
-        // for production to enable full server-side validation.
+        // Trust StoreKit's delivery and apply without server-side validation.
+        // Set APPLE_SHARED_SECRET in GitHub Secrets for production.
         console.warn(
           `verifyPurchase: APPLE_SHARED_SECRET not set — ` +
           `applying ${productId} for uid=${uid} without Apple receipt check (dev/sandbox mode).`
@@ -192,7 +183,37 @@ export const verifyPurchase = onCall(
         await applyPurchase(uid, productId);
         return { success: true };
       }
-      valid = await verifyAppleReceipt(receiptData, secret);
+      const { valid: appleValid, status: appleStatus } =
+        await verifyAppleReceipt(receiptData, secret);
+      valid = appleValid;
+
+      if (!valid) {
+        console.warn(
+          `verifyPurchase: Apple receipt invalid — ` +
+          `status=${appleStatus} uid=${uid} product=${productId} isRestore=${!!isRestore}`
+        );
+        // status 21004 = wrong APPLE_SHARED_SECRET (our config error, not user's).
+        // Trust StoreKit's cryptographic confirmation and apply the purchase.
+        if (appleStatus === 21004) {
+          console.warn(
+            `verifyPurchase: status 21004 (bad shared secret) — ` +
+            `applying ${productId} for uid=${uid} despite Apple rejection (config issue).`
+          );
+          await applyPurchase(uid, productId);
+          return { success: true };
+        }
+        // status 21006 = subscription expired; receipt is authentic but lapsed.
+        if (appleStatus === 21006 && isSubscription) {
+          throw new HttpsError(
+            "failed-precondition",
+            "Subscription has expired. Please renew to continue."
+          );
+        }
+        throw new HttpsError(
+          "permission-denied",
+          "Purchase receipt validation failed."
+        );
+      }
     } else if (platform === "android") {
       if (!purchaseToken) {
         throw new HttpsError(
@@ -201,6 +222,15 @@ export const verifyPurchase = onCall(
         );
       }
       valid = await verifyAndroidPurchase(productId, purchaseToken, isSubscription);
+      if (!valid) {
+        console.warn(
+          `verifyPurchase: Android purchase invalid uid=${uid} product=${productId}`
+        );
+        throw new HttpsError(
+          "permission-denied",
+          "Purchase receipt validation failed."
+        );
+      }
     } else {
       throw new HttpsError("invalid-argument", `Unknown platform: ${platform}`);
     }

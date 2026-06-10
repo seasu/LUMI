@@ -2,8 +2,8 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.59+148
-**後端版本 (Cloud Functions)：** 1.0.14
+**前端版本 (Flutter App)：** 1.0.60+149
+**後端版本 (Cloud Functions)：** 1.0.15
 **開發框架：** Flutter (Cross-platform)
 
 ---
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-06-10 | 1.0.60+149 | 1.0.15 | 修正 iOS 購買與恢復購買流程三個 bug：(1) **後端** `verifyPurchase.ts`：`verifyAppleReceipt` 改回傳 `{ valid, status }`，Apple 狀態 21004（APPLE_SHARED_SECRET 設定錯誤，屬後端 config 問題）時信任 StoreKit 並直接套用購買；21006（訂閱已過期）改拋 `failed-precondition` 供前端顯示明確訊息；(2) **前端** `purchase_provider.dart`：新增 `_isRestoreAction` 旗標，區分 `buy()` 與 `restore()` 動作——StoreKit 可能對 `buy()` 回傳 `restored` 狀態（沙盒環境），不再一律視為 restore；(3) 移除舊有「restore 失敗也 silent PurchaseDone」邏輯，改為正確顯示錯誤訊息，避免使用者看到假成功但 Firestore 未更新 | Purchase / IAP / Cloud Functions |
 | 2026-05-29 | 1.0.59+148 | 1.0.14 | 多國語系（i18n）完整實作：使用 Flutter `gen-l10n`，支援 English / 繁體中文 / 简体中文 / 日本語；新增 `l10n.yaml`、5 個 ARB 檔（`app_en.arb`、`app_zh_TW.arb`、`app_zh_CN.arb`、`app_ja.arb`、`app_zh.arb`）含 ~320 個字串 key；替換全 App 29 個 UI 檔硬編碼中文字串；新增 `LocaleNotifier`（Riverpod + SharedPreferences）與 Profile 頁語言切換 UI；新增 `translateCategory`/`translateColor` helper | UI / i18n / Auth / Profile / Wardrobe / OOTD / Check |
 | 2026-05-28 | 1.0.58+147 | 1.0.14 | 新增帳號刪除功能（Apple App Store Guideline 5.1.1(v)）：(1) CF `deleteAccount`：刪除 Firestore `users/{uid}` 文件後刪除 Firebase Auth 記錄；(2) 個人頁新增「刪除帳號」文字按鈕，點擊後彈出確認 Dialog；(3) `auth_provider.dart` 新增 `deleteAccount()`；(4) `CloudFunctionsService.deleteAccount()` 呼叫 CF | Auth / Profile / Cloud Functions |
 | 2026-05-25 | 1.0.57+146 | 1.0.13 | (1) Paywall Sheet UI（`paywall_sheet.dart`）：底部升級 Sheet，Pro 年費方案卡＋補充包卡（decoy 效果）、Glow Orb 購買中動畫、成功自動關閉；(2) 個人頁配額進度條（`profile_page.dart`）：顯示 AI 分析配額使用量、linear progress bar、剩餘 ≤5 件橘色警示、升級按鈕；(3) Snap 頁配額警示 Banner（`snap_page.dart`）：SnapPreviewing 狀態且剩餘 ≤5 件時顯示橘色 Banner，quota_exceeded 錯誤自動彈出 Paywall | Purchase / IAP / UI / Profile / Snap |

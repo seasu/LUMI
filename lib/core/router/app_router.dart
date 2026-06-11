@@ -41,6 +41,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Web popup / consent flows can briefly surface a stale `null` event while
       // Firebase is still restoring the active user. Fall back to
       // `FirebaseAuth.currentUser` to avoid flashing back to `/login`.
+      // After account deletion, signOut() is always called which clears
+      // auth.currentUser — so this fallback correctly returns null at that point.
       final resolvedUser = authValue.valueOrNull ?? auth.currentUser;
       final isLoggedIn = resolvedUser != null;
       final loc = state.matchedLocation;

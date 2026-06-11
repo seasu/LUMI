@@ -178,20 +178,35 @@ class _ProfileContent extends ConsumerWidget {
       builder: (_) => const _DeletingDialog(),
     );
 
+    Object? caughtError;
+
     try {
       await deleteAccount(ref); // deletes Firestore doc + Firebase Auth user
-
-      // Pop the progress dialog BEFORE signOut.
-      // signOut triggers GoRouter navigation synchronously on iOS — if the
-      // dialog is still present it ends up on an orphaned stack → black screen.
-      navigator.pop();
-
-      await signOut(ref); // clears local session → GoRouter → login page
     } catch (e) {
-      navigator.pop(); // dismiss progress dialog on error
+      caughtError = e;
+    } finally {
+      // Always dismiss the dialog here, before any navigation fires.
+      // GoRouter may have already navigated away (authStateChanges null fired
+      // mid-CF-call on iOS); canPop guards against double-pop.
+      if (navigator.canPop()) navigator.pop();
+    }
+
+    // Always sign out regardless of CF outcome. The CF may have partially
+    // succeeded (Firestore deleted, Auth deletion pending or already done).
+    // Signing out clears auth.currentUser so GoRouter's redirect fires
+    // correctly and the app reaches a clean state. Without this, the user
+    // can be left "logged in" with no Firestore profile → white screen.
+    try {
+      await signOut(ref);
+    } catch (_) {
+      // Swallow: ref may be disposed because authStateChanges null already
+      // fired and navigated away. GoRouter will handle the redirect.
+    }
+
+    if (caughtError != null && context.mounted) {
       messenger.showSnackBar(
         SnackBar(
-          content: Text('${l10n.profileDeleteError}\n$e'),
+          content: Text('${l10n.profileDeleteError}\n$caughtError'),
           backgroundColor: LumiColors.warning,
           behavior: SnackBarBehavior.floating,
         ),

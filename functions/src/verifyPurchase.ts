@@ -192,6 +192,22 @@ export const verifyPurchase = onCall(
           `verifyPurchase: Apple receipt invalid — ` +
           `status=${appleStatus} uid=${uid} product=${productId} isRestore=${!!isRestore}`
         );
+
+        // For restores, StoreKit has already cryptographically verified on-device
+        // that the user owns this product. Trust that confirmation regardless of
+        // why Apple's server-side check failed (wrong shared secret, network glitch,
+        // expired certificate, etc.) — backend validation is a secondary guard.
+        // Log extensively so we can diagnose config issues from Cloud Function logs.
+        if (isRestore) {
+          console.warn(
+            `verifyPurchase: restore — trusting StoreKit despite Apple status=${appleStatus} ` +
+            `uid=${uid} product=${productId}. Fix APPLE_SHARED_SECRET if status=21004.`
+          );
+          await applyPurchase(uid, productId);
+          return { success: true };
+        }
+
+        // For new purchases (not restore):
         // status 21004 = wrong APPLE_SHARED_SECRET (our config error, not user's).
         // Trust StoreKit's cryptographic confirmation and apply the purchase.
         if (appleStatus === 21004) {

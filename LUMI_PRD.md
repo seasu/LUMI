@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.64+153
+**前端版本 (Flutter App)：** 1.0.65+154
 **後端版本 (Cloud Functions)：** 1.0.16
 **開發框架：** Flutter (Cross-platform)
 
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-06-16 | 1.0.65+154 | 1.0.16 | 修正「購買已持有商品」流程：使用者點擊購買時，若 StoreKit 回傳 `PurchaseStatus.restored`（代表該商品已在帳戶中），原本因 `_isRestoreAction=false` 傳送 `isRestore=false` 給後端，導致 CF 的 StoreKit 信任旁路未觸發而出現 `permission-denied`；現改為 `PurchaseStatus.restored` 永遠傳送 `isRestore=true`，符合 StoreKit 語意（已持有 = 恢復），讓後端旁路正確生效 | Purchase / IAP |
 | 2026-06-16 | 1.0.64+153 | 1.0.16 | 修正帳號刪除後 Profile 頁面卡住問題：當 Firestore 用戶文件不存在但使用者仍處於登入狀態時（如刪帳流程中途失敗），Profile 頁以前顯示無限轉圈；現改為 `_OrphanedProfileState` widget，顯示「找不到帳號資料，即將為您登出…」並在 3 秒後自動呼叫 `signOut()`，同時提供手動登出按鈕，讓使用者可立即脫離卡住狀態 | Auth / Profile / UI |
 | 2026-06-16 | 1.0.63+152 | 1.0.16 | 診斷 / 日誌改善：(1) `deleteAccount.ts` 新增 `console.log` 記錄每個步驟（CF 呼叫開始、Firestore 刪除、Auth 刪除、完成）及 `console.error` 記錄錯誤，讓 Firebase Console 可見執行過程；(2) `DebugLogService` 新增 SharedPreferences 持久化（debounce 1s 寫入，最多保留 300 筆）；(3) `main.dart` 啟動時 `loadPersisted()` 載入上一 session 的 log，讓重開 App 後仍可看到刪帳錯誤訊息 | Auth / Cloud Functions / Debug |
 | 2026-06-16 | 1.0.62+151 | 1.0.15 | Paywall 還原購買 UX：按下「還原購買」後，sheet 整體內容替換為 _RestoreOverlay（Glow Orb 動畫 + 「正在還原購買…」文字），讓使用者清楚知道正在處理；新增 `paywallRestoringPurchases` l10n key（繁/簡中、英、日） | Purchase / IAP / UI / i18n |

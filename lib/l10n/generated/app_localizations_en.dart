@@ -245,6 +245,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileSignOut => 'Sign Out';
 
   @override
+  String get profileSigningOut => 'Account data not found. Signing you out…';
+
+  @override
   String get profileDeleteAccount => 'Delete Account';
 
   @override

@@ -72,6 +72,7 @@
   "profileHips": "臀圍",
   "profileInseam": "腿長",
   "profileSignOut": "登出",
+  "profileSigningOut": "找不到帳號資料，即將為您登出…",
   "profileDeleteAccount": "刪除帳號",
   "profileDeleteTitle": "刪除帳號",
   "profileDeleteConfirm": "所有資料將永久刪除且無法恢復，確定要繼續嗎？",

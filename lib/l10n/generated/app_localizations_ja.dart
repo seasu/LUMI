@@ -239,6 +239,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileSignOut => 'ログアウト';
 
   @override
+  String get profileSigningOut => 'アカウントデータが見つかりません。ログアウトします…';
+
+  @override
   String get profileDeleteAccount => 'アカウントを削除';
 
   @override

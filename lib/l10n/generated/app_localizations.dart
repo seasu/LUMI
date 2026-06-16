@@ -531,6 +531,12 @@ abstract class AppLocalizations {
   /// **'Sign Out'**
   String get profileSignOut;
 
+  /// No description provided for @profileSigningOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Account data not found. Signing you out…'**
+  String get profileSigningOut;
+
   /// No description provided for @profileDeleteAccount.
   ///
   /// In en, this message translates to:

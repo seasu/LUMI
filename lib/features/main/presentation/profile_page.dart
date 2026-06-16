@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../l10n/generated/app_localizations.dart';
@@ -34,10 +36,83 @@ class ProfilePage extends ConsumerWidget {
             ),
           ),
           data: (profile) => profile == null
-              ? const Center(
-                  child: CircularProgressIndicator(color: LumiColors.primary),
-                )
+              ? const _OrphanedProfileState()
               : _ProfileContent(profile: profile),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Orphaned-profile recovery ─────────────────────────────────────────────────
+// Shown when the user is authenticated but the Firestore profile doc is gone
+// (e.g. account was partially deleted). Auto-signs out after 3 seconds so the
+// app reaches the login screen without requiring user action.
+
+class _OrphanedProfileState extends ConsumerStatefulWidget {
+  const _OrphanedProfileState();
+
+  @override
+  ConsumerState<_OrphanedProfileState> createState() =>
+      _OrphanedProfileStateState();
+}
+
+class _OrphanedProfileStateState extends ConsumerState<_OrphanedProfileState> {
+  Timer? _autoSignOutTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _autoSignOutTimer = Timer(const Duration(seconds: 3), _signOut);
+  }
+
+  @override
+  void dispose() {
+    _autoSignOutTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _signOut() async {
+    try {
+      await signOut(ref);
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(LumiSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(color: LumiColors.primary),
+            const SizedBox(height: LumiSpacing.lg),
+            Text(
+              l10n.profileSigningOut,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: LumiTypeScale.body,
+                color: LumiColors.subtext,
+              ),
+            ),
+            const SizedBox(height: LumiSpacing.xl),
+            OutlinedButton(
+              onPressed: _signOut,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: LumiColors.subtext,
+                side: BorderSide(
+                    color: LumiColors.subtext.withValues(alpha: 0.55)),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: LumiSpacing.lg, vertical: LumiSpacing.sm),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(LumiRadii.pill),
+                ),
+              ),
+              child: Text(l10n.profileSignOut),
+            ),
+          ],
         ),
       ),
     );

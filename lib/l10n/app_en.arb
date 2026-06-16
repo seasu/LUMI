@@ -124,6 +124,7 @@
   "profileHips": "Hips",
   "profileInseam": "Inseam",
   "profileSignOut": "Sign Out",
+  "profileSigningOut": "Account data not found. Signing you out…",
   "profileDeleteAccount": "Delete Account",
   "profileDeleteTitle": "Delete Account",
   "profileDeleteConfirm": "All data will be permanently deleted and cannot be recovered. Are you sure?",

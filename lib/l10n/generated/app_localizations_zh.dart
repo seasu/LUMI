@@ -239,6 +239,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileSignOut => '登出';
 
   @override
+  String get profileSigningOut => '找不到帳號資料，即將為您登出…';
+
+  @override
   String get profileDeleteAccount => '刪除帳號';
 
   @override
@@ -883,6 +886,9 @@ class AppLocalizationsZhCn extends AppLocalizationsZh {
   String get profileSignOut => '退出登录';
 
   @override
+  String get profileSigningOut => '找不到账号数据，即将为您退出…';
+
+  @override
   String get profileDeleteAccount => '删除账号';
 
   @override
@@ -1525,6 +1531,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get profileSignOut => '登出';
+
+  @override
+  String get profileSigningOut => '找不到帳號資料，即將為您登出…';
 
   @override
   String get profileDeleteAccount => '刪除帳號';

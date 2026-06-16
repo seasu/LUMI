@@ -72,6 +72,7 @@
   "profileHips": "ヒップ",
   "profileInseam": "股下",
   "profileSignOut": "ログアウト",
+  "profileSigningOut": "アカウントデータが見つかりません。ログアウトします…",
   "profileDeleteAccount": "アカウントを削除",
   "profileDeleteTitle": "アカウントを削除",
   "profileDeleteConfirm": "すべてのデータが完全に削除され、復元できません。よろしいですか？",

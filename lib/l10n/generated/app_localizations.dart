@@ -681,6 +681,12 @@ abstract class AppLocalizations {
   /// **'Restore Purchases'**
   String get paywallRestorePurchases;
 
+  /// No description provided for @paywallRestoringPurchases.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring purchases…'**
+  String get paywallRestoringPurchases;
+
   /// No description provided for @paywallSuccessPro.
   ///
   /// In en, this message translates to:

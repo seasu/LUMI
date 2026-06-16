@@ -28,6 +28,10 @@ FirebaseOptions? _resolveFirebaseOptions() {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Load previous session's log entries before installing the hook so that
+  // errors from the last run (e.g. account deletion failures) are visible
+  // in the debug log page immediately after restart.
+  await DebugLogService.instance.loadPersisted();
   DebugLogService.instance.install();
 
   // Install error handlers early so Firebase-init errors are also captured.

@@ -318,6 +318,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get paywallRestorePurchases => '購入を復元';
 
   @override
+  String get paywallRestoringPurchases => '購入を復元中…';
+
+  @override
   String get paywallSuccessPro => '🎉 Proにアップグレード！無制限のAI分析をお楽しみください';
 
   @override

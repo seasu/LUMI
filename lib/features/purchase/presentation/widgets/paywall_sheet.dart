@@ -113,8 +113,10 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
       });
     });
 
-    final isProcessing = purchaseAsync.valueOrNull is PurchaseProcessing;
     final purchaseState = purchaseAsync.valueOrNull;
+    final isProcessing = purchaseState is PurchaseProcessing;
+    final isRestoring = purchaseState is PurchaseProcessing &&
+        purchaseState.productId == 'restore';
 
     return PopScope(
       canPop: !isProcessing,
@@ -133,7 +135,9 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
               MediaQuery.of(context).padding.bottom +
               LumiSpacing.lg,
         ),
-        child: Column(
+        child: isRestoring
+            ? _RestoreOverlay(glowAnim: _glowAnim)
+            : Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Handle
@@ -740,6 +744,40 @@ class _ErrorBanner extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── Restore-in-progress overlay ───────────────────────────────────────────────
+//
+// Replaces the full sheet content while restorePurchases() is running so the
+// user gets unambiguous feedback that something is happening.
+
+class _RestoreOverlay extends StatelessWidget {
+  const _RestoreOverlay({required this.glowAnim});
+
+  final Animation<double> glowAnim;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return SizedBox(
+      height: 200,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _GlowOrb(anim: glowAnim),
+          const SizedBox(height: LumiSpacing.lg),
+          Text(
+            l10n.paywallRestoringPurchases,
+            style: const TextStyle(
+              fontSize: LumiTypeScale.titleSm,
+              fontWeight: FontWeight.w600,
+              color: LumiColors.text,
+            ),
+          ),
+        ],
       ),
     );
   }

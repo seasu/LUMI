@@ -324,6 +324,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paywallRestorePurchases => 'Restore Purchases';
 
   @override
+  String get paywallRestoringPurchases => 'Restoring purchases…';
+
+  @override
   String get paywallSuccessPro => '🎉 Upgraded to Pro! Enjoy unlimited AI analysis';
 
   @override

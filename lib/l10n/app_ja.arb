@@ -97,6 +97,7 @@
   "paywallExtraDesc": "+100回のAI分析、買い切り",
   "paywallFreeContinue": "無料のまま続ける",
   "paywallRestorePurchases": "購入を復元",
+  "paywallRestoringPurchases": "購入を復元中…",
   "paywallSuccessPro": "🎉 Proにアップグレード！無制限のAI分析をお楽しみください",
   "paywallSuccessExtra": "✅ AI分析100回分を補充しました",
   "paywallErrorGeneric": "購入に失敗しました。もう一度お試しください。",

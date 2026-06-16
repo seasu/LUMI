@@ -166,6 +166,7 @@
   "paywallExtraDesc": "+100 AI analysis credits, one-time",
   "paywallFreeContinue": "Continue for free",
   "paywallRestorePurchases": "Restore Purchases",
+  "paywallRestoringPurchases": "Restoring purchases…",
   "paywallSuccessPro": "🎉 Upgraded to Pro! Enjoy unlimited AI analysis",
   "paywallSuccessExtra": "✅ Added 100 AI analysis credits",
   "paywallErrorGeneric": "Purchase failed. Please try again.",

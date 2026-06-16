@@ -318,6 +318,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get paywallRestorePurchases => '還原購買';
 
   @override
+  String get paywallRestoringPurchases => '正在還原購買…';
+
+  @override
   String get paywallSuccessPro => '🎉 已升級為 Pro！享受無限 AI 分析';
 
   @override
@@ -959,6 +962,9 @@ class AppLocalizationsZhCn extends AppLocalizationsZh {
   String get paywallRestorePurchases => '恢复购买';
 
   @override
+  String get paywallRestoringPurchases => '正在恢复购买…';
+
+  @override
   String get paywallSuccessPro => '🎉 已升级为 Pro！享受无限 AI 分析';
 
   @override
@@ -1598,6 +1604,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get paywallRestorePurchases => '還原購買';
+
+  @override
+  String get paywallRestoringPurchases => '正在還原購買…';
 
   @override
   String get paywallSuccessPro => '🎉 已升級為 Pro！享受無限 AI 分析';

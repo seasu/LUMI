@@ -68,19 +68,19 @@ class PurchaseRepository {
       _iap.completePurchase(details);
 
   /// Extracts the platform-appropriate verification data from [details]:
-  /// - iOS  → base64 App Store receipt (`localVerificationData`)
+  /// - iOS     → StoreKit transactionIdentifier (`purchaseID`)
   /// - Android → purchase token (`serverVerificationData`)
-  static ({String? receiptData, String? purchaseToken}) extractVerificationData(
+  static ({String? transactionId, String? purchaseToken}) extractVerificationData(
     PurchaseDetails details,
   ) {
     if (Platform.isIOS) {
       return (
-        receiptData: details.verificationData.localVerificationData,
+        transactionId: details.purchaseID,
         purchaseToken: null,
       );
     } else {
       return (
-        receiptData: null,
+        transactionId: null,
         purchaseToken: details.verificationData.serverVerificationData,
       );
     }

@@ -60,9 +60,9 @@ jobs:
       - name: Verify Apple IAP secrets presence
         run: |
           MISSING=()
-          [ -z "${{ secrets.APPLE_API_KEY_ID }}" ]      && MISSING+=("APPLE_API_KEY_ID")
-          [ -z "${{ secrets.APPLE_API_ISSUER_ID }}" ]   && MISSING+=("APPLE_API_ISSUER_ID")
-          [ -z "${{ secrets.APPLE_API_PRIVATE_KEY }}" ] && MISSING+=("APPLE_API_PRIVATE_KEY")
+          [ -z "${{ secrets.APP_STORE_CONNECT_KEY_ID }}" ]      && MISSING+=("APP_STORE_CONNECT_KEY_ID")
+          [ -z "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}" ]   && MISSING+=("APP_STORE_CONNECT_ISSUER_ID")
+          [ -z "${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}" ] && MISSING+=("APP_STORE_CONNECT_PRIVATE_KEY")
           if [ ${#MISSING[@]} -gt 0 ]; then
             echo "⚠️  Missing Apple IAP secrets: ${MISSING[*]}"
             echo "   iOS purchases will fail until these are set."
@@ -72,6 +72,9 @@ jobs:
           fi
 
       - name: Write runtime env for Firebase deploy
+        env:
+          # Use env: to safely pass the multi-line PEM private key into the shell.
+          APP_STORE_PRIVATE_KEY_PEM: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
         working-directory: functions
         run: |
           rm -f .env.lumi-309ff
@@ -82,14 +85,17 @@ jobs:
           if [ -n "${{ vars.GEMINI_EMBEDDING_MODEL }}" ]; then
             printf '%s\n' 'GEMINI_EMBEDDING_MODEL=${{ vars.GEMINI_EMBEDDING_MODEL }}' >> .env.lumi-309ff
           fi
-          if [ -n "${{ secrets.APPLE_API_KEY_ID }}" ]; then
-            printf '%s\n' 'APPLE_API_KEY_ID=${{ secrets.APPLE_API_KEY_ID }}' >> .env.lumi-309ff
+          if [ -n "${{ secrets.APP_STORE_CONNECT_KEY_ID }}" ]; then
+            printf '%s\n' 'APPLE_API_KEY_ID=${{ secrets.APP_STORE_CONNECT_KEY_ID }}' >> .env.lumi-309ff
           fi
-          if [ -n "${{ secrets.APPLE_API_ISSUER_ID }}" ]; then
-            printf '%s\n' 'APPLE_API_ISSUER_ID=${{ secrets.APPLE_API_ISSUER_ID }}' >> .env.lumi-309ff
+          if [ -n "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}" ]; then
+            printf '%s\n' 'APPLE_API_ISSUER_ID=${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}' >> .env.lumi-309ff
           fi
-          if [ -n "${{ secrets.APPLE_API_PRIVATE_KEY }}" ]; then
-            printf '%s\n' 'APPLE_API_PRIVATE_KEY=${{ secrets.APPLE_API_PRIVATE_KEY }}' >> .env.lumi-309ff
+          if [ -n "$APP_STORE_PRIVATE_KEY_PEM" ]; then
+            # Base64-encode so the multi-line PEM survives the single-line .env format.
+            # The CF decodes it back to PEM at runtime.
+            ENCODED=$(printf '%s' "$APP_STORE_PRIVATE_KEY_PEM" | base64 | tr -d '\n')
+            printf '%s\n' "APPLE_API_PRIVATE_KEY=${ENCODED}" >> .env.lumi-309ff
           fi
 
       - name: Deploy Cloud Functions (with trigger migration fallback)

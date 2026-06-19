@@ -48,7 +48,7 @@ function generateAppStoreJWT(): string {
   // Private key is stored as base64 in .env so multi-line PEM survives the file format.
   const privateKey = Buffer.from(privateKeyB64, "base64").toString("utf8");
 
-  return jwt.sign({}, privateKey, {
+  return jwt.sign({ bid: BUNDLE_ID }, privateKey, {
     algorithm: "ES256",
     keyid: keyId,
     issuer: issuerId,

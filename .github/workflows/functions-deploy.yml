@@ -56,18 +56,25 @@ jobs:
       # --force on deploy: CLI applies Artifact Registry cleanup policy for build artifacts;
       # without it, deploy can exit 1 after functions succeeded.
 
-      # Optional runtime overrides on the deployed function (still via .env.lumi-309ff).
-      - name: Verify optional secrets presence
+      # Runtime env for Cloud Functions — written to .env.lumi-309ff before deploy.
+      - name: Verify Apple IAP secrets presence
         run: |
-          if [ -z "${{ secrets.APPLE_SHARED_SECRET }}" ]; then
-            echo "⚠️  APPLE_SHARED_SECRET not set — deploying in sandbox/dev mode."
-            echo "   iOS purchases will be applied without Apple receipt validation (StoreKit trusted)."
-            echo "   Set APPLE_SHARED_SECRET for production: Settings → Secrets → Actions → New repository secret"
+          MISSING=()
+          [ -z "${{ secrets.APP_STORE_CONNECT_KEY_ID }}" ]      && MISSING+=("APP_STORE_CONNECT_KEY_ID")
+          [ -z "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}" ]   && MISSING+=("APP_STORE_CONNECT_ISSUER_ID")
+          [ -z "${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}" ] && MISSING+=("APP_STORE_CONNECT_PRIVATE_KEY")
+          if [ ${#MISSING[@]} -gt 0 ]; then
+            echo "⚠️  Missing Apple IAP secrets: ${MISSING[*]}"
+            echo "   iOS purchases will fail until these are set."
+            echo "   See: App Store Connect → Users & Access → Integrations → Keys"
           else
-            echo "✅ APPLE_SHARED_SECRET is configured — full Apple receipt validation enabled"
+            echo "✅ Apple App Store Server API credentials are configured"
           fi
 
-      - name: Write optional runtime Gemini env for Firebase deploy
+      - name: Write runtime env for Firebase deploy
+        env:
+          # Use env: to safely pass the multi-line PEM private key into the shell.
+          APP_STORE_PRIVATE_KEY_PEM: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
         working-directory: functions
         run: |
           rm -f .env.lumi-309ff
@@ -78,8 +85,17 @@ jobs:
           if [ -n "${{ vars.GEMINI_EMBEDDING_MODEL }}" ]; then
             printf '%s\n' 'GEMINI_EMBEDDING_MODEL=${{ vars.GEMINI_EMBEDDING_MODEL }}' >> .env.lumi-309ff
           fi
-          if [ -n "${{ secrets.APPLE_SHARED_SECRET }}" ]; then
-            printf '%s\n' 'APPLE_SHARED_SECRET=${{ secrets.APPLE_SHARED_SECRET }}' >> .env.lumi-309ff
+          if [ -n "${{ secrets.APP_STORE_CONNECT_KEY_ID }}" ]; then
+            printf '%s\n' 'APPLE_API_KEY_ID=${{ secrets.APP_STORE_CONNECT_KEY_ID }}' >> .env.lumi-309ff
+          fi
+          if [ -n "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}" ]; then
+            printf '%s\n' 'APPLE_API_ISSUER_ID=${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}' >> .env.lumi-309ff
+          fi
+          if [ -n "$APP_STORE_PRIVATE_KEY_PEM" ]; then
+            # Base64-encode so the multi-line PEM survives the single-line .env format.
+            # The CF decodes it back to PEM at runtime.
+            ENCODED=$(printf '%s' "$APP_STORE_PRIVATE_KEY_PEM" | base64 | tr -d '\n')
+            printf '%s\n' "APPLE_API_PRIVATE_KEY=${ENCODED}" >> .env.lumi-309ff
           fi
 
       - name: Deploy Cloud Functions (with trigger migration fallback)

@@ -83,19 +83,18 @@ class CloudFunctionsService {
     }
   }
 
-  /// Validates a platform purchase receipt with the backend and updates the
-  /// user's Firestore quota / plan.
+  /// Validates a platform purchase with the backend (App Store Server API / Play API)
+  /// and updates the user's Firestore quota / plan.
   ///
-  /// [productId] is one of: `lumi_extra_100`, `lumi_pro_yearly`
-  /// [purchaseToken] is the Android purchase token (Android only).
-  /// [receiptData]   is the base64-encoded App Store receipt (iOS only).
+  /// [productId]     one of: `lumi_extra_100`, `lumi_pro_yearly`
+  /// [transactionId] iOS StoreKit transactionIdentifier (iOS only)
+  /// [purchaseToken] Google Play purchase token (Android only)
   Future<void> verifyPurchase({
     required String productId,
+    String? transactionId,
     String? purchaseToken,
-    String? receiptData,
-    bool isRestore = false,
   }) async {
-    _log('verifyPurchase → product=$productId isRestore=$isRestore');
+    _log('verifyPurchase → product=$productId');
     final sw = Stopwatch()..start();
     try {
       final platform = Platform.isIOS ? 'ios' : 'android';
@@ -103,9 +102,8 @@ class CloudFunctionsService {
       await callable.call<Map<dynamic, dynamic>>({
         'platform': platform,
         'productId': productId,
+        if (transactionId != null) 'transactionId': transactionId,
         if (purchaseToken != null) 'purchaseToken': purchaseToken,
-        if (receiptData != null) 'receiptData': receiptData,
-        if (isRestore) 'isRestore': true,
       });
       _log('verifyPurchase ← ok ${sw.elapsedMilliseconds}ms');
     } catch (e) {

@@ -1,64 +1,134 @@
 /**
  * verifyPurchase — Cloud Function
  *
- * Validates an in-app purchase receipt/token with Apple or Google, then
- * updates the Firestore user document:
+ * Validates an in-app purchase with the platform's official server-side API,
+ * then updates the Firestore user document:
  *   - lumi_extra_100  → freeQuota += 100  (consumable)
  *   - lumi_pro_yearly → plan = 'pro'      (auto-renewable subscription)
  *
- * Platform setup required (one-time, done in consoles — not in code):
- *   iOS   : App Store Connect → App Information → App-Specific Shared Secret
- *           → store as Firebase secret APPLE_SHARED_SECRET
- *   Android: Play Console → Setup → API access → link this GCP project,
- *           then grant the Cloud Functions service account the role
- *           "Service Account User" + "Android Management API" viewer in IAM.
+ * iOS uses the App Store Server API (not the deprecated verifyReceipt endpoint):
+ *   https://developer.apple.com/documentation/appstoreserverapi
+ *
+ * Required one-time setup via GitHub Secrets → .env.lumi-309ff:
+ *   APPLE_API_KEY_ID      — Key ID from App Store Connect → Users & Access → Integrations → Keys
+ *   APPLE_API_ISSUER_ID   — Issuer ID from the same page (UUID)
+ *   APPLE_API_PRIVATE_KEY — base64-encoded content of the downloaded .p8 file
+ *                           Run: base64 < AuthKey_XXXXXXXXXX.p8 | tr -d '\n'
+ *
+ * Android uses the Google Play Developer API (unchanged).
  */
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import * as jwt from "jsonwebtoken";
 import { GoogleAuth } from "google-auth-library";
 import { FUNCTIONS_REGION } from "./functionsRegion";
 
-// APPLE_SHARED_SECRET is injected via .env.lumi-309ff at deploy time
-// (set APPLE_SHARED_SECRET in GitHub Actions Secrets → flows into .env via workflow).
-// Sandbox receipts are accepted without it; production subscriptions require the real value.
+const BUNDLE_ID = "io.github.seasu.lumi";
 const PACKAGE_NAME = "io.github.seasu.lumi";
-const APPLE_VERIFY_PROD = "https://buy.itunes.apple.com/verifyReceipt";
-const APPLE_VERIFY_SANDBOX = "https://sandbox.itunes.apple.com/verifyReceipt";
+const APP_STORE_API_PROD = "https://api.storekit.itunes.apple.com";
+const APP_STORE_API_SANDBOX = "https://api.storekit-sandbox.itunes.apple.com";
 
-// ── Apple receipt validation ──────────────────────────────────────────────────
+// ── App Store Server API — JWT authentication ─────────────────────────────────
 
-async function verifyAppleReceipt(
-  receiptData: string,
-  sharedSecret: string,
-  useSandbox = false
-): Promise<{ valid: boolean; status: number }> {
-  const url = useSandbox ? APPLE_VERIFY_SANDBOX : APPLE_VERIFY_PROD;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      "receipt-data": receiptData,
-      password: sharedSecret,
-      "exclude-old-transactions": true,
-    }),
-  });
-  const json = (await res.json()) as { status: number };
+function generateAppStoreJWT(): string {
+  const privateKeyB64 = process.env.APPLE_API_PRIVATE_KEY ?? "";
+  const keyId = process.env.APPLE_API_KEY_ID ?? "";
+  const issuerId = process.env.APPLE_API_ISSUER_ID ?? "";
 
-  // 21007 means sandbox receipt sent to production — retry against sandbox
-  if (json.status === 21007) {
-    return verifyAppleReceipt(receiptData, sharedSecret, true);
-  }
-
-  if (json.status !== 0) {
-    console.warn(
-      `verifyAppleReceipt: Apple returned status=${json.status} sandbox=${useSandbox}`
+  if (!privateKeyB64 || !keyId || !issuerId) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Apple IAP not configured. " +
+        "Set APPLE_API_KEY_ID, APPLE_API_ISSUER_ID, and APPLE_API_PRIVATE_KEY " +
+        "in GitHub Secrets."
     );
   }
-  return { valid: json.status === 0, status: json.status };
+
+  // Private key is stored as base64 in .env so multi-line PEM survives the file format.
+  const privateKey = Buffer.from(privateKeyB64, "base64").toString("utf8");
+
+  return jwt.sign({}, privateKey, {
+    algorithm: "ES256",
+    keyid: keyId,
+    issuer: issuerId,
+    audience: "appstoreconnect-v1",
+    expiresIn: "20m",
+  });
 }
 
-// ── Google Play purchase validation ──────────────────────────────────────────
+// ── App Store Server API — transaction verification ───────────────────────────
+
+interface AppStoreTransactionPayload {
+  bundleId: string;
+  productId: string;
+  transactionId: string;
+  originalTransactionId: string;
+  /** 'Consumable' | 'Non-Consumable' | 'Auto-Renewable Subscription' | … */
+  type: string;
+  /** Subscription expiry — Unix epoch ms. Only present for subscriptions. */
+  expiresDate?: number;
+}
+
+async function verifyAppStoreTransaction(
+  transactionId: string,
+  expectedProductId: string,
+  useSandbox = false
+): Promise<AppStoreTransactionPayload> {
+  const baseUrl = useSandbox ? APP_STORE_API_SANDBOX : APP_STORE_API_PROD;
+  const token = generateAppStoreJWT();
+
+  const res = await fetch(
+    `${baseUrl}/inApps/v1/transactions/${transactionId}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+
+  if (res.status === 401) {
+    console.error("verifyPurchase: App Store Server API 401 — check API key credentials");
+    throw new HttpsError("internal", "Apple API authentication failed. Check APPLE_API_* secrets.");
+  }
+
+  if (!res.ok) {
+    const body = (await res.json()) as { errorCode?: number; errorMessage?: string };
+    console.warn(
+      `verifyPurchase: App Store API HTTP ${res.status} sandbox=${useSandbox}`,
+      body
+    );
+    // 4040010 = TRANSACTION_ID_NOT_FOUND on production → transaction is from sandbox
+    if (!useSandbox && body.errorCode === 4040010) {
+      console.log(`verifyPurchase: not on production, retrying sandbox`);
+      return verifyAppStoreTransaction(transactionId, expectedProductId, true);
+    }
+    throw new HttpsError("permission-denied", "Transaction not found or invalid.");
+  }
+
+  const body = (await res.json()) as { signedTransactionInfo: string };
+
+  // Decode the JWS payload. The response originated from Apple's authenticated
+  // API endpoint — signature verification is redundant here.
+  const parts = body.signedTransactionInfo.split(".");
+  if (parts.length !== 3) {
+    throw new HttpsError("internal", "Malformed JWS from App Store Server API.");
+  }
+  const payload = JSON.parse(
+    Buffer.from(parts[1], "base64url").toString("utf8")
+  ) as AppStoreTransactionPayload;
+
+  if (payload.bundleId !== BUNDLE_ID) {
+    console.error(`verifyPurchase: bundle ID mismatch — got ${payload.bundleId}`);
+    throw new HttpsError("permission-denied", "Transaction bundle ID mismatch.");
+  }
+  if (payload.productId !== expectedProductId) {
+    console.error(
+      `verifyPurchase: product ID mismatch — got ${payload.productId}, expected ${expectedProductId}`
+    );
+    throw new HttpsError("permission-denied", "Transaction product ID mismatch.");
+  }
+
+  return payload;
+}
+
+// ── Google Play Developer API — purchase validation ───────────────────────────
 
 async function verifyAndroidPurchase(
   productId: string,
@@ -76,13 +146,9 @@ async function verifyAndroidPurchase(
   const base =
     "https://androidpublisher.googleapis.com/androidpublisher/v3/applications";
 
-  let url: string;
-  if (isSubscription) {
-    // subscriptions.v2 endpoint (modern; handles base plans)
-    url = `${base}/${PACKAGE_NAME}/purchases/subscriptionsv2/tokens/${purchaseToken}`;
-  } else {
-    url = `${base}/${PACKAGE_NAME}/purchases/products/${productId}/tokens/${purchaseToken}`;
-  }
+  const url = isSubscription
+    ? `${base}/${PACKAGE_NAME}/purchases/subscriptionsv2/tokens/${purchaseToken}`
+    : `${base}/${PACKAGE_NAME}/purchases/products/${productId}/tokens/${purchaseToken}`;
 
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
@@ -90,7 +156,7 @@ async function verifyAndroidPurchase(
 
   if (!res.ok) {
     console.error(
-      `Android purchase verify failed ${res.status}: ${await res.text()}`
+      `verifyPurchase: Android API ${res.status}: ${await res.text()}`
     );
     return false;
   }
@@ -98,21 +164,16 @@ async function verifyAndroidPurchase(
   const json = (await res.json()) as Record<string, unknown>;
 
   if (isSubscription) {
-    // subscriptionState SUBSCRIPTION_STATE_ACTIVE = active & paid
     const state = json.subscriptionState as string | undefined;
     const valid =
       state === "SUBSCRIPTION_STATE_ACTIVE" ||
       state === "SUBSCRIPTION_STATE_IN_GRACE_PERIOD";
-    if (!valid) {
-      console.warn(`verifyAndroidPurchase: subscriptionState=${state}`);
-    }
+    if (!valid) console.warn(`verifyPurchase: Android subscriptionState=${state}`);
     return valid;
   } else {
-    // purchaseState: 0 = purchased, 1 = canceled, 2 = pending
     const purchaseState = json.purchaseState as number | undefined;
-    if (purchaseState !== 0) {
-      console.warn(`verifyAndroidPurchase: purchaseState=${purchaseState}`);
-    }
+    if (purchaseState !== 0)
+      console.warn(`verifyPurchase: Android purchaseState=${purchaseState}`);
     return purchaseState === 0;
   }
 }
@@ -148,120 +209,57 @@ export const verifyPurchase = onCall(
     }
     const uid = request.auth.uid;
 
-    const { platform, productId, purchaseToken, receiptData, isRestore } =
+    const { platform, productId, transactionId, purchaseToken } =
       request.data as {
-        platform: string;       // 'ios' | 'android'
-        productId: string;      // 'lumi_extra_100' | 'lumi_pro_yearly'
-        purchaseToken?: string; // Android only
-        receiptData?: string;   // iOS only (base64 App Store receipt)
-        isRestore?: boolean;    // true when triggered by restorePurchases()
+        platform: string;        // 'ios' | 'android'
+        productId: string;       // 'lumi_extra_100' | 'lumi_pro_yearly'
+        transactionId?: string;  // iOS: StoreKit transactionIdentifier
+        purchaseToken?: string;  // Android: Play purchase token
       };
 
     if (!platform || !productId) {
-      throw new HttpsError(
-        "invalid-argument",
-        "platform and productId are required."
-      );
+      throw new HttpsError("invalid-argument", "platform and productId are required.");
     }
 
     const isSubscription = productId === "lumi_pro_yearly";
-    let valid = false;
+    console.log(
+      `verifyPurchase: start uid=${uid} platform=${platform} product=${productId}`
+    );
 
     if (platform === "ios") {
-      if (!receiptData) {
-        throw new HttpsError("invalid-argument", "receiptData required for iOS.");
+      if (!transactionId) {
+        throw new HttpsError("invalid-argument", "transactionId required for iOS.");
       }
-      const secret = process.env.APPLE_SHARED_SECRET ?? "";
-      if (!secret) {
-        // APPLE_SHARED_SECRET not configured (sandbox / dev environment).
-        // Trust StoreKit's delivery and apply without server-side validation.
-        // Set APPLE_SHARED_SECRET in GitHub Secrets for production.
+
+      const tx = await verifyAppStoreTransaction(transactionId, productId);
+      console.log(
+        `verifyPurchase: Apple confirmed transactionId=${transactionId} type=${tx.type}`
+      );
+
+      // Reject expired subscriptions — but not consumables (no expiresDate).
+      if (isSubscription && tx.expiresDate != null && tx.expiresDate < Date.now()) {
         console.warn(
-          `verifyPurchase: APPLE_SHARED_SECRET not set — ` +
-          `applying ${productId} for uid=${uid} without Apple receipt check (dev/sandbox mode).`
+          `verifyPurchase: subscription expired uid=${uid} expiresDate=${new Date(tx.expiresDate).toISOString()}`
         );
-        await applyPurchase(uid, productId);
-        return { success: true };
-      }
-      const { valid: appleValid, status: appleStatus } =
-        await verifyAppleReceipt(receiptData, secret);
-      valid = appleValid;
-
-      if (!valid) {
-        console.warn(
-          `verifyPurchase: Apple receipt invalid — ` +
-          `status=${appleStatus} uid=${uid} product=${productId} isRestore=${!!isRestore}`
-        );
-
-        // For restores, StoreKit has already cryptographically verified on-device
-        // that the user owns this product. Trust that confirmation regardless of
-        // why Apple's server-side check failed (wrong shared secret, network glitch,
-        // expired certificate, etc.) — backend validation is a secondary guard.
-        // Log extensively so we can diagnose config issues from Cloud Function logs.
-        if (isRestore) {
-          console.warn(
-            `verifyPurchase: restore — trusting StoreKit despite Apple status=${appleStatus} ` +
-            `uid=${uid} product=${productId}. Fix APPLE_SHARED_SECRET if status=21004.`
-          );
-          await applyPurchase(uid, productId);
-          return { success: true };
-        }
-
-        // For new purchases (not restore):
-        // status 21004 = wrong APPLE_SHARED_SECRET (our config error, not user's).
-        // Trust StoreKit's cryptographic confirmation and apply the purchase.
-        if (appleStatus === 21004) {
-          console.warn(
-            `verifyPurchase: status 21004 (bad shared secret) — ` +
-            `applying ${productId} for uid=${uid} despite Apple rejection (config issue).`
-          );
-          await applyPurchase(uid, productId);
-          return { success: true };
-        }
-        // status 21006 = subscription expired; receipt is authentic but lapsed.
-        if (appleStatus === 21006 && isSubscription) {
-          throw new HttpsError(
-            "failed-precondition",
-            "Subscription has expired. Please renew to continue."
-          );
-        }
         throw new HttpsError(
-          "permission-denied",
-          "Purchase receipt validation failed."
+          "failed-precondition",
+          "Subscription has expired. Please renew to continue."
         );
       }
     } else if (platform === "android") {
       if (!purchaseToken) {
-        throw new HttpsError(
-          "invalid-argument",
-          "purchaseToken required for Android."
-        );
+        throw new HttpsError("invalid-argument", "purchaseToken required for Android.");
       }
-      valid = await verifyAndroidPurchase(productId, purchaseToken, isSubscription);
+      const valid = await verifyAndroidPurchase(productId, purchaseToken, isSubscription);
       if (!valid) {
-        console.warn(
-          `verifyPurchase: Android purchase invalid uid=${uid} product=${productId}`
-        );
-        throw new HttpsError(
-          "permission-denied",
-          "Purchase receipt validation failed."
-        );
+        throw new HttpsError("permission-denied", "Purchase receipt validation failed.");
       }
     } else {
       throw new HttpsError("invalid-argument", `Unknown platform: ${platform}`);
     }
 
-    if (!valid) {
-      console.warn(
-        `verifyPurchase: INVALID receipt uid=${uid} platform=${platform} product=${productId}`
-      );
-      throw new HttpsError(
-        "permission-denied",
-        "Purchase receipt validation failed."
-      );
-    }
-
     await applyPurchase(uid, productId);
+    console.log(`verifyPurchase: complete uid=${uid} product=${productId}`);
     return { success: true };
   }
 );

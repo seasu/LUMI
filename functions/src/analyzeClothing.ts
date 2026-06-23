@@ -80,7 +80,8 @@ export const analyzeClothing = onCall(
         const snap = await t.get(userRef);
         const current =
           (snap.data()?.analyzedCount as number | undefined) ?? 0;
-        t.update(userRef, { analyzedCount: current + 1 });
+        // Use set+merge so this works even if the user document does not yet exist.
+        t.set(userRef, { analyzedCount: current + 1 }, { merge: true });
       });
 
       console.log(

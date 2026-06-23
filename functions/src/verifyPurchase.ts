@@ -76,12 +76,28 @@ async function verifyAppStoreTransaction(
   useSandbox = false
 ): Promise<AppStoreTransactionPayload> {
   const baseUrl = useSandbox ? APP_STORE_API_SANDBOX : APP_STORE_API_PROD;
-  const token = generateAppStoreJWT();
 
-  const res = await fetch(
-    `${baseUrl}/inApps/v1/transactions/${transactionId}`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
+  let token: string;
+  try {
+    token = generateAppStoreJWT();
+  } catch (err) {
+    if (err instanceof HttpsError) throw err;
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("verifyPurchase: JWT generation failed:", msg);
+    throw new HttpsError("internal", "Failed to generate App Store JWT. Check APPLE_API_PRIVATE_KEY format.");
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(
+      `${baseUrl}/inApps/v1/transactions/${transactionId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("verifyPurchase: network error reaching App Store API:", msg);
+    throw new HttpsError("internal", "Network error reaching App Store Server API.");
+  }
 
   if (res.status === 401) {
     console.error("verifyPurchase: App Store Server API 401 — check API key credentials");
@@ -89,30 +105,54 @@ async function verifyAppStoreTransaction(
   }
 
   if (!res.ok) {
-    const body = (await res.json()) as { errorCode?: number; errorMessage?: string };
+    let errBody: { errorCode?: number; errorMessage?: string };
+    try {
+      errBody = (await res.json()) as { errorCode?: number; errorMessage?: string };
+    } catch {
+      throw new HttpsError(
+        "internal",
+        `App Store Server API returned HTTP ${res.status} with non-JSON body.`
+      );
+    }
     console.warn(
       `verifyPurchase: App Store API HTTP ${res.status} sandbox=${useSandbox}`,
-      body
+      errBody
     );
     // 4040010 = TRANSACTION_ID_NOT_FOUND on production → transaction is from sandbox
-    if (!useSandbox && body.errorCode === 4040010) {
+    if (!useSandbox && errBody.errorCode === 4040010) {
       console.log(`verifyPurchase: not on production, retrying sandbox`);
       return verifyAppStoreTransaction(transactionId, expectedProductId, true);
     }
     throw new HttpsError("permission-denied", "Transaction not found or invalid.");
   }
 
-  const body = (await res.json()) as { signedTransactionInfo: string };
+  let okBody: { signedTransactionInfo?: string };
+  try {
+    okBody = (await res.json()) as { signedTransactionInfo?: string };
+  } catch {
+    throw new HttpsError("internal", "App Store Server API returned non-JSON success response.");
+  }
+
+  if (!okBody.signedTransactionInfo) {
+    console.error("verifyPurchase: response missing signedTransactionInfo field", okBody);
+    throw new HttpsError("internal", "App Store Server API response missing signedTransactionInfo.");
+  }
 
   // Decode the JWS payload. The response originated from Apple's authenticated
   // API endpoint — signature verification is redundant here.
-  const parts = body.signedTransactionInfo.split(".");
+  const parts = okBody.signedTransactionInfo.split(".");
   if (parts.length !== 3) {
     throw new HttpsError("internal", "Malformed JWS from App Store Server API.");
   }
-  const payload = JSON.parse(
-    Buffer.from(parts[1], "base64url").toString("utf8")
-  ) as AppStoreTransactionPayload;
+
+  let payload: AppStoreTransactionPayload;
+  try {
+    payload = JSON.parse(
+      Buffer.from(parts[1], "base64url").toString("utf8")
+    ) as AppStoreTransactionPayload;
+  } catch {
+    throw new HttpsError("internal", "Failed to decode JWS payload from App Store Server API.");
+  }
 
   if (payload.bundleId !== BUNDLE_ID) {
     console.error(`verifyPurchase: bundle ID mismatch — got ${payload.bundleId}`);
@@ -188,11 +228,13 @@ async function applyPurchase(uid: string, productId: string): Promise<void> {
     await db.runTransaction(async (t) => {
       const snap = await t.get(userRef);
       const current = (snap.data()?.freeQuota as number | undefined) ?? 30;
-      t.update(userRef, { freeQuota: current + 100 });
+      // Use set+merge so this works even if the user document does not yet exist.
+      t.set(userRef, { freeQuota: current + 100 }, { merge: true });
     });
     console.log(`verifyPurchase: +100 quota applied uid=${uid}`);
   } else if (productId === "lumi_pro_yearly") {
-    await userRef.update({ plan: "pro" });
+    // Use set+merge so this works even if the user document does not yet exist.
+    await userRef.set({ plan: "pro" }, { merge: true });
     console.log(`verifyPurchase: plan=pro applied uid=${uid}`);
   } else {
     throw new HttpsError("invalid-argument", `Unknown productId: ${productId}`);

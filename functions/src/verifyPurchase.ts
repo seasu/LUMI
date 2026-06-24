@@ -24,6 +24,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import * as admin from "firebase-admin";
+import * as crypto from "node:crypto";
 import { GoogleAuth } from "google-auth-library";
 import {
   AppStoreServerAPIClient,
@@ -71,10 +72,19 @@ async function verifyAppStoreTransaction(
     );
   }
 
+  let pubkeyFingerprint = "unknown";
+  try {
+    const privKey = crypto.createPrivateKey(rawPem);
+    const pubKey = crypto.createPublicKey(privKey);
+    const der = pubKey.export({ type: "spki", format: "der" }) as Buffer;
+    pubkeyFingerprint = crypto.createHash("sha256").update(der).digest("hex");
+  } catch { /* non-fatal */ }
+
   console.log(
     `verifyPurchase: Apple credentials — keyId=${keyId} ` +
     `issuerId=${issuerId} ` +
     `pemBytes=${rawPem.length} pemHeader="${rawPem.split("\n")[0]}" ` +
+    `pubkeyFingerprint=${pubkeyFingerprint} ` +
     `environment=${environment}`
   );
 

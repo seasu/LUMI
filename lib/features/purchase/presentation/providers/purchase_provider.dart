@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
@@ -83,6 +84,12 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
     } catch (e) {
       _log('buy ✗ $e');
       _purchaseInitiated = false;
+      // StoreKit2 throws this when the user dismisses the payment sheet.
+      // Treat as silent cancel — no error banner, just return to idle.
+      if (e is PlatformException && e.code == 'storekit2_purchase_cancelled') {
+        state = const AsyncData(PurchaseIdle());
+        return;
+      }
       state = AsyncData(PurchaseError(e.toString()));
     }
   }
@@ -94,6 +101,18 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
     _isRestoreAction = true;
     state = const AsyncData(PurchaseProcessing(productId: 'restore'));
     await ref.read(purchaseRepositoryProvider).restore();
+    // iOS fires paymentQueueRestoreCompletedTransactionsFinished after all
+    // restored transactions have been delivered (or immediately when there are
+    // none). The plugin may emit an empty list, which _onPurchaseUpdate ignores.
+    // If no state change occurs within 25 s, fall back to idle so the sheet
+    // doesn't stay stuck forever (covers "nothing to restore" and timeout cases).
+    await Future.delayed(const Duration(seconds: 25));
+    if (state.valueOrNull is PurchaseProcessing) {
+      _log('restore: no result after 25 s — resetting to idle');
+      _purchaseInitiated = false;
+      _isRestoreAction = false;
+      state = const AsyncData(PurchaseIdle());
+    }
   }
 
   void reset() {
@@ -105,6 +124,15 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
   // ── Purchase stream handler ────────────────────────────────────────────────
 
   Future<void> _onPurchaseUpdate(List<PurchaseDetails> purchases) async {
+    // iOS emits an empty list when restore completes with no transactions.
+    // Treat this as "nothing to restore" and unblock the loading state.
+    if (purchases.isEmpty && _isRestoreAction && _purchaseInitiated) {
+      _log('restore complete: no previous purchases found (empty stream event)');
+      _purchaseInitiated = false;
+      _isRestoreAction = false;
+      state = const AsyncData(PurchaseIdle());
+      return;
+    }
     for (final p in purchases) {
       _log('update: id=${p.productID} status=${p.status} initiated=$_purchaseInitiated');
       switch (p.status) {

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
@@ -83,6 +84,12 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
     } catch (e) {
       _log('buy ✗ $e');
       _purchaseInitiated = false;
+      // StoreKit2 throws this when the user dismisses the payment sheet.
+      // Treat as silent cancel — no error banner, just return to idle.
+      if (e is PlatformException && e.code == 'storekit2_purchase_cancelled') {
+        state = const AsyncData(PurchaseIdle());
+        return;
+      }
       state = AsyncData(PurchaseError(e.toString()));
     }
   }

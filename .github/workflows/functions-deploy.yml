@@ -40,38 +40,19 @@ jobs:
       - name: Write service account credentials
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa.json
 
-      - name: Show deploy service account (for IAM debugging)
+      - name: Show deploy service account
         run: python3 -c "import json; print(json.load(open('/tmp/sa.json'))['client_email'])"
 
-      # IAM for this SA (project lumi-309ff): must allow Firebase CLI deploy, including
-      # cloudresourcemanager.googleapis.com GET on the project (403 = missing roles).
-      # Typical fix: grant this service account one of:
-      # - roles/firebase.admin (Firebase Admin), or
-      # - roles/editor (broader; use only if acceptable for your org)
-      # Also ensure the SA is not disabled and is the same JSON as in FIREBASE_SERVICE_ACCOUNT.
-
-      # Do not run `functions:secrets:set` here: it requires Service Usage + Secret Manager
-      # permissions that the deploy SA often lacks (403 on serviceusage.googleapis.com).
-      # Configure GEMINI_API_KEY once in Firebase (Console or CLI with an admin account).
+      # Authentication: uses FIREBASE_SERVICE_ACCOUNT secret (service account JSON key).
+      # If this step fails with "Failed to authenticate", the key in the secret has been
+      # deleted or revoked in GCP. Fix:
+      #   GCP Console → IAM & Admin → Service Accounts → github-actions@lumi-309ff.iam.gserviceaccount.com
+      #   → Keys → Add Key → Create new key (JSON) → update FIREBASE_SERVICE_ACCOUNT GitHub Secret.
       #
-      # Cloud Functions Gen2 (v2 SDK), region asia-east1 — align with App Engine (lumi-309ff).
-      #
-      # One-time (project owner): if deploy still asks to enable APIs, enable manually:
-      # - Cloud Build: https://console.cloud.google.com/apis/library/cloudbuild.googleapis.com?project=lumi-309ff
-      # - Artifact Registry: https://console.cloud.google.com/apis/library/artifactregistry.googleapis.com?project=lumi-309ff
-      #
-      # --force on deploy: CLI applies Artifact Registry cleanup policy for build artifacts;
-      # without it, deploy can exit 1 after functions succeeded.
+      # Cloud Functions Gen2 (v2 SDK), region asia-east1.
+      # Apple IAP secrets are managed via Firebase Secret Manager (not this workflow).
 
       # Runtime env for Cloud Functions — written to .env.lumi-309ff before deploy.
-      # Apple IAP secrets (APPLE_API_KEY_ID / APPLE_API_ISSUER_ID / APPLE_API_PRIVATE_KEY)
-      # are managed via Firebase Secret Manager, NOT this .env file.
-      # One-time setup (project owner, run locally):
-      #   firebase functions:secrets:set APPLE_API_KEY_ID      --project lumi-309ff
-      #   firebase functions:secrets:set APPLE_API_ISSUER_ID   --project lumi-309ff
-      #   firebase functions:secrets:set APPLE_API_PRIVATE_KEY --project lumi-309ff
-      # Paste the raw .p8 content (PEM as-is) when prompted — no base64 encoding needed.
-
       - name: Write runtime env for Firebase deploy
         working-directory: functions
         run: |

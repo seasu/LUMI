@@ -309,8 +309,8 @@ Web 優先完成 M1–M4；Native（M5+）待後續階段。詳見 `LUMI_PRD.md`
 
 - `LUMI_PRD.md` 開頭需明確標示「目前最新版本號」。
 - 版本號需分為兩條線管理：
-  - **前端版本**（Flutter App；對應 `pubspec.yaml` 的 `version`）
-  - **後端版本**（Cloud Functions / backend）
+  - **前端版本**（Flutter App）— source of truth：`pubspec.yaml` 的 `version`
+  - **後端版本**（Cloud Functions）— source of truth：`functions/package.json` 的 `version`
 
 ### 2) PRD 必須維護版本歷史（Changelog）
 
@@ -324,8 +324,10 @@ Web 優先完成 M1–M4；Native（M5+）待後續階段。詳見 `LUMI_PRD.md`
 ### 3) 何時要更新版本
 
 - **只要有程式碼變更並要提交 commit**，就要同步處理：
-  1. 更新對應版本號（前端或後端；若皆有修改則都更新）
-  2. 更新 `LUMI_PRD.md` 開頭最新版本號
+  1. 更新對應版本號：
+     - 前端有改 → 更新 `pubspec.yaml` 的 `version`
+     - 後端有改 → 更新 `functions/package.json` 的 `version`（deploy workflow 會自動同步至 `serverInfo.ts`）
+  2. 更新 `LUMI_PRD.md` 開頭最新版本號（參考上面的 source of truth）
   3. 在 PRD 版本歷史新增一筆紀錄
 
 ### 4) AI 執行原則

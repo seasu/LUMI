@@ -128,7 +128,9 @@ async function verifyAppStoreTransaction(
   }
 
   if (res.status === 401) {
-    console.error("verifyPurchase: App Store Server API 401 — check API key credentials");
+    let errBody = "";
+    try { errBody = await res.text(); } catch { /* ignore */ }
+    console.error(`verifyPurchase: App Store Server API 401 — body: ${errBody}`);
     throw new HttpsError("internal", "Apple API authentication failed. Check APPLE_API_* secrets.");
   }
 

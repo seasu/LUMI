@@ -26,6 +26,16 @@ jobs:
         run: npm ci
         working-directory: functions
 
+      - name: Inject backend version from LUMI_PRD.md into serverInfo.ts
+        run: |
+          VERSION=$(grep -oP '(?<=\*\*後端版本 \(Cloud Functions\)：\*\* )[\d.]+' LUMI_PRD.md)
+          if [ -z "$VERSION" ]; then
+            echo "❌ Could not extract backend version from LUMI_PRD.md"
+            exit 1
+          fi
+          echo "Injecting FUNCTIONS_VERSION=${VERSION}"
+          sed -i "s/export const FUNCTIONS_VERSION = \".*\"/export const FUNCTIONS_VERSION = \"${VERSION}\"/" functions/src/serverInfo.ts
+
       - name: Build TypeScript
         run: npm run build
         working-directory: functions

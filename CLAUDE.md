@@ -328,25 +328,9 @@ Web 優先完成 M1–M4；Native（M5+）待後續階段。詳見 `LUMI_PRD.md`
   2. 更新 `LUMI_PRD.md` 開頭最新版本號
   3. 在 PRD 版本歷史新增一筆紀錄
 
-### 4) 後端版本號同步規則（必做）
-
-**修改任何 `functions/src/**` 檔案時**，除了更新 `LUMI_PRD.md`，還必須同步更新：
-
-- **`functions/src/serverInfo.ts`** 中的 `FUNCTIONS_VERSION` 常數
-
-此常數是 Cloud Functions 實際回傳給 App 的版本號，若不更新，App log 顯示的版本會與 PRD 不符，難以對應線上問題。
-
-```typescript
-// functions/src/serverInfo.ts
-export const FUNCTIONS_VERSION = "x.y.z";  // ← 每次改 functions 都要更新
-```
-
-版本號格式與 PRD 後端版本號保持一致（例如 `"1.0.18"`）。
-
-### 5) AI 執行原則
+### 4) AI 執行原則
 
 - AI 不得跳過版本與 PRD 更新步驟。
-- **改 `functions/src/` 下任何檔案時，必須同步更新 `serverInfo.ts` 的 `FUNCTIONS_VERSION`。**
 - 若使用者明確指示「本次不升版號」，仍需在 PRD 版本歷史留下紀錄並註明原因。
 - 若本次改動僅文件且無程式碼變更，可不調整程式版本號，但可補 PRD 歷史紀錄。
 

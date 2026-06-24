@@ -3,7 +3,7 @@
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
 **前端版本 (Flutter App)：** 1.0.66+155
-**後端版本 (Cloud Functions)：** 1.0.21
+**後端版本 (Cloud Functions)：** 1.0.22
 **開發框架：** Flutter (Cross-platform)
 
 ---
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-06-24 | 1.0.66+155 | 1.0.22 | 比照 Magic-Sticker 重構 iOS IAP 驗證：Apple API 憑證從 .env 環境變數遷移至 Firebase Secret Manager（defineSecret）；JWT 簽名從 jsonwebtoken 改為 Node.js crypto.sign() + ieee-p1363（符合 JWS ES256 規範）；私鑰直接以原始 PEM 儲存（無需 base64）；移除 jsonwebtoken 依賴 | Purchase / IAP / Cloud Functions |
 | 2026-06-24 | 1.0.66+155 | 1.0.21 | 強制重新部署以套用重新下載的 G4JY65BP34 In-App Purchase 私鑰 | Purchase / IAP / Cloud Functions |
 | 2026-06-24 | 1.0.66+155 | 1.0.20 | 擴充 Apple credentials 診斷 log：改為印出完整 keyId、完整 issuerId（兩者均為 JWT 公開欄位，非秘密）及私鑰位元組數，以便直接對照 App Store Connect 確認憑證正確性 | Purchase / IAP / Cloud Functions |
 | 2026-06-24 | 1.0.66+155 | 1.0.19 | 強制重新部署以套用更新的 Apple API 金鑰 Secrets：前次部署（1.0.18）因 Firebase CLI "No changes detected" 優化跳過，導致用戶更新的 `APP_STORE_CONNECT_*` Secrets 未生效；新增 `generateAppStoreJWT()` 診斷 log（記錄 keyId 前綴、issuerId 前綴、PEM header），幫助後續排查 401 | Purchase / IAP / Cloud Functions |

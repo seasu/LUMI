@@ -9,20 +9,28 @@
  * iOS uses the App Store Server API (not the deprecated verifyReceipt endpoint):
  *   https://developer.apple.com/documentation/appstoreserverapi
  *
- * Required one-time setup via GitHub Secrets → .env.lumi-309ff:
- *   APPLE_API_KEY_ID      — Key ID from App Store Connect → Users & Access → Integrations → Keys
+ * Required one-time setup (project owner, NOT CI — run locally with your own credentials):
+ *   firebase functions:secrets:set APPLE_API_KEY_ID      --project lumi-309ff
+ *   firebase functions:secrets:set APPLE_API_ISSUER_ID   --project lumi-309ff
+ *   firebase functions:secrets:set APPLE_API_PRIVATE_KEY --project lumi-309ff
+ *
+ *   APPLE_API_KEY_ID      — Key ID from App Store Connect → Users & Access → Integrations → In-App Purchase Keys
  *   APPLE_API_ISSUER_ID   — Issuer ID from the same page (UUID)
- *   APPLE_API_PRIVATE_KEY — base64-encoded content of the downloaded .p8 file
- *                           Run: base64 < AuthKey_XXXXXXXXXX.p8 | tr -d '\n'
+ *   APPLE_API_PRIVATE_KEY — raw content of the downloaded .p8 file (paste PEM as-is, no base64 needed)
  *
  * Android uses the Google Play Developer API (unchanged).
  */
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { defineSecret } from "firebase-functions/params";
 import * as admin from "firebase-admin";
-import * as jwt from "jsonwebtoken";
+import * as crypto from "node:crypto";
 import { GoogleAuth } from "google-auth-library";
 import { FUNCTIONS_REGION } from "./functionsRegion";
+
+const appleApiKeyId = defineSecret("APPLE_API_KEY_ID");
+const appleApiIssuerId = defineSecret("APPLE_API_ISSUER_ID");
+const appleApiPrivateKey = defineSecret("APPLE_API_PRIVATE_KEY");
 
 const BUNDLE_ID = "io.github.seasu.lumi";
 const PACKAGE_NAME = "io.github.seasu.lumi";
@@ -32,37 +40,49 @@ const APP_STORE_API_SANDBOX = "https://api.storekit-sandbox.itunes.apple.com";
 // ── App Store Server API — JWT authentication ─────────────────────────────────
 
 function generateAppStoreJWT(): string {
-  const privateKeyB64 = process.env.APPLE_API_PRIVATE_KEY ?? "";
-  const keyId = process.env.APPLE_API_KEY_ID ?? "";
-  const issuerId = process.env.APPLE_API_ISSUER_ID ?? "";
+  const now = Math.floor(Date.now() / 1000);
+  const keyId = appleApiKeyId.value();
+  const issuerId = appleApiIssuerId.value();
+  // Secret Manager 中可能以字面 \n 儲存（GitHub Actions env 注入常見），
+  // 先將字面 \n 轉為真正的換行符，確保 PEM 格式正確。
+  const rawPem = appleApiPrivateKey.value().replace(/\\n/g, "\n");
 
-  if (!privateKeyB64 || !keyId || !issuerId) {
+  if (!keyId || !issuerId || !rawPem) {
     throw new HttpsError(
       "failed-precondition",
       "Apple IAP not configured. " +
-        "Set APPLE_API_KEY_ID, APPLE_API_ISSUER_ID, and APPLE_API_PRIVATE_KEY " +
-        "in GitHub Secrets."
+        "Run: firebase functions:secrets:set APPLE_API_KEY_ID / APPLE_API_ISSUER_ID / APPLE_API_PRIVATE_KEY --project lumi-309ff"
     );
   }
 
-  // Private key is stored as base64 in .env so multi-line PEM survives the file format.
-  const privateKey = Buffer.from(privateKeyB64, "base64").toString("utf8");
-
   // Diagnostic: log credential metadata (never log actual key values).
-  // keyId appears in JWT header (public); issuerId appears in JWT payload — neither is a secret.
   console.log(
     `verifyPurchase: Apple credentials — keyId=${keyId} ` +
     `issuerId=${issuerId} ` +
-    `pemBytes=${privateKey.length} pemHeader="${privateKey.split("\n")[0]}"`
+    `pemBytes=${rawPem.length} pemHeader="${rawPem.split("\n")[0]}"`
   );
 
-  return jwt.sign({ bid: BUNDLE_ID }, privateKey, {
-    algorithm: "ES256",
-    keyid: keyId,
-    issuer: issuerId,
-    audience: "appstoreconnect-v1",
-    expiresIn: "20m",
+  const header = Buffer.from(
+    JSON.stringify({ alg: "ES256", kid: keyId, typ: "JWT" })
+  ).toString("base64url");
+  const payload = Buffer.from(
+    JSON.stringify({
+      iss: issuerId,
+      iat: now,
+      exp: now + 900,
+      aud: "appstoreconnect-v1",
+      bid: BUNDLE_ID,
+    })
+  ).toString("base64url");
+
+  const signingInput = `${header}.${payload}`;
+  const privateKey = crypto.createPrivateKey(rawPem);
+  // IEEE P1363 format (R||S fixed-length) is required by JWS ES256 spec.
+  const sig = crypto.sign("sha256", Buffer.from(signingInput), {
+    key: privateKey,
+    dsaEncoding: "ieee-p1363",
   });
+  return `${signingInput}.${sig.toString("base64url")}`;
 }
 
 // ── App Store Server API — transaction verification ───────────────────────────
@@ -252,7 +272,10 @@ async function applyPurchase(uid: string, productId: string): Promise<void> {
 // ── Cloud Function ────────────────────────────────────────────────────────────
 
 export const verifyPurchase = onCall(
-  { region: FUNCTIONS_REGION },
+  {
+    region: FUNCTIONS_REGION,
+    secrets: [appleApiKeyId, appleApiIssuerId, appleApiPrivateKey],
+  },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Authentication required.");

@@ -6,8 +6,8 @@
  *   - lumi_extra_100  → freeQuota += 100  (consumable)
  *   - lumi_pro_yearly → plan = 'pro'      (auto-renewable subscription)
  *
- * iOS uses the App Store Server API (not the deprecated verifyReceipt endpoint):
- *   https://developer.apple.com/documentation/appstoreserverapi
+ * iOS uses the App Store Server API via Apple's official Node.js library:
+ *   https://github.com/apple/app-store-server-library-node
  *
  * Required one-time setup (project owner, NOT CI — run locally with your own credentials):
  *   firebase functions:secrets:set APPLE_API_KEY_ID      --project lumi-309ff
@@ -16,7 +16,7 @@
  *
  *   APPLE_API_KEY_ID      — Key ID from App Store Connect → Users & Access → Integrations → In-App Purchase Keys
  *   APPLE_API_ISSUER_ID   — Issuer ID from the same page (UUID)
- *   APPLE_API_PRIVATE_KEY — raw content of the downloaded .p8 file (paste PEM as-is, no base64 needed)
+ *   APPLE_API_PRIVATE_KEY — raw content of the downloaded .p8 file (paste PEM as-is, newlines as \n or literal)
  *
  * Android uses the Google Play Developer API (unchanged).
  */
@@ -24,8 +24,13 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import * as admin from "firebase-admin";
-import * as crypto from "node:crypto";
 import { GoogleAuth } from "google-auth-library";
+import {
+  AppStoreServerAPIClient,
+  Environment,
+  APIException,
+  APIError,
+} from "@apple/app-store-server-library";
 import { FUNCTIONS_REGION } from "./functionsRegion";
 
 const appleApiKeyId = defineSecret("APPLE_API_KEY_ID");
@@ -34,56 +39,6 @@ const appleApiPrivateKey = defineSecret("APPLE_API_PRIVATE_KEY");
 
 const BUNDLE_ID = "io.github.seasu.lumi";
 const PACKAGE_NAME = "io.github.seasu.lumi";
-const APP_STORE_API_PROD = "https://api.storekit.itunes.apple.com";
-const APP_STORE_API_SANDBOX = "https://api.storekit-sandbox.itunes.apple.com";
-
-// ── App Store Server API — JWT authentication ─────────────────────────────────
-
-function generateAppStoreJWT(): string {
-  const now = Math.floor(Date.now() / 1000);
-  const keyId = appleApiKeyId.value();
-  const issuerId = appleApiIssuerId.value();
-  // Secret Manager 中可能以字面 \n 儲存（GitHub Actions env 注入常見），
-  // 先將字面 \n 轉為真正的換行符，確保 PEM 格式正確。
-  const rawPem = appleApiPrivateKey.value().replace(/\\n/g, "\n");
-
-  if (!keyId || !issuerId || !rawPem) {
-    throw new HttpsError(
-      "failed-precondition",
-      "Apple IAP not configured. " +
-        "Run: firebase functions:secrets:set APPLE_API_KEY_ID / APPLE_API_ISSUER_ID / APPLE_API_PRIVATE_KEY --project lumi-309ff"
-    );
-  }
-
-  // Diagnostic: log credential metadata (never log actual key values).
-  console.log(
-    `verifyPurchase: Apple credentials — keyId=${keyId} ` +
-    `issuerId=${issuerId} ` +
-    `pemBytes=${rawPem.length} pemHeader="${rawPem.split("\n")[0]}"`
-  );
-
-  const header = Buffer.from(
-    JSON.stringify({ alg: "ES256", kid: keyId, typ: "JWT" })
-  ).toString("base64url");
-  const payload = Buffer.from(
-    JSON.stringify({
-      iss: issuerId,
-      iat: now,
-      exp: now + 900,
-      aud: "appstoreconnect-v1",
-      bid: BUNDLE_ID,
-    })
-  ).toString("base64url");
-
-  const signingInput = `${header}.${payload}`;
-  const privateKey = crypto.createPrivateKey(rawPem);
-  // IEEE P1363 format (R||S fixed-length) is required by JWS ES256 spec.
-  const sig = crypto.sign("sha256", Buffer.from(signingInput), {
-    key: privateKey,
-    dsaEncoding: "ieee-p1363",
-  });
-  return `${signingInput}.${sig.toString("base64url")}`;
-}
 
 // ── App Store Server API — transaction verification ───────────────────────────
 
@@ -101,76 +56,77 @@ interface AppStoreTransactionPayload {
 async function verifyAppStoreTransaction(
   transactionId: string,
   expectedProductId: string,
-  useSandbox = false
+  environment: Environment = Environment.PRODUCTION
 ): Promise<AppStoreTransactionPayload> {
-  const baseUrl = useSandbox ? APP_STORE_API_SANDBOX : APP_STORE_API_PROD;
+  const keyId = appleApiKeyId.value();
+  const issuerId = appleApiIssuerId.value();
+  // Secret Manager may store literal \n — normalise to real newlines for PEM.
+  const rawPem = appleApiPrivateKey.value().replace(/\\n/g, "\n");
 
-  let token: string;
+  if (!keyId || !issuerId || !rawPem) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Apple IAP not configured. " +
+        "Run: firebase functions:secrets:set APPLE_API_KEY_ID / APPLE_API_ISSUER_ID / APPLE_API_PRIVATE_KEY --project lumi-309ff"
+    );
+  }
+
+  console.log(
+    `verifyPurchase: Apple credentials — keyId=${keyId} ` +
+    `issuerId=${issuerId} ` +
+    `pemBytes=${rawPem.length} pemHeader="${rawPem.split("\n")[0]}" ` +
+    `environment=${environment}`
+  );
+
+  const client = new AppStoreServerAPIClient(
+    rawPem,
+    keyId,
+    issuerId,
+    BUNDLE_ID,
+    environment
+  );
+
+  let signedTransactionInfo: string;
   try {
-    token = generateAppStoreJWT();
+    const response = await client.getTransactionInfo(transactionId);
+    if (!response.signedTransactionInfo) {
+      console.error("verifyPurchase: response missing signedTransactionInfo", response);
+      throw new HttpsError("internal", "App Store Server API response missing signedTransactionInfo.");
+    }
+    signedTransactionInfo = response.signedTransactionInfo;
   } catch (err) {
     if (err instanceof HttpsError) throw err;
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("verifyPurchase: JWT generation failed:", msg);
-    throw new HttpsError("internal", "Failed to generate App Store JWT. Check APPLE_API_PRIVATE_KEY format.");
-  }
 
-  let res: Response;
-  try {
-    res = await fetch(
-      `${baseUrl}/inApps/v1/transactions/${transactionId}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("verifyPurchase: network error reaching App Store API:", msg);
-    throw new HttpsError("internal", "Network error reaching App Store Server API.");
-  }
-
-  if (res.status === 401) {
-    let errBody = "";
-    try { errBody = await res.text(); } catch { /* ignore */ }
-    console.error(`verifyPurchase: App Store Server API 401 — body: ${errBody}`);
-    throw new HttpsError("internal", "Apple API authentication failed. Check APPLE_API_* secrets.");
-  }
-
-  if (!res.ok) {
-    let errBody: { errorCode?: number; errorMessage?: string };
-    try {
-      errBody = (await res.json()) as { errorCode?: number; errorMessage?: string };
-    } catch {
-      throw new HttpsError(
-        "internal",
-        `App Store Server API returned HTTP ${res.status} with non-JSON body.`
+    if (err instanceof APIException) {
+      console.warn(
+        `verifyPurchase: APIException httpStatus=${err.httpStatusCode} ` +
+        `apiError=${err.apiError} message="${err.errorMessage}" environment=${environment}`
       );
+      // TRANSACTION_ID_NOT_FOUND on production means this is a sandbox transaction.
+      if (
+        environment === Environment.PRODUCTION &&
+        err.apiError === APIError.TRANSACTION_ID_NOT_FOUND
+      ) {
+        console.log("verifyPurchase: not found on production, retrying sandbox");
+        return verifyAppStoreTransaction(transactionId, expectedProductId, Environment.SANDBOX);
+      }
+      if (err.httpStatusCode === 401) {
+        throw new HttpsError(
+          "internal",
+          "Apple API authentication failed (401). Check APPLE_API_KEY_ID, APPLE_API_ISSUER_ID, and APPLE_API_PRIVATE_KEY secrets — ensure APPLE_API_KEY_ID is an In-App Purchase key (not an App Store Connect API key)."
+        );
+      }
+      throw new HttpsError("permission-denied", "Transaction not found or invalid.");
     }
-    console.warn(
-      `verifyPurchase: App Store API HTTP ${res.status} sandbox=${useSandbox}`,
-      errBody
-    );
-    // 4040010 = TRANSACTION_ID_NOT_FOUND on production → transaction is from sandbox
-    if (!useSandbox && errBody.errorCode === 4040010) {
-      console.log(`verifyPurchase: not on production, retrying sandbox`);
-      return verifyAppStoreTransaction(transactionId, expectedProductId, true);
-    }
-    throw new HttpsError("permission-denied", "Transaction not found or invalid.");
+
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("verifyPurchase: unexpected error from AppStoreServerAPIClient:", msg);
+    throw new HttpsError("internal", `App Store Server API error: ${msg}`);
   }
 
-  let okBody: { signedTransactionInfo?: string };
-  try {
-    okBody = (await res.json()) as { signedTransactionInfo?: string };
-  } catch {
-    throw new HttpsError("internal", "App Store Server API returned non-JSON success response.");
-  }
-
-  if (!okBody.signedTransactionInfo) {
-    console.error("verifyPurchase: response missing signedTransactionInfo field", okBody);
-    throw new HttpsError("internal", "App Store Server API response missing signedTransactionInfo.");
-  }
-
-  // Decode the JWS payload. The response originated from Apple's authenticated
-  // API endpoint — signature verification is redundant here.
-  const parts = okBody.signedTransactionInfo.split(".");
+  // Decode the JWS payload (parts[1] is base64url-encoded JSON).
+  // The response originated from Apple's authenticated API endpoint; we trust it.
+  const parts = signedTransactionInfo.split(".");
   if (parts.length !== 3) {
     throw new HttpsError("internal", "Malformed JWS from App Store Server API.");
   }
@@ -195,6 +151,10 @@ async function verifyAppStoreTransaction(
     throw new HttpsError("permission-denied", "Transaction product ID mismatch.");
   }
 
+  console.log(
+    `verifyPurchase: Apple confirmed transactionId=${payload.transactionId} ` +
+    `productId=${payload.productId} type=${payload.type} environment=${environment}`
+  );
   return payload;
 }
 
@@ -258,12 +218,10 @@ async function applyPurchase(uid: string, productId: string): Promise<void> {
     await db.runTransaction(async (t) => {
       const snap = await t.get(userRef);
       const current = (snap.data()?.freeQuota as number | undefined) ?? 30;
-      // Use set+merge so this works even if the user document does not yet exist.
       t.set(userRef, { freeQuota: current + 100 }, { merge: true });
     });
     console.log(`verifyPurchase: +100 quota applied uid=${uid}`);
   } else if (productId === "lumi_pro_yearly") {
-    // Use set+merge so this works even if the user document does not yet exist.
     await userRef.set({ plan: "pro" }, { merge: true });
     console.log(`verifyPurchase: plan=pro applied uid=${uid}`);
   } else {
@@ -307,9 +265,6 @@ export const verifyPurchase = onCall(
       }
 
       const tx = await verifyAppStoreTransaction(transactionId, productId);
-      console.log(
-        `verifyPurchase: Apple confirmed transactionId=${transactionId} type=${tx.type}`
-      );
 
       // Reject expired subscriptions — but not consumables (no expiresDate).
       if (isSubscription && tx.expiresDate != null && tx.expiresDate < Date.now()) {

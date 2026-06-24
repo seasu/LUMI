@@ -49,10 +49,11 @@ function generateAppStoreJWT(): string {
   const privateKey = Buffer.from(privateKeyB64, "base64").toString("utf8");
 
   // Diagnostic: log credential metadata (never log actual key values).
+  // keyId appears in JWT header (public); issuerId appears in JWT payload — neither is a secret.
   console.log(
-    `verifyPurchase: Apple credentials — keyId=${keyId.substring(0, 4)}… ` +
-    `issuerId=${issuerId.substring(0, 8)}… ` +
-    `pemHeader="${privateKey.split("\n")[0]}"`
+    `verifyPurchase: Apple credentials — keyId=${keyId} ` +
+    `issuerId=${issuerId} ` +
+    `pemBytes=${privateKey.length} pemHeader="${privateKey.split("\n")[0]}"`
   );
 
   return jwt.sign({ bid: BUNDLE_ID }, privateKey, {

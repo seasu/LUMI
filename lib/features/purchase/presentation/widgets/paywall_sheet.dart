@@ -135,107 +135,116 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
               MediaQuery.of(context).padding.bottom +
               LumiSpacing.lg,
         ),
-        child: isRestoring
-            ? _RestoreOverlay(glowAnim: _glowAnim)
-            : Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Stack(
           children: [
-            // Handle
-            _Handle(),
-            const SizedBox(height: LumiSpacing.lg),
+            // Main paywall content (always present so sheet height stays stable)
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle
+                _Handle(),
+                const SizedBox(height: LumiSpacing.lg),
 
-            // Hanger illustration
-            _HangerIcon(),
-            const SizedBox(height: LumiSpacing.md),
+                // Hanger illustration
+                _HangerIcon(),
+                const SizedBox(height: LumiSpacing.md),
 
-            // Title
-            Builder(builder: (context) {
-              final l10n = AppLocalizations.of(context);
-              return Column(
-                children: [
-                  Text(
-                    l10n.paywallTitle,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: LumiTypeScale.titleLg,
-                      fontWeight: FontWeight.w800,
-                      color: LumiColors.text,
-                      height: 1.3,
+                // Title
+                Builder(builder: (context) {
+                  final l10n = AppLocalizations.of(context);
+                  return Column(
+                    children: [
+                      Text(
+                        l10n.paywallTitle,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: LumiTypeScale.titleLg,
+                          fontWeight: FontWeight.w800,
+                          color: LumiColors.text,
+                          height: 1.3,
+                        ),
+                      ),
+                      const SizedBox(height: LumiSpacing.xs),
+                      Text(
+                        l10n.paywallSubtitle,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: LumiTypeScale.labelMd,
+                          color: LumiColors.subtext,
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+                const SizedBox(height: LumiSpacing.lg),
+
+                // Plan cards
+                productsAsync.when(
+                  loading: () => const _PlanCardsLoading(),
+                  error: (e, _) => _PlanCardsFallback(
+                    isProcessing: isProcessing,
+                    glowAnim: _glowAnim,
+                    onBuyExtra: () => _buy(LumiProductIds.extra100),
+                    onBuyPro: () => _buy(LumiProductIds.proYearly),
+                  ),
+                  data: (products) {
+                    final extra = products
+                        .where((p) => p.id == LumiProductIds.extra100)
+                        .firstOrNull;
+                    final pro = products
+                        .where((p) => p.id == LumiProductIds.proYearly)
+                        .firstOrNull;
+                    return _PlanCards(
+                      extraPrice: extra?.price ?? 'NT\$99',
+                      proPrice: pro?.price ?? 'NT\$199',
+                      isProcessing: isProcessing,
+                      glowAnim: _glowAnim,
+                      onBuyExtra: () => _buy(LumiProductIds.extra100),
+                      onBuyPro: () => _buy(LumiProductIds.proYearly),
+                    );
+                  },
+                ),
+
+                // Error banner
+                if (purchaseState is PurchaseError)
+                  _ErrorBanner(
+                    message: purchaseState.message,
+                    onDismiss: () => ref.read(purchaseProvider.notifier).reset(),
+                  ),
+
+                const SizedBox(height: LumiSpacing.md),
+
+                // Restore Purchases (App Store compliance)
+                if (!isProcessing)
+                  TextButton(
+                    onPressed: () {
+                      _log('restore tapped');
+                      ref.read(purchaseProvider.notifier).restore();
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: LumiColors.subtext,
+                    ),
+                    child: Text(
+                      AppLocalizations.of(context).paywallRestorePurchases,
                     ),
                   ),
-                  const SizedBox(height: LumiSpacing.xs),
-                  Text(
-                    l10n.paywallSubtitle,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: LumiTypeScale.labelMd,
-                      color: LumiColors.subtext,
-                    ),
-                  ),
-                ],
-              );
-            }),
-            const SizedBox(height: LumiSpacing.lg),
 
-            // Plan cards
-            productsAsync.when(
-              loading: () => const _PlanCardsLoading(),
-              error: (e, _) => _PlanCardsFallback(
-                isProcessing: isProcessing,
-                glowAnim: _glowAnim,
-                onBuyExtra: () => _buy(LumiProductIds.extra100),
-                onBuyPro: () => _buy(LumiProductIds.proYearly),
-              ),
-              data: (products) {
-                final extra = products
-                    .where((p) => p.id == LumiProductIds.extra100)
-                    .firstOrNull;
-                final pro = products
-                    .where((p) => p.id == LumiProductIds.proYearly)
-                    .firstOrNull;
-                return _PlanCards(
-                  extraPrice: extra?.price ?? 'NT\$99',
-                  proPrice: pro?.price ?? 'NT\$199',
-                  isProcessing: isProcessing,
-                  glowAnim: _glowAnim,
-                  onBuyExtra: () => _buy(LumiProductIds.extra100),
-                  onBuyPro: () => _buy(LumiProductIds.proYearly),
-                );
-              },
+                // Dismiss
+                if (!isProcessing)
+                  TextButton(
+                    onPressed: () => context.pop(),
+                    style: TextButton.styleFrom(
+                      foregroundColor: LumiColors.subtext,
+                    ),
+                    child: Text(AppLocalizations.of(context).paywallFreeContinue),
+                  ),
+              ],
             ),
 
-            // Error banner
-            if (purchaseState is PurchaseError)
-              _ErrorBanner(
-                message: purchaseState.message,
-                onDismiss: () => ref.read(purchaseProvider.notifier).reset(),
-              ),
-
-            const SizedBox(height: LumiSpacing.md),
-
-            // Restore Purchases (App Store compliance)
-            if (!isProcessing)
-              TextButton(
-                onPressed: () {
-                  _log('restore tapped');
-                  ref.read(purchaseProvider.notifier).restore();
-                },
-                style: TextButton.styleFrom(
-                  foregroundColor: LumiColors.subtext,
-                ),
-                child: Text(
-                  AppLocalizations.of(context).paywallRestorePurchases,
-                ),
-              ),
-
-            // Dismiss
-            if (!isProcessing)
-              TextButton(
-                onPressed: () => context.pop(),
-                style: TextButton.styleFrom(
-                  foregroundColor: LumiColors.subtext,
-                ),
-                child: Text(AppLocalizations.of(context).paywallFreeContinue),
+            // Restore overlay — shown on top without changing sheet size
+            if (isRestoring)
+              Positioned.fill(
+                child: _RestoreOverlay(glowAnim: _glowAnim),
               ),
           ],
         ),

@@ -94,6 +94,18 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
     _isRestoreAction = true;
     state = const AsyncData(PurchaseProcessing(productId: 'restore'));
     await ref.read(purchaseRepositoryProvider).restore();
+    // iOS fires paymentQueueRestoreCompletedTransactionsFinished after all
+    // restored transactions have been delivered (or immediately when there are
+    // none). The plugin may emit an empty list, which _onPurchaseUpdate ignores.
+    // If no state change occurs within 25 s, fall back to idle so the sheet
+    // doesn't stay stuck forever (covers "nothing to restore" and timeout cases).
+    await Future.delayed(const Duration(seconds: 25));
+    if (state.valueOrNull is PurchaseProcessing) {
+      _log('restore: no result after 25 s — resetting to idle');
+      _purchaseInitiated = false;
+      _isRestoreAction = false;
+      state = const AsyncData(PurchaseIdle());
+    }
   }
 
   void reset() {
@@ -105,6 +117,15 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
   // ── Purchase stream handler ────────────────────────────────────────────────
 
   Future<void> _onPurchaseUpdate(List<PurchaseDetails> purchases) async {
+    // iOS emits an empty list when restore completes with no transactions.
+    // Treat this as "nothing to restore" and unblock the loading state.
+    if (purchases.isEmpty && _isRestoreAction && _purchaseInitiated) {
+      _log('restore complete: no previous purchases found (empty stream event)');
+      _purchaseInitiated = false;
+      _isRestoreAction = false;
+      state = const AsyncData(PurchaseIdle());
+      return;
+    }
     for (final p in purchases) {
       _log('update: id=${p.productID} status=${p.status} initiated=$_purchaseInitiated');
       switch (p.status) {

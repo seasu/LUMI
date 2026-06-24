@@ -48,6 +48,13 @@ function generateAppStoreJWT(): string {
   // Private key is stored as base64 in .env so multi-line PEM survives the file format.
   const privateKey = Buffer.from(privateKeyB64, "base64").toString("utf8");
 
+  // Diagnostic: log credential metadata (never log actual key values).
+  console.log(
+    `verifyPurchase: Apple credentials — keyId=${keyId.substring(0, 4)}… ` +
+    `issuerId=${issuerId.substring(0, 8)}… ` +
+    `pemHeader="${privateKey.split("\n")[0]}"`
+  );
+
   return jwt.sign({ bid: BUNDLE_ID }, privateKey, {
     algorithm: "ES256",
     keyid: keyId,

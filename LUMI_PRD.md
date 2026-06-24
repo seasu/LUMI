@@ -3,7 +3,7 @@
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
 **前端版本 (Flutter App)：** 1.0.66+155
-**後端版本 (Cloud Functions)：** 1.0.18
+**後端版本 (Cloud Functions)：** 1.0.19
 **開發框架：** Flutter (Cross-platform)
 
 ---
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-06-24 | 1.0.66+155 | 1.0.19 | 強制重新部署以套用更新的 Apple API 金鑰 Secrets：前次部署（1.0.18）因 Firebase CLI "No changes detected" 優化跳過，導致用戶更新的 `APP_STORE_CONNECT_*` Secrets 未生效；新增 `generateAppStoreJWT()` 診斷 log（記錄 keyId 前綴、issuerId 前綴、PEM header），幫助後續排查 401 | Purchase / IAP / Cloud Functions |
 | 2026-06-23 | 1.0.66+155 | 1.0.18 | 修正 iOS IAP 驗證時 `code=internal msg=INTERNAL` 錯誤：(1) `applyPurchase` 與 `analyzeClothing` 中的 `Firestore.update()` 改為 `set(..., {merge: true})`，防止 Firestore document 不存在時拋出 `NOT_FOUND` 未捕例外；(2) `verifyAppStoreTransaction` 所有可能未捕的例外（JWT 產生失敗、網路錯誤、非 JSON 回應、`signedTransactionInfo` 缺失、JWS payload 解碼失敗）全部包裹為 `HttpsError` 並附上診斷訊息 | Purchase / IAP / Cloud Functions |
 | 2026-06-19 | 1.0.66+155 | 1.0.17 | 遷移 iOS IAP 驗證至 App Store Server API：移除廢棄的 `verifyReceipt` 端點與 `APPLE_SHARED_SECRET`；改用 App Store Server API（API 私鑰 JWT 認證）+ StoreKit `transactionId` 驗證；刪除所有旁路邏輯（21004 旁路、isRestore 旁路）；Flutter 端改送 `transactionId`（`details.purchaseID`）取代整張 receipt；更新 deploy workflow 注入 `APPLE_API_KEY_ID`/`APPLE_API_ISSUER_ID`/`APPLE_API_PRIVATE_KEY` | Purchase / IAP / Cloud Functions |
 | 2026-06-16 | 1.0.65+154 | 1.0.16 | 修正「購買已持有商品」流程：使用者點擊購買時，若 StoreKit 回傳 `PurchaseStatus.restored`（代表該商品已在帳戶中），原本因 `_isRestoreAction=false` 傳送 `isRestore=false` 給後端，導致 CF 的 StoreKit 信任旁路未觸發而出現 `permission-denied`；現改為 `PurchaseStatus.restored` 永遠傳送 `isRestore=true`，符合 StoreKit 語意（已持有 = 恢復），讓後端旁路正確生效 | Purchase / IAP |

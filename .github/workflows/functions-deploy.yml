@@ -66,6 +66,10 @@ jobs:
             -X POST -d '' https://oauth2.googleapis.com/token \
             || echo "curl (default) oauth2.googleapis.com FAILED (exit $?)"
 
+          echo "=== Runtime env (node version + proxy) ==="
+          node -v
+          env | grep -iE 'proxy' || echo "(no proxy env vars set)"
+
           echo "=== Node token exchange (NODE_OPTIONS=${NODE_OPTIONS}) ==="
           node -e '
             const fs = require("fs");

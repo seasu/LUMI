@@ -12,6 +12,10 @@ jobs:
   deploy:
     name: Deploy Functions
     runs-on: ubuntu-latest
+    env:
+      # Force IPv4-first DNS ordering. Broken IPv6 egress on the runner is the
+      # most common cause of "Premature close" when reaching googleapis.com.
+      NODE_OPTIONS: --dns-result-order=ipv4first
     steps:
       - uses: actions/checkout@v4
 
@@ -50,6 +54,19 @@ jobs:
       - name: Verify service account key can obtain a token
         working-directory: functions
         run: |
+          echo "=== Network-layer connectivity (curl) ==="
+          echo "An empty POST returning HTTP 400 means TLS+HTTP round-trip works fine."
+          curl -4 -sS -o /dev/null -w "www.googleapis.com (IPv4) -> HTTP %{http_code}\n" \
+            -X POST -d '' https://www.googleapis.com/oauth2/v4/token \
+            || echo "curl -4 www.googleapis.com FAILED (exit $?)"
+          curl -sS -o /dev/null -w "www.googleapis.com (default) -> HTTP %{http_code}\n" \
+            -X POST -d '' https://www.googleapis.com/oauth2/v4/token \
+            || echo "curl (default) www.googleapis.com FAILED (exit $?)"
+          curl -sS -o /dev/null -w "oauth2.googleapis.com (default) -> HTTP %{http_code}\n" \
+            -X POST -d '' https://oauth2.googleapis.com/token \
+            || echo "curl (default) oauth2.googleapis.com FAILED (exit $?)"
+
+          echo "=== Node token exchange (NODE_OPTIONS=${NODE_OPTIONS}) ==="
           node -e '
             const fs = require("fs");
             const { GoogleAuth } = require("google-auth-library");

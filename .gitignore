@@ -42,3 +42,10 @@ functions/lib/
 
 # Coverage
 coverage/
+
+# Apple / secrets — never commit private keys or local credential test scripts
+*.p8
+SubscriptionKey_*.p8
+AuthKey_*.p8
+testappleauth.mjs
+test-apple-auth.mjs

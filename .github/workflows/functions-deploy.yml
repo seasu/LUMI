@@ -155,12 +155,35 @@ jobs:
           echo "Exceeded retry limit (${MAX_ATTEMPTS}) while resolving trigger migration conflicts."
           exit 1
 
+      # firebaserules.googleapis.com intermittently returns 503/transient errors
+      # during the rules compilation pre-check, failing the whole deploy. Retry
+      # with backoff so a Google-side blip doesn't turn the run red.
       - name: Deploy Firestore Rules
         working-directory: functions
         run: |
-          GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
-            npx firebase deploy --only firestore:rules \
-              --project lumi-309ff --non-interactive
+          MAX_ATTEMPTS=4
+          ATTEMPT=1
+          DELAY=5
+          while [ "$ATTEMPT" -le "$MAX_ATTEMPTS" ]; do
+            echo "Firestore rules deploy attempt ${ATTEMPT}/${MAX_ATTEMPTS}"
+            set +e
+            GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
+              npx firebase deploy --only firestore:rules \
+                --project lumi-309ff --non-interactive
+            STATUS=$?
+            set -e
+            if [ "$STATUS" -eq 0 ]; then
+              exit 0
+            fi
+            if [ "$ATTEMPT" -eq "$MAX_ATTEMPTS" ]; then
+              echo "Firestore rules deploy failed after ${MAX_ATTEMPTS} attempts."
+              exit "$STATUS"
+            fi
+            echo "Deploy failed (status ${STATUS}); retrying in ${DELAY}s…"
+            sleep "$DELAY"
+            ATTEMPT=$((ATTEMPT + 1))
+            DELAY=$((DELAY * 2))
+          done
 
       - name: Cleanup credentials
         if: always()

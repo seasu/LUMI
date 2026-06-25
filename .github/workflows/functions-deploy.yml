@@ -43,6 +43,28 @@ jobs:
       - name: Show deploy service account
         run: python3 -c "import json; print(json.load(open('/tmp/sa.json'))['client_email'])"
 
+      # Diagnostic: exchange the SA key for an access token directly, so Google's
+      # real error surfaces (e.g. invalid_grant = key deleted/wrong) instead of
+      # firebase-tools' generic "Failed to authenticate". google-auth-library is a
+      # functions dependency, so it resolves from functions/node_modules.
+      - name: Verify service account key can obtain a token
+        working-directory: functions
+        run: |
+          node -e '
+            const fs = require("fs");
+            const { GoogleAuth } = require("google-auth-library");
+            const key = JSON.parse(fs.readFileSync("/tmp/sa.json", "utf8"));
+            console.log("private_key_id:", key.private_key_id);
+            console.log("project_id:", key.project_id);
+            const auth = new GoogleAuth({
+              keyFilename: "/tmp/sa.json",
+              scopes: ["https://www.googleapis.com/auth/cloud-platform"],
+            });
+            auth.getAccessToken()
+              .then((t) => { console.log("ACCESS TOKEN OK (prefix):", String(t).slice(0, 10)); })
+              .catch((e) => { console.error("TOKEN EXCHANGE FAILED:", e.message); process.exit(1); });
+          '
+
       # Authentication: uses FIREBASE_SERVICE_ACCOUNT secret (service account JSON key).
       # If this step fails with "Failed to authenticate", the key in the secret has been
       # deleted or revoked in GCP. Fix:

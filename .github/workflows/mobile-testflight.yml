@@ -57,6 +57,35 @@ jobs:
           fi
           echo "✅ All required secrets are present"
 
+      # Fail fast on bad App Store Connect API credentials.
+      # Without this, a 401 only surfaces at the very last "Upload to TestFlight"
+      # step — after a 10+ minute build — and the dSYM step used to swallow it as
+      # "non-fatal", making a broken run look green. Validate the key here so an
+      # expired/mismatched APP_STORE_CONNECT_* secret fails the job immediately.
+      - name: Verify App Store Connect API credentials
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/private_keys
+          printf '%s' "$APP_STORE_CONNECT_PRIVATE_KEY" \
+            > ~/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8
+          echo "Authenticating to App Store Connect (keyId=${APP_STORE_CONNECT_KEY_ID})…"
+          if ! xcrun altool --list-apps \
+                 --apiKey "$APP_STORE_CONNECT_KEY_ID" \
+                 --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" \
+                 --output-format json > /tmp/asc-auth.json 2> /tmp/asc-auth.err; then
+            echo "❌ App Store Connect API authentication failed (likely 401)."
+            echo "   Check APP_STORE_CONNECT_KEY_ID / _ISSUER_ID / _PRIVATE_KEY in GitHub Secrets."
+            echo "   The Key ID and the .p8 private key must be the SAME generated pair from"
+            echo "   App Store Connect → Users and Access → Integrations → App Store Connect API."
+            echo "--- altool stderr ---"
+            tail -20 /tmp/asc-auth.err
+            exit 1
+          fi
+          echo "✅ App Store Connect API credentials are valid"
+
       - name: Validate iOS project exists
         run: |
           if [ ! -d ios ]; then
@@ -263,12 +292,18 @@ jobs:
           if [ -d "$DSYM_DIR" ] && [ "$(ls -A "$DSYM_DIR")" ]; then
             cd build/ios/archive/Runner.xcarchive
             zip -r /tmp/app-dSYMs.zip dSYMs/
-            xcrun altool --upload-symbols \
-              -p /tmp/app-dSYMs.zip \
-              --type ios \
-              --apiKey "$APP_STORE_CONNECT_KEY_ID" \
-              --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" \
-              2>&1 | tail -5 || echo "dSYM upload failed (non-fatal)"
+            # dSYM upload is genuinely optional, so a failure here must not fail the
+            # job — but don't pipe through `tail` (that hides altool's real exit code
+            # behind tail's). Capture the status explicitly and only warn.
+            if xcrun altool --upload-symbols \
+                 -p /tmp/app-dSYMs.zip \
+                 --type ios \
+                 --apiKey "$APP_STORE_CONNECT_KEY_ID" \
+                 --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"; then
+              echo "✅ dSYMs uploaded"
+            else
+              echo "⚠️  dSYM upload failed (non-fatal — symbols can be uploaded later)"
+            fi
           else
             echo "No dSYMs found — skipping"
           fi

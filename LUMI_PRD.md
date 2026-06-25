@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.67+157
+**前端版本 (Flutter App)：** 1.0.68+158
 **後端版本 (Cloud Functions)：** 1.0.25
 **開發框架：** Flutter (Cross-platform)
 
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-06-24 | 1.0.68+158 | 1.0.25 | 發版：整合本輪所有 IAP 修復（取消靜默、restore UI、官方 Apple library）以供 TestFlight 完整驗證 | Purchase / IAP / UI / Cloud Functions |
 | 2026-06-24 | 1.0.67+157 | 1.0.25 | 新增 pubkey fingerprint 診斷 log，讓 Cloud Function 可與本機 .p8 fingerprint 比對確認私鑰是否正確 | Purchase / IAP / Cloud Functions |
 | 2026-06-24 | 1.0.67+157 | 1.0.24 | 改用 Apple 官方 @apple/app-store-server-library 取代手刻 JWT；移除 crypto.sign() + ieee-p1363 手動實作；401 錯誤加入更明確診斷訊息（區分 In-App Purchase key 與 App Store Connect API key）；使用 APIException 結構化錯誤處理 | Purchase / IAP / Cloud Functions |
 | 2026-06-24 | 1.0.67+157 | 1.0.23 | 新增 401 錯誤回應 body 診斷 log；bump 後端版本強制建立新 Cloud Run revision 以套用最新 Secret Manager 版本 | Purchase / IAP / Cloud Functions |

@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-06-25 | 1.0.69+159 | 1.0.26 | CI（無程式碼變更，不升版號）：`functions-deploy.yml` 的「Deploy Firestore Rules」步驟加上 4 次指數退避重試，避免 `firebaserules.googleapis.com` 暫時性 503 讓整個部署紅燈 | CI / Functions Deploy |
 | 2026-06-25 | 1.0.69+159 | 1.0.26 | **修正 iOS IAP 401 根因**：本機用 `requestTestNotification` 隔離測試證實憑證完全正確（Sandbox 回 4040007 = 認證成功），Production 因 App 尚未在 App Store 正式上架而回 401。TestFlight 購買皆為 Sandbox 交易，但 `verifyPurchase.ts` 原本只在 `TRANSACTION_ID_NOT_FOUND` 才退回 Sandbox，吃到 401 直接拋錯。改為 Production 回 401 時也退回 Sandbox 驗證；僅當 Sandbox 仍 401 才視為憑證錯誤 | Purchase / IAP / Cloud Functions |
 | 2026-06-25 | 1.0.69+159 | 1.0.25 | CI：TestFlight workflow 新增 App Store Connect API 認證 fail-fast 預檢（壞掉的 key 在 build 前就紅燈）；修正 dSYM 上傳步驟用 `\| tail` 吞掉 altool 真實 exit code 導致 401 認證失敗被當成「非致命」而讓整個 job 假性成功的問題。同時 bump 版本觸發新 TestFlight build | CI / iOS Deploy |
 | 2026-06-24 | 1.0.68+158 | 1.0.25 | 發版：整合本輪所有 IAP 修復（取消靜默、restore UI、官方 Apple library）以供 TestFlight 完整驗證 | Purchase / IAP / UI / Cloud Functions |

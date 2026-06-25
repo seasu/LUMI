@@ -12,12 +12,6 @@ jobs:
   deploy:
     name: Deploy Functions
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    env:
-      # Firebase CI token from `firebase login:ci` (Google OAuth refresh token,
-      # NOT a service account key). Stored in repo Secrets as FIREBASE_TOKEN.
-      FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -43,9 +37,22 @@ jobs:
         run: npm run build
         working-directory: functions
 
+      - name: Write service account credentials
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa.json
+
+      - name: Show deploy service account
+        run: python3 -c "import json; print(json.load(open('/tmp/sa.json'))['client_email'])"
+
+      # Authentication: uses FIREBASE_SERVICE_ACCOUNT secret (service account JSON key).
+      # If this step fails with "Failed to authenticate", the key in the secret has been
+      # deleted or revoked in GCP. Fix:
+      #   GCP Console → IAM & Admin → Service Accounts → github-actions@lumi-309ff.iam.gserviceaccount.com
+      #   → Keys → Add Key → Create new key (JSON) → update FIREBASE_SERVICE_ACCOUNT GitHub Secret.
+      #
+      # Cloud Functions Gen2 (v2 SDK), region asia-east1.
+      # Apple IAP secrets are managed via Firebase Secret Manager (not this workflow).
+
       # Runtime env for Cloud Functions — written to .env.lumi-309ff before deploy.
-      # Apple IAP secrets (APPLE_API_KEY_ID / APPLE_API_ISSUER_ID / APPLE_API_PRIVATE_KEY)
-      # are managed via Firebase Secret Manager, NOT this .env file.
       - name: Write runtime env for Firebase deploy
         working-directory: functions
         run: |
@@ -69,8 +76,9 @@ jobs:
 
             set +e
             DEPLOY_OUTPUT=$(
-              npx firebase deploy --only functions \
-                --project lumi-309ff --non-interactive --force 2>&1
+              GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
+                npx firebase deploy --only functions \
+                  --project lumi-309ff --non-interactive --force 2>&1
             )
             DEPLOY_STATUS=$?
             set -e
@@ -95,8 +103,9 @@ jobs:
               echo "Deleting legacy function ${FUNCTION_NAME}(${FUNCTION_REGION}) then retrying."
               set +e
               DELETE_OUTPUT=$(
-                npx firebase functions:delete "$FUNCTION_NAME" \
-                  --region "$FUNCTION_REGION" --project lumi-309ff --force 2>&1
+                GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
+                  npx firebase functions:delete "$FUNCTION_NAME" \
+                    --region "$FUNCTION_REGION" --project lumi-309ff --force 2>&1
               )
               DELETE_STATUS=$?
               set -e
@@ -118,6 +127,12 @@ jobs:
           exit 1
 
       - name: Deploy Firestore Rules
+        working-directory: functions
         run: |
-          npx firebase deploy --only firestore:rules \
-            --project lumi-309ff --non-interactive
+          GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
+            npx firebase deploy --only firestore:rules \
+              --project lumi-309ff --non-interactive
+
+      - name: Cleanup credentials
+        if: always()
+        run: rm -f /tmp/sa.json

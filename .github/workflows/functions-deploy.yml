@@ -52,42 +52,23 @@ jobs:
       - name: Show deploy service account
         run: python3 -c "import json; print(json.load(open('/tmp/sa.json'))['client_email'])"
 
-      # Diagnostic: exchange the SA key for an access token directly, so Google's
-      # real error surfaces (e.g. invalid_grant = key deleted/wrong) instead of
-      # firebase-tools' generic "Failed to authenticate". google-auth-library is a
-      # functions dependency, so it resolves from functions/node_modules.
+      # Pre-flight auth check: exchange the SA key for an access token directly so
+      # any credential failure surfaces with Google's real error (e.g. invalid_grant
+      # = key deleted/wrong) instead of firebase-tools' generic "Failed to
+      # authenticate". google-auth-library resolves from functions/node_modules.
       - name: Verify service account key can obtain a token
         working-directory: functions
         run: |
-          echo "=== Network-layer connectivity (curl) ==="
-          echo "An empty POST returning HTTP 400 means TLS+HTTP round-trip works fine."
-          curl -4 -sS -o /dev/null -w "www.googleapis.com (IPv4) -> HTTP %{http_code}\n" \
-            -X POST -d '' https://www.googleapis.com/oauth2/v4/token \
-            || echo "curl -4 www.googleapis.com FAILED (exit $?)"
-          curl -sS -o /dev/null -w "www.googleapis.com (default) -> HTTP %{http_code}\n" \
-            -X POST -d '' https://www.googleapis.com/oauth2/v4/token \
-            || echo "curl (default) www.googleapis.com FAILED (exit $?)"
-          curl -sS -o /dev/null -w "oauth2.googleapis.com (default) -> HTTP %{http_code}\n" \
-            -X POST -d '' https://oauth2.googleapis.com/token \
-            || echo "curl (default) oauth2.googleapis.com FAILED (exit $?)"
-
-          echo "=== Runtime env (node version + proxy) ==="
-          node -v
-          env | grep -iE 'proxy' || echo "(no proxy env vars set)"
-
-          echo "=== Node token exchange (NODE_OPTIONS=${NODE_OPTIONS}) ==="
           node -e '
-            const fs = require("fs");
             const { GoogleAuth } = require("google-auth-library");
-            const key = JSON.parse(fs.readFileSync("/tmp/sa.json", "utf8"));
+            const key = require("/tmp/sa.json");
             console.log("private_key_id:", key.private_key_id);
-            console.log("project_id:", key.project_id);
             const auth = new GoogleAuth({
               keyFilename: "/tmp/sa.json",
               scopes: ["https://www.googleapis.com/auth/cloud-platform"],
             });
             auth.getAccessToken()
-              .then((t) => { console.log("ACCESS TOKEN OK (prefix):", String(t).slice(0, 10)); })
+              .then((t) => { console.log("ACCESS TOKEN OK (prefix):", String(t).slice(0, 8)); })
               .catch((e) => { console.error("TOKEN EXCHANGE FAILED:", e.message); process.exit(1); });
           '
 

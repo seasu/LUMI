@@ -112,18 +112,29 @@ async function verifyAppStoreTransaction(
         `verifyPurchase: APIException httpStatus=${err.httpStatusCode} ` +
         `apiError=${err.apiError} message="${err.errorMessage}" environment=${environment}`
       );
-      // TRANSACTION_ID_NOT_FOUND on production means this is a sandbox transaction.
+      // TestFlight/sandbox transactions don't exist in the Production environment.
+      // Production may reject them with TRANSACTION_ID_NOT_FOUND — or, while the app
+      // has no App Store release yet, reject auth outright with 401 (the Production
+      // App Store Server API doesn't recognise the app). In both cases the real
+      // transaction lives in Sandbox, so retry there. Verified out-of-band: these
+      // credentials authenticate successfully against Sandbox; Production 401s only
+      // because the app isn't live on the App Store yet.
       if (
         environment === Environment.PRODUCTION &&
-        err.apiError === APIError.TRANSACTION_ID_NOT_FOUND
+        (err.apiError === APIError.TRANSACTION_ID_NOT_FOUND ||
+          err.httpStatusCode === 401)
       ) {
-        console.log("verifyPurchase: not found on production, retrying sandbox");
+        console.log(
+          `verifyPurchase: production failed (httpStatus=${err.httpStatusCode}), retrying sandbox`
+        );
         return verifyAppStoreTransaction(transactionId, expectedProductId, Environment.SANDBOX);
       }
+      // A 401 from Sandbox (i.e. after the retry above) means the credentials
+      // themselves are wrong — not just an environment mismatch.
       if (err.httpStatusCode === 401) {
         throw new HttpsError(
           "internal",
-          "Apple API authentication failed (401). Check APPLE_API_KEY_ID, APPLE_API_ISSUER_ID, and APPLE_API_PRIVATE_KEY secrets — ensure APPLE_API_KEY_ID is an In-App Purchase key (not an App Store Connect API key)."
+          "Apple API authentication failed (401) in sandbox. Check APPLE_API_KEY_ID, APPLE_API_ISSUER_ID, and APPLE_API_PRIVATE_KEY secrets — ensure APPLE_API_KEY_ID is an In-App Purchase key (not an App Store Connect API key)."
         );
       }
       throw new HttpsError("permission-denied", "Transaction not found or invalid.");

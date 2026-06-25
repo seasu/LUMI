@@ -49,12 +49,13 @@ jobs:
       #   gcloud iam workload-identity-pools providers create-oidc "github" --project="${PROJECT_ID}" --location="global" --workload-identity-pool="github" --display-name="GitHub" --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.repository=assertion.repository,attribute.repository_owner=assertion.repository_owner" --issuer-uri="https://token.actions.githubusercontent.com"
       #   gcloud iam service-accounts add-iam-policy-binding "${SA}" --project="${PROJECT_ID}" --role="roles/iam.workloadIdentityUser" --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github/attribute.repository/${REPO}"
       - name: Authenticate to Google Cloud (Workload Identity Federation)
-        id: auth
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: 'projects/140301774847/locations/global/workloadIdentityPools/github/providers/github'
           service_account: 'github-actions@lumi-309ff.iam.gserviceaccount.com'
-          token_format: 'access_token'
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
 
       # Runtime env for Cloud Functions — written to .env.lumi-309ff before deploy.
       # Apple IAP secrets (APPLE_API_KEY_ID / APPLE_API_ISSUER_ID / APPLE_API_PRIVATE_KEY)
@@ -73,9 +74,8 @@ jobs:
 
       - name: Deploy Cloud Functions (with trigger migration fallback)
         working-directory: functions
-        env:
-          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
         run: |
+          export GOOGLE_OAUTH_ACCESS_TOKEN=$(gcloud auth print-access-token)
           MAX_ATTEMPTS=5
           ATTEMPT=1
 
@@ -133,8 +133,7 @@ jobs:
           exit 1
 
       - name: Deploy Firestore Rules
-        env:
-          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
         run: |
+          export GOOGLE_OAUTH_ACCESS_TOKEN=$(gcloud auth print-access-token)
           npx firebase deploy --only firestore:rules \
             --project lumi-309ff --non-interactive

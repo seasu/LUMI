@@ -330,6 +330,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get paywallSuccessExtra => '✅ 已補充 100 次 AI 分析配額';
 
   @override
+  String get paywallRestoreSuccess => '✅ 購買已成功還原';
+
+  @override
   String get paywallErrorGeneric => '購買失敗，請再試一次。';
 
   @override
@@ -977,6 +980,9 @@ class AppLocalizationsZhCn extends AppLocalizationsZh {
   String get paywallSuccessExtra => '✅ 已补充 100 次 AI 分析配额';
 
   @override
+  String get paywallRestoreSuccess => '✅ 购买已成功恢复';
+
+  @override
   String get paywallErrorGeneric => '购买失败，请再试一次。';
 
   @override
@@ -1622,6 +1628,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get paywallSuccessExtra => '✅ 已補充 100 次 AI 分析配額';
+
+  @override
+  String get paywallRestoreSuccess => '✅ 購買已成功還原';
 
   @override
   String get paywallErrorGeneric => '購買失敗，請再試一次。';

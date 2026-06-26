@@ -21,8 +21,9 @@ class PurchaseProcessing extends PurchaseState {
 
 /// Purchase completed and Firestore has been updated.
 class PurchaseDone extends PurchaseState {
-  const PurchaseDone({required this.productId});
+  const PurchaseDone({required this.productId, this.fromRestore = false});
   final String productId;
+  final bool fromRestore;
 }
 
 /// An error occurred (product load failure, payment cancelled, verification fail).

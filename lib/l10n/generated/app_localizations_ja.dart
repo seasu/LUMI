@@ -330,6 +330,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get paywallSuccessExtra => '✅ AI分析100回分を補充しました';
 
   @override
+  String get paywallRestoreSuccess => '✅ 購入を正常に復元しました';
+
+  @override
   String get paywallErrorGeneric => '購入に失敗しました。もう一度お試しください。';
 
   @override

@@ -106,7 +106,7 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
           _log('PurchaseDone detected — invalidating profile and popping sheet');
           ref.invalidate(userProfileProvider);
           // Show snackbar BEFORE popping so context is still valid.
-          _showSuccessSnackBar(context, state.productId);
+          _showSuccessSnackBar(context, state.productId, isRestore: state.fromRestore);
           _log('calling context.pop() via GoRouter');
           context.pop();
         }
@@ -259,11 +259,16 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
     ref.read(purchaseProvider.notifier).buy(productId);
   }
 
-  void _showSuccessSnackBar(BuildContext ctx, String productId) {
+  void _showSuccessSnackBar(BuildContext ctx, String productId, {bool isRestore = false}) {
     final l10n = AppLocalizations.of(ctx);
-    final msg = productId == LumiProductIds.proYearly
-        ? l10n.paywallSuccessPro
-        : l10n.paywallSuccessExtra;
+    final String msg;
+    if (isRestore) {
+      msg = l10n.paywallRestoreSuccess;
+    } else if (productId == LumiProductIds.proYearly) {
+      msg = l10n.paywallSuccessPro;
+    } else {
+      msg = l10n.paywallSuccessExtra;
+    }
     ScaffoldMessenger.of(ctx).showSnackBar(
       SnackBar(
         content: Text(msg),
@@ -771,8 +776,14 @@ class _RestoreOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return SizedBox(
-      height: 200,
+    // Solid background so the purchase-options content underneath is hidden.
+    return Container(
+      decoration: const BoxDecoration(
+        color: LumiColors.base,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(LumiRadii.xl),
+        ),
+      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

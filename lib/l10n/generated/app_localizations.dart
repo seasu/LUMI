@@ -705,6 +705,12 @@ abstract class AppLocalizations {
   /// **'✅ Added 100 AI analysis credits'**
   String get paywallSuccessExtra;
 
+  /// No description provided for @paywallRestoreSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'✅ Purchases restored successfully'**
+  String get paywallRestoreSuccess;
+
   /// No description provided for @paywallErrorGeneric.
   ///
   /// In en, this message translates to:

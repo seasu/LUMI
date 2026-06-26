@@ -101,6 +101,7 @@
   "paywallRestoringPurchases": "正在恢复购买…",
   "paywallSuccessPro": "🎉 已升级为 Pro！享受无限 AI 分析",
   "paywallSuccessExtra": "✅ 已补充 100 次 AI 分析配额",
+  "paywallRestoreSuccess": "✅ 购买已成功恢复",
   "paywallErrorGeneric": "购买失败，请再试一次。",
   "outfitTitle": "我的穿搭",
   "outfitCreate": "新增穿搭",

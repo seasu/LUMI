@@ -336,6 +336,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paywallSuccessExtra => '✅ Added 100 AI analysis credits';
 
   @override
+  String get paywallRestoreSuccess => '✅ Purchases restored successfully';
+
+  @override
   String get paywallErrorGeneric => 'Purchase failed. Please try again.';
 
   @override

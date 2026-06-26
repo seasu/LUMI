@@ -199,7 +199,7 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
       }
 
       _log('${_isRestoreAction ? 'restore' : 'purchase'}: $productId — Firestore updated');
-      state = AsyncData(PurchaseDone(productId: productId));
+      state = AsyncData(PurchaseDone(productId: productId, fromRestore: _isRestoreAction));
     } catch (e) {
       _log('${_isRestoreAction ? 'restore' : 'verify'} ✗ $e');
       if (details.pendingCompletePurchase) {

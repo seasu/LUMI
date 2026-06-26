@@ -170,6 +170,7 @@
   "paywallRestoringPurchases": "Restoring purchases…",
   "paywallSuccessPro": "🎉 Upgraded to Pro! Enjoy unlimited AI analysis",
   "paywallSuccessExtra": "✅ Added 100 AI analysis credits",
+  "paywallRestoreSuccess": "✅ Purchases restored successfully",
   "paywallErrorGeneric": "Purchase failed. Please try again.",
   "outfitTitle": "Outfits",
   "outfitCreate": "Create Outfit",

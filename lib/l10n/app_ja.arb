@@ -101,6 +101,7 @@
   "paywallRestoringPurchases": "購入を復元中…",
   "paywallSuccessPro": "🎉 Proにアップグレード！無制限のAI分析をお楽しみください",
   "paywallSuccessExtra": "✅ AI分析100回分を補充しました",
+  "paywallRestoreSuccess": "✅ 購入を正常に復元しました",
   "paywallErrorGeneric": "購入に失敗しました。もう一度お試しください。",
   "outfitTitle": "コーディネート",
   "outfitCreate": "コーデを作成",

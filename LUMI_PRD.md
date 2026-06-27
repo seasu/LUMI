@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.70+160
+**前端版本 (Flutter App)：** 1.0.71+161
 **後端版本 (Cloud Functions)：** 1.0.26
 **開發框架：** Flutter (Cross-platform)
 
@@ -308,7 +308,8 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
-| 2026-06-25 | 1.0.70+160 | 1.0.26 | 修正還原購買 UX：`_RestoreOverlay` 加上不透明背景蓋住 plan cards；新增專屬「還原成功」snackbar 訊息（`paywallRestoreSuccess`）；`PurchaseDone` 加 `fromRestore` 欄位讓 UI 區分購買與還原完成 | Purchase / IAP / UI |
+| 2026-06-27 | 1.0.71+161 | 1.0.26 | **修正 Apple 退審原因**：購買失敗時錯誤橫幅直接顯示原始 `PlatformException` / StoreKit stacktrace 給使用者，被 Apple 判定為 App 異常退審。`PurchaseError` 改用語意化 `PurchaseErrorKind` enum（generic / verifyFailed / restoreFailed / subscriptionExpired），原始錯誤只寫進 debug log、絕不顯示；UI 端以 l10n 顯示友善訊息（新增 `paywallVerifyFailed` / `paywallRestoreFailed` / `paywallSubscriptionExpired` ×5 語系） | Purchase / IAP / UI |
+| 2026-06-26 | 1.0.70+160 | 1.0.26 | 修正還原購買 UX：`_RestoreOverlay` 加上不透明背景蓋住 plan cards；新增專屬「還原成功」snackbar 訊息（`paywallRestoreSuccess`）；`PurchaseDone` 加 `fromRestore` 欄位讓 UI 區分購買與還原完成 | Purchase / IAP / UI |
 | 2026-06-25 | 1.0.69+159 | 1.0.26 | CI（無程式碼變更，不升版號）：`functions-deploy.yml` 的「Deploy Firestore Rules」步驟加上 4 次指數退避重試，避免 `firebaserules.googleapis.com` 暫時性 503 讓整個部署紅燈 | CI / Functions Deploy |
 | 2026-06-25 | 1.0.69+159 | 1.0.26 | **修正 iOS IAP 401 根因**：本機用 `requestTestNotification` 隔離測試證實憑證完全正確（Sandbox 回 4040007 = 認證成功），Production 因 App 尚未在 App Store 正式上架而回 401。TestFlight 購買皆為 Sandbox 交易，但 `verifyPurchase.ts` 原本只在 `TRANSACTION_ID_NOT_FOUND` 才退回 Sandbox，吃到 401 直接拋錯。改為 Production 回 401 時也退回 Sandbox 驗證；僅當 Sandbox 仍 401 才視為憑證錯誤 | Purchase / IAP / Cloud Functions |
 | 2026-06-25 | 1.0.69+159 | 1.0.25 | CI：TestFlight workflow 新增 App Store Connect API 認證 fail-fast 預檢（壞掉的 key 在 build 前就紅燈）；修正 dSYM 上傳步驟用 `\| tail` 吞掉 altool 真實 exit code 導致 401 認證失敗被當成「非致命」而讓整個 job 假性成功的問題。同時 bump 版本觸發新 TestFlight build | CI / iOS Deploy |

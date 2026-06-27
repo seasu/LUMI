@@ -90,7 +90,9 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
         state = const AsyncData(PurchaseIdle());
         return;
       }
-      state = AsyncData(PurchaseError(e.toString()));
+      state = AsyncData(
+        PurchaseError(PurchaseErrorKind.generic, debugDetail: e.toString()),
+      );
     }
   }
 
@@ -166,7 +168,9 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
         case PurchaseStatus.error:
           final msg = p.error?.message ?? 'Purchase failed';
           _log('error: $msg');
-          state = AsyncData(PurchaseError(msg));
+          state = AsyncData(
+            PurchaseError(PurchaseErrorKind.generic, debugDetail: msg),
+          );
           if (p.pendingCompletePurchase) {
             await ref.read(purchaseRepositoryProvider).complete(p);
           }
@@ -206,13 +210,17 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
         await ref.read(purchaseRepositoryProvider).complete(details);
       }
       if (e is FirebaseFunctionsException && e.code == 'failed-precondition') {
-        state = const AsyncData(PurchaseError('訂閱已過期，請重新訂閱以繼續使用 Pro 功能。'));
+        state = const AsyncData(PurchaseError(PurchaseErrorKind.subscriptionExpired));
         return;
       }
       if (_isRestoreAction) {
-        state = AsyncData(PurchaseError('恢復購買失敗，請稍後再試或聯絡客服。\n$e'));
+        state = AsyncData(
+          PurchaseError(PurchaseErrorKind.restoreFailed, debugDetail: e.toString()),
+        );
       } else {
-        state = AsyncData(PurchaseError('購買驗證失敗，請聯絡客服。\n$e'));
+        state = AsyncData(
+          PurchaseError(PurchaseErrorKind.verifyFailed, debugDetail: e.toString()),
+        );
       }
     }
   }

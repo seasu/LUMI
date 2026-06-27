@@ -336,6 +336,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get paywallErrorGeneric => '購入に失敗しました。もう一度お試しください。';
 
   @override
+  String get paywallVerifyFailed => '購入の確認に失敗しました。後ほど再試行するか、サポートにお問い合わせください。';
+
+  @override
+  String get paywallRestoreFailed => '購入の復元に失敗しました。後ほど再試行するか、サポートにお問い合わせください。';
+
+  @override
+  String get paywallSubscriptionExpired => 'サブスクリプションの有効期限が切れています。Pro機能を継続するには再登録してください。';
+
+  @override
   String get outfitTitle => 'コーディネート';
 
   @override

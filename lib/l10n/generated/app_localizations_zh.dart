@@ -336,6 +336,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get paywallErrorGeneric => '購買失敗，請再試一次。';
 
   @override
+  String get paywallVerifyFailed => '購買驗證失敗，請稍後再試或聯絡客服。';
+
+  @override
+  String get paywallRestoreFailed => '還原購買失敗，請稍後再試或聯絡客服。';
+
+  @override
+  String get paywallSubscriptionExpired => '訂閱已過期，請重新訂閱以繼續使用 Pro 功能。';
+
+  @override
   String get outfitTitle => '我的穿搭';
 
   @override
@@ -986,6 +995,15 @@ class AppLocalizationsZhCn extends AppLocalizationsZh {
   String get paywallErrorGeneric => '购买失败，请再试一次。';
 
   @override
+  String get paywallVerifyFailed => '购买验证失败，请稍后再试或联系客服。';
+
+  @override
+  String get paywallRestoreFailed => '恢复购买失败，请稍后再试或联系客服。';
+
+  @override
+  String get paywallSubscriptionExpired => '订阅已过期，请重新订阅以继续使用 Pro 功能。';
+
+  @override
   String get outfitTitle => '我的穿搭';
 
   @override
@@ -1634,6 +1652,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get paywallErrorGeneric => '購買失敗，請再試一次。';
+
+  @override
+  String get paywallVerifyFailed => '購買驗證失敗，請稍後再試或聯絡客服。';
+
+  @override
+  String get paywallRestoreFailed => '還原購買失敗，請稍後再試或聯絡客服。';
+
+  @override
+  String get paywallSubscriptionExpired => '訂閱已過期，請重新訂閱以繼續使用 Pro 功能。';
 
   @override
   String get outfitTitle => '我的穿搭';

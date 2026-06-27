@@ -208,7 +208,7 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
                 // Error banner
                 if (purchaseState is PurchaseError)
                   _ErrorBanner(
-                    message: purchaseState.message,
+                    message: _errorMessage(context, purchaseState.kind),
                     onDismiss: () => ref.read(purchaseProvider.notifier).reset(),
                   ),
 
@@ -257,6 +257,23 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
   void _buy(String productId) {
     _log('_buy tapped: $productId');
     ref.read(purchaseProvider.notifier).buy(productId);
+  }
+
+  /// Maps a [PurchaseErrorKind] to a localized, user-friendly message.
+  /// Raw exception text is never shown — Apple rejects screens that surface
+  /// debug errors. The technical detail lives only in the debug log.
+  String _errorMessage(BuildContext ctx, PurchaseErrorKind kind) {
+    final l10n = AppLocalizations.of(ctx);
+    switch (kind) {
+      case PurchaseErrorKind.verifyFailed:
+        return l10n.paywallVerifyFailed;
+      case PurchaseErrorKind.restoreFailed:
+        return l10n.paywallRestoreFailed;
+      case PurchaseErrorKind.subscriptionExpired:
+        return l10n.paywallSubscriptionExpired;
+      case PurchaseErrorKind.generic:
+        return l10n.paywallErrorGeneric;
+    }
   }
 
   void _showSuccessSnackBar(BuildContext ctx, String productId, {bool isRestore = false}) {

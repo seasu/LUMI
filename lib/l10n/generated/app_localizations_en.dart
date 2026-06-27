@@ -342,6 +342,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paywallErrorGeneric => 'Purchase failed. Please try again.';
 
   @override
+  String get paywallVerifyFailed => 'Purchase verification failed. Please try again later or contact support.';
+
+  @override
+  String get paywallRestoreFailed => 'Restore failed. Please try again later or contact support.';
+
+  @override
+  String get paywallSubscriptionExpired => 'Your subscription has expired. Please resubscribe to continue using Pro features.';
+
+  @override
   String get outfitTitle => 'Outfits';
 
   @override

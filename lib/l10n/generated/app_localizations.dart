@@ -717,6 +717,24 @@ abstract class AppLocalizations {
   /// **'Purchase failed. Please try again.'**
   String get paywallErrorGeneric;
 
+  /// No description provided for @paywallVerifyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase verification failed. Please try again later or contact support.'**
+  String get paywallVerifyFailed;
+
+  /// No description provided for @paywallRestoreFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore failed. Please try again later or contact support.'**
+  String get paywallRestoreFailed;
+
+  /// No description provided for @paywallSubscriptionExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Your subscription has expired. Please resubscribe to continue using Pro features.'**
+  String get paywallSubscriptionExpired;
+
   /// No description provided for @outfitTitle.
   ///
   /// In en, this message translates to:

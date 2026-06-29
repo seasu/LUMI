@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.71+161
+**前端版本 (Flutter App)：** 1.0.72+162
 **後端版本 (Cloud Functions)：** 1.0.26
 **開發框架：** Flutter (Cross-platform)
 
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-06-27 | 1.0.72+162 | 1.0.26 | **修正 Apple 退審 2.1(b) 真正成因**：`_onPurchaseUpdate` 的 `PurchaseStatus.error` 未判斷 `_purchaseInitiated`，導致 StoreKit 在 App 啟動／訂閱 purchaseStream 時重送的「殘留 error 交易」會在使用者尚未發起購買時就跳出錯誤橫幅（符合 Apple「error message still appeared during the purchase」）。改為僅在本次主動購買時顯示，殘留 error 交易靜默 finish 掉 | Purchase / IAP | 
 | 2026-06-27 | 1.0.71+161 | 1.0.26 | **修正 Apple 退審原因**：購買失敗時錯誤橫幅直接顯示原始 `PlatformException` / StoreKit stacktrace 給使用者，被 Apple 判定為 App 異常退審。`PurchaseError` 改用語意化 `PurchaseErrorKind` enum（generic / verifyFailed / restoreFailed / subscriptionExpired），原始錯誤只寫進 debug log、絕不顯示；UI 端以 l10n 顯示友善訊息（新增 `paywallVerifyFailed` / `paywallRestoreFailed` / `paywallSubscriptionExpired` ×5 語系） | Purchase / IAP / UI |
 | 2026-06-26 | 1.0.70+160 | 1.0.26 | 修正還原購買 UX：`_RestoreOverlay` 加上不透明背景蓋住 plan cards；新增專屬「還原成功」snackbar 訊息（`paywallRestoreSuccess`）；`PurchaseDone` 加 `fromRestore` 欄位讓 UI 區分購買與還原完成 | Purchase / IAP / UI |
 | 2026-06-25 | 1.0.69+159 | 1.0.26 | CI（無程式碼變更，不升版號）：`functions-deploy.yml` 的「Deploy Firestore Rules」步驟加上 4 次指數退避重試，避免 `firebaserules.googleapis.com` 暫時性 503 讓整個部署紅燈 | CI / Functions Deploy |

@@ -351,6 +351,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paywallSubscriptionExpired => 'Your subscription has expired. Please resubscribe to continue using Pro features.';
 
   @override
+  String get paywallAutoRenewNotice => 'Lumi Pro is an auto-renewing subscription. Your Apple ID is charged 24 hours before each period ends; cancel anytime in your App Store account settings.';
+
+  @override
   String get outfitTitle => 'Outfits';
 
   @override

@@ -175,6 +175,7 @@
   "paywallVerifyFailed": "Purchase verification failed. Please try again later or contact support.",
   "paywallRestoreFailed": "Restore failed. Please try again later or contact support.",
   "paywallSubscriptionExpired": "Your subscription has expired. Please resubscribe to continue using Pro features.",
+  "paywallAutoRenewNotice": "Lumi Pro is an auto-renewing subscription. Your Apple ID is charged 24 hours before each period ends; cancel anytime in your App Store account settings.",
   "outfitTitle": "Outfits",
   "outfitCreate": "Create Outfit",
   "outfitEmpty": "No outfits yet",

@@ -86,7 +86,7 @@ class CloudFunctionsService {
   /// Validates a platform purchase with the backend (App Store Server API / Play API)
   /// and updates the user's Firestore quota / plan.
   ///
-  /// [productId]     one of: `lumi_extra_100`, `lumi_pro_yearly`
+  /// [productId]     one of: `lumi_extra_100`, `lumi_pro_yearly_v2`
   /// [transactionId] iOS StoreKit transactionIdentifier (iOS only)
   /// [purchaseToken] Google Play purchase token (Android only)
   Future<void> verifyPurchase({

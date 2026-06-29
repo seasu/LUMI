@@ -167,10 +167,19 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
           }
         case PurchaseStatus.error:
           final msg = p.error?.message ?? 'Purchase failed';
-          _log('error: $msg');
-          state = AsyncData(
-            PurchaseError(PurchaseErrorKind.generic, debugDetail: msg),
-          );
+          _log('error: $msg initiated=$_purchaseInitiated');
+          // Only surface the error if the user actually started a purchase this
+          // session. iOS StoreKit re-delivers unfinished/errored transactions on
+          // purchaseStream subscribe; showing a banner for those makes an error
+          // appear before the user taps anything (an App Store review reject).
+          if (_purchaseInitiated) {
+            state = AsyncData(
+              PurchaseError(PurchaseErrorKind.generic, debugDetail: msg),
+            );
+          } else {
+            _log('stale error re-delivery — finishing transaction silently');
+          }
+          // Always finish the transaction so it stops being re-delivered.
           if (p.pendingCompletePurchase) {
             await ref.read(purchaseRepositoryProvider).complete(p);
           }

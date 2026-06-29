@@ -4,7 +4,7 @@
  * Validates an in-app purchase with the platform's official server-side API,
  * then updates the Firestore user document:
  *   - lumi_extra_100  → freeQuota += 100  (consumable)
- *   - lumi_pro_yearly → plan = 'pro'      (auto-renewable subscription)
+ *   - lumi_pro_yearly_v2 → plan = 'pro'   (auto-renewable subscription)
  *
  * iOS uses the App Store Server API via Apple's official Node.js library:
  *   https://github.com/apple/app-store-server-library-node
@@ -242,7 +242,7 @@ async function applyPurchase(uid: string, productId: string): Promise<void> {
       t.set(userRef, { freeQuota: current + 100 }, { merge: true });
     });
     console.log(`verifyPurchase: +100 quota applied uid=${uid}`);
-  } else if (productId === "lumi_pro_yearly") {
+  } else if (productId === "lumi_pro_yearly_v2") {
     await userRef.set({ plan: "pro" }, { merge: true });
     console.log(`verifyPurchase: plan=pro applied uid=${uid}`);
   } else {
@@ -266,7 +266,7 @@ export const verifyPurchase = onCall(
     const { platform, productId, transactionId, purchaseToken } =
       request.data as {
         platform: string;        // 'ios' | 'android'
-        productId: string;       // 'lumi_extra_100' | 'lumi_pro_yearly'
+        productId: string;       // 'lumi_extra_100' | 'lumi_pro_yearly_v2'
         transactionId?: string;  // iOS: StoreKit transactionIdentifier
         purchaseToken?: string;  // Android: Play purchase token
       };
@@ -275,7 +275,7 @@ export const verifyPurchase = onCall(
       throw new HttpsError("invalid-argument", "platform and productId are required.");
     }
 
-    const isSubscription = productId === "lumi_pro_yearly";
+    const isSubscription = productId === "lumi_pro_yearly_v2";
     console.log(
       `verifyPurchase: start uid=${uid} platform=${platform} product=${productId}`
     );

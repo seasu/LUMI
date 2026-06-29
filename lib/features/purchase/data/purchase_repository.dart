@@ -10,7 +10,10 @@ abstract final class LumiProductIds {
   static const extra100 = 'lumi_extra_100';
 
   /// Auto-renewable annual subscription: unlimited AI analysis.
-  static const proYearly = 'lumi_pro_yearly';
+  /// `_v2` because the original `lumi_pro_yearly` ID was first created as a
+  /// Non-Consumable in App Store Connect and product IDs cannot be reused;
+  /// the real auto-renewable subscription uses this new ID.
+  static const proYearly = 'lumi_pro_yearly_v2';
 
   static const all = {extra100, proYearly};
 }

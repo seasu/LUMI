@@ -345,6 +345,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get paywallSubscriptionExpired => '訂閱已過期，請重新訂閱以繼續使用 Pro 功能。';
 
   @override
+  String get paywallAutoRenewNotice => 'Lumi Pro 為自動續訂訂閱，到期前 24 小時自動向你的 Apple ID 收費，可隨時於 App Store 帳號設定取消。';
+
+  @override
   String get outfitTitle => '我的穿搭';
 
   @override
@@ -1004,6 +1007,9 @@ class AppLocalizationsZhCn extends AppLocalizationsZh {
   String get paywallSubscriptionExpired => '订阅已过期，请重新订阅以继续使用 Pro 功能。';
 
   @override
+  String get paywallAutoRenewNotice => 'Lumi Pro 为自动续订订阅，到期前 24 小时自动向你的 Apple ID 收费，可随时在 App Store 账户设置中取消。';
+
+  @override
   String get outfitTitle => '我的穿搭';
 
   @override
@@ -1661,6 +1667,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get paywallSubscriptionExpired => '訂閱已過期，請重新訂閱以繼續使用 Pro 功能。';
+
+  @override
+  String get paywallAutoRenewNotice => 'Lumi Pro 為自動續訂訂閱，到期前 24 小時自動向你的 Apple ID 收費，可隨時於 App Store 帳號設定取消。';
 
   @override
   String get outfitTitle => '我的穿搭';

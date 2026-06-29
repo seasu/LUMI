@@ -1,11 +1,14 @@
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/debug/debug_log.dart';
 import '../../../../l10n/generated/app_localizations.dart';
+import '../../../../shared/constants/app_urls.dart';
 import '../../../../shared/constants/lumi_colors.dart';
 import '../../../../shared/constants/lumi_radii.dart';
 import '../../../../shared/constants/lumi_spacing.dart';
@@ -204,6 +207,12 @@ class _PaywallSheetState extends ConsumerState<PaywallSheet>
                     );
                   },
                 ),
+
+                // Auto-renewable subscription disclosure + legal links.
+                // Required by App Store Review Guideline 3.1.2 at the point of
+                // purchase. Always visible (not gated by processing state).
+                const SizedBox(height: LumiSpacing.md),
+                const _SubscriptionDisclosure(),
 
                 // Error banner
                 if (purchaseState is PurchaseError)
@@ -720,6 +729,65 @@ class _Badge extends StatelessWidget {
           color: LumiColors.onPrimary,
         ),
       ),
+    );
+  }
+}
+
+// ── Auto-renewable subscription disclosure (App Store 3.1.2) ──────────────────
+
+class _SubscriptionDisclosure extends StatelessWidget {
+  const _SubscriptionDisclosure();
+
+  Future<void> _launch(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    const noticeStyle = TextStyle(
+      fontSize: LumiTypeScale.labelSm,
+      color: LumiColors.subtext,
+      height: 1.5,
+    );
+    final linkStyle = noticeStyle.copyWith(
+      decoration: TextDecoration.underline,
+      decorationColor: LumiColors.subtext,
+    );
+
+    return Column(
+      children: [
+        Text(
+          l10n.paywallAutoRenewNotice,
+          textAlign: TextAlign.center,
+          style: noticeStyle,
+        ),
+        const SizedBox(height: LumiSpacing.xs),
+        Text.rich(
+          TextSpan(
+            style: noticeStyle,
+            children: [
+              TextSpan(
+                text: l10n.authTermsLink,
+                style: linkStyle,
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () => _launch(kTermsOfServiceUrl),
+              ),
+              TextSpan(text: l10n.and),
+              TextSpan(
+                text: l10n.authPrivacyLink,
+                style: linkStyle,
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () => _launch(kPrivacyPolicyUrl),
+              ),
+            ],
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 }

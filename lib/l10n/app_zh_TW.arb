@@ -106,6 +106,7 @@
   "paywallVerifyFailed": "購買驗證失敗，請稍後再試或聯絡客服。",
   "paywallRestoreFailed": "還原購買失敗，請稍後再試或聯絡客服。",
   "paywallSubscriptionExpired": "訂閱已過期，請重新訂閱以繼續使用 Pro 功能。",
+  "paywallAutoRenewNotice": "Lumi Pro 為自動續訂訂閱，到期前 24 小時自動向你的 Apple ID 收費，可隨時於 App Store 帳號設定取消。",
   "outfitTitle": "我的穿搭",
   "outfitCreate": "新增穿搭",
   "outfitEmpty": "還沒有穿搭紀錄",

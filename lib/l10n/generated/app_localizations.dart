@@ -735,6 +735,12 @@ abstract class AppLocalizations {
   /// **'Your subscription has expired. Please resubscribe to continue using Pro features.'**
   String get paywallSubscriptionExpired;
 
+  /// No description provided for @paywallAutoRenewNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Lumi Pro is an auto-renewing subscription. Your Apple ID is charged 24 hours before each period ends; cancel anytime in your App Store account settings.'**
+  String get paywallAutoRenewNotice;
+
   /// No description provided for @outfitTitle.
   ///
   /// In en, this message translates to:

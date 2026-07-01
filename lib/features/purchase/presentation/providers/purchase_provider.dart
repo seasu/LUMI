@@ -145,6 +145,26 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
     }
     for (final p in purchases) {
       _log('update: id=${p.productID} status=${p.status} initiated=$_purchaseInitiated');
+
+      // Retired/unknown product IDs (e.g. a legacy purchase under an old
+      // product ID that has since been replaced, such as lumi_pro_yearly ->
+      // lumi_pro_yearly_v2) can still be re-delivered by StoreKit — restore
+      // returns every transaction ever made on the Apple ID, not just current
+      // products. The backend only recognizes current IDs and would reject
+      // these with "Unknown productId", which flipped the UI to PurchaseError
+      // right after an unrelated successful restore. Finish the transaction
+      // (required by Apple regardless of whether we still sell it) without
+      // verifying or touching purchase state.
+      if (!LumiProductIds.all.contains(p.productID) &&
+          (p.status == PurchaseStatus.purchased ||
+              p.status == PurchaseStatus.restored)) {
+        _log('ignoring retired/unknown productId: ${p.productID}');
+        if (p.pendingCompletePurchase) {
+          await ref.read(purchaseRepositoryProvider).complete(p);
+        }
+        continue;
+      }
+
       switch (p.status) {
         case PurchaseStatus.pending:
           state = AsyncData(PurchaseProcessing(productId: p.productID));

@@ -2,7 +2,7 @@
 
 **專案名稱：** Lumi
 **口號：** *Light up your wardrobe with Google Photos.*
-**前端版本 (Flutter App)：** 1.0.74+164
+**前端版本 (Flutter App)：** 1.0.75+165
 **後端版本 (Cloud Functions)：** 1.0.27
 **開發框架：** Flutter (Cross-platform)
 
@@ -308,6 +308,7 @@ users/{userId}/
 
 | 日期 | 前端版本 | 後端版本 | 變更摘要 | 影響範圍 |
 |------|---------|---------|---------|---------|
+| 2026-07-01 | 1.0.75+165 | 1.0.27 | 修正還原購買誤判錯誤：debug log 顯示 StoreKit 還原時，同一 Apple ID 因商品 ID 曾由 `lumi_pro_yearly`（Non-Consumable）改為 `lumi_pro_yearly_v2`（訂閱），會同時收到新舊兩筆交易；舊 ID 已不在後端已知清單，`verifyPurchase` 回 `Unknown productId` 並把 UI 狀態蓋成 `PurchaseError`，即使新 ID 那筆已成功還原。修正：`_onPurchaseUpdate` 收到不在 `LumiProductIds.all` 清單內的 purchased/restored 交易時，靜默 `complete()` 結束交易、不送後端驗證、不影響購買狀態 | Purchase / IAP |
 | 2026-07-01 | 1.0.74+164 | 1.0.27 | 診斷強化：購買失敗時把完整 StoreKit 錯誤（code/source/message/details）寫進 debug log（個人頁連點版本 5 下可開、可複製分享），方便定位「商品載得到但購買失敗」的確切錯誤碼。使用者端仍只看到友善訊息，無退審風險 | Purchase / IAP / Debug |
 | 2026-06-27 | 1.0.73+163 | 1.0.27 | **Pro 改為真正的自動續訂訂閱**：App Store Connect 原把 `lumi_pro_yearly` 誤建為 Non-Consumable，改建為 Auto-Renewable Subscription，因 product ID 不可重用故改用 `lumi_pro_yearly_v2`（同步更新前端 `LumiProductIds.proYearly` 與後端 `verifyPurchase.ts`）。另補上 Apple Guideline 3.1.2 必要的**自動續訂揭露文字 + 使用條款／隱私政策連結**於 paywall（新增 `paywallAutoRenewNotice` ×5 語系），避免訂閱類退審 | Purchase / IAP / UI / Cloud Functions |
 | 2026-06-27 | 1.0.72+162 | 1.0.26 | **修正 Apple 退審 2.1(b) 真正成因**：`_onPurchaseUpdate` 的 `PurchaseStatus.error` 未判斷 `_purchaseInitiated`，導致 StoreKit 在 App 啟動／訂閱 purchaseStream 時重送的「殘留 error 交易」會在使用者尚未發起購買時就跳出錯誤橫幅（符合 Apple「error message still appeared during the purchase」）。改為僅在本次主動購買時顯示，殘留 error 交易靜默 finish 掉 | Purchase / IAP | 

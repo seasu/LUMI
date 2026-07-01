@@ -82,7 +82,15 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
       await ref.read(purchaseRepositoryProvider).buy(product);
       // Actual result arrives via purchaseStream → _onPurchaseUpdate
     } catch (e) {
-      _log('buy ✗ $e');
+      // Log the full platform error detail so the exact StoreKit failure is
+      // visible in the debug log page (Profile → tap version 5×). The user only
+      // ever sees the friendly PurchaseError message.
+      if (e is PlatformException) {
+        _log('buy ✗ PlatformException code=${e.code} '
+            'message=${e.message} details=${e.details}');
+      } else {
+        _log('buy ✗ $e');
+      }
       _purchaseInitiated = false;
       // StoreKit2 throws this when the user dismisses the payment sheet.
       // Treat as silent cancel — no error banner, just return to idle.
@@ -137,6 +145,26 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
     }
     for (final p in purchases) {
       _log('update: id=${p.productID} status=${p.status} initiated=$_purchaseInitiated');
+
+      // Retired/unknown product IDs (e.g. a legacy purchase under an old
+      // product ID that has since been replaced, such as lumi_pro_yearly ->
+      // lumi_pro_yearly_v2) can still be re-delivered by StoreKit — restore
+      // returns every transaction ever made on the Apple ID, not just current
+      // products. The backend only recognizes current IDs and would reject
+      // these with "Unknown productId", which flipped the UI to PurchaseError
+      // right after an unrelated successful restore. Finish the transaction
+      // (required by Apple regardless of whether we still sell it) without
+      // verifying or touching purchase state.
+      if (!LumiProductIds.all.contains(p.productID) &&
+          (p.status == PurchaseStatus.purchased ||
+              p.status == PurchaseStatus.restored)) {
+        _log('ignoring retired/unknown productId: ${p.productID}');
+        if (p.pendingCompletePurchase) {
+          await ref.read(purchaseRepositoryProvider).complete(p);
+        }
+        continue;
+      }
+
       switch (p.status) {
         case PurchaseStatus.pending:
           state = AsyncData(PurchaseProcessing(productId: p.productID));
@@ -166,8 +194,12 @@ class PurchaseNotifier extends AsyncNotifier<PurchaseState> {
             }
           }
         case PurchaseStatus.error:
-          final msg = p.error?.message ?? 'Purchase failed';
-          _log('error: $msg initiated=$_purchaseInitiated');
+          final err = p.error;
+          final msg = err?.message ?? 'Purchase failed';
+          // Full detail (code/source/details) goes to the debug log only.
+          _log('error: code=${err?.code} source=${err?.source} '
+              'message=$msg details=${err?.details} '
+              'initiated=$_purchaseInitiated');
           // Only surface the error if the user actually started a purchase this
           // session. iOS StoreKit re-delivers unfinished/errored transactions on
           // purchaseStream subscribe; showing a banner for those makes an error
